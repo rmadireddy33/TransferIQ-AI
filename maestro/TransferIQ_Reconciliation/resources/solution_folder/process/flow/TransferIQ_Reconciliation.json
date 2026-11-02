@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransferIQ_Reconciliation",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "80a7046c-0d44-4b13-bf11-b0fe7d23d6db",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TransferIQ_Reconciliation"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "TransferIQ_Reconciliation",
+      "package": {
+        "key": "a5b542b6-16a9-4fc7-b5ad-413d98722177"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "cc0b0df0-4633-4cf5-be18-9bb7c20b553c",
+    "files": []
+  }
+}

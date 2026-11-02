@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransferIQ_Reconciliation",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "80a7046c-0d44-4b13-bf11-b0fe7d23d6db",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TransferIQ_Reconciliation"
+    },
+    "locks": [],
+    "key": "a5b542b6-16a9-4fc7-b5ad-413d98722177",
+    "files": []
+  }
+}

@@ -1,0 +1,4210 @@
+{
+  "id": "fa7de741-ad8f-441f-8f3d-9bf96e5f3497",
+  "version": "1.9",
+  "name": "TransferIQ_Reconciliation",
+  "runtime": "maestro",
+  "nodes": [
+    {
+      "id": "StartTransferInvestigation",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "StartTransferInvestigation",
+        "icon": "play"
+      },
+      "inputs": {
+        "entryPointId": "59339fa7-1f50-422d-b70c-5c45498d590b"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "uniqueId": "e4d21456-9d5d-4328-9723-eca67a3b0294"
+    },
+    {
+      "id": "ValidateInput",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "ValidateInput",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "const transferId = $vars.StartTransferInvestigation.output.transferId;\nif (typeof transferId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(transferId)) throw new Error('INVALID_TRANSFER_INPUT');\nreturn { transferId, correlationId: 'TIQ-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12) };\n",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output",
+          "properties": {
+            "transferId": {
+              "type": "string"
+            },
+            "correlationId": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "7febf81f-c824-40a9-841c-5b870a8c3779"
+    },
+    {
+      "id": "InvalidInput",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateInput\" },\n  error: { code: \"INVALID_TRANSFER_INPUT\", summary: \"Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters).\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "70adbbcf-5e65-48a8-933b-15fedee3203a"
+    },
+    {
+      "id": "BackendConfigured",
+      "type": "core.logic.decision",
+      "typeVersion": "1.3",
+      "display": {
+        "label": "BackendConfigured",
+        "icon": "trending-up-down"
+      },
+      "inputs": {
+        "trueLabel": "Secure HTTP connection configured",
+        "falseLabel": "Configuration required",
+        "expression": "$vars.backendConnectionConfigured"
+      },
+      "uniqueId": "27609695-fdca-4d55-be05-8ba630de80fd"
+    },
+    {
+      "id": "ValidateBackendConfiguration",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "ValidateBackendConfiguration",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "if (typeof $vars.backendBaseUrl !== 'string' || !/^https:\\/\\//.test($vars.backendBaseUrl)) throw new Error('INVALID_CONFIGURATION'); return true;",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "boolean",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "dd0731a6-3f87-46e0-ae15-5f186e97a884"
+    },
+    {
+      "id": "InvalidConfiguration",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateBackendConfiguration\" },\n  error: { code: \"INVALID_CONFIGURATION\", summary: \"A configured cloud connection requires an HTTPS backend URL.\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "ec10bd50-996d-4141-b5fd-d158666d4132"
+    },
+    {
+      "id": "ConfigurationRequired",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"BackendConfigured\" },\n  error: { code: \"CONFIGURATION_REQUIRED\", summary: \"Configure a reachable HTTPS backend and bind its UiPath HTTP connection; localhost is not reachable from UiPath Cloud.\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "69882e83-8479-439b-b01e-70440dd07321"
+    },
+    {
+      "id": "GetTransferDetails",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.6",
+      "display": {
+        "label": "GetTransferDetails",
+        "icon": "https://cloud.uipath.com/elements_/scaleunit_/58cb4f17-4581-4130-a2ae-52448b37dc03/v3/element/elements/uipath-uipath-http/image"
+      },
+      "inputs": {
+        "branches": [],
+        "timeout": "PT30S",
+        "retryCount": 1,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "GET",
+            "url": "=js:$vars.backendBaseUrl + '/api/transfers/' + encodeURIComponent($vars.ValidateInput.output.transferId)",
+            "headers": {
+              "Accept": "application/json",
+              "X-Correlation-ID": "=js:$vars.ValidateInput.output.correlationId"
+            }
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        },
+        "errorHandlingEnabled": true,
+        "defaultBranch": {
+          "enabled": true,
+          "label": ""
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output",
+          "properties": {
+            "body": {
+              "type": "object",
+              "description": "Response body, deserialized by Integration Service",
+              "properties": {
+                "transferId": {
+                  "type": "string"
+                },
+                "clientId": {
+                  "type": "string"
+                },
+                "deliveringFirmId": {
+                  "type": "string"
+                },
+                "receivingFirmId": {
+                  "type": "string"
+                },
+                "sourceAccountId": {
+                  "type": "string"
+                },
+                "destinationAccountId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "transferType": {
+                  "type": "string"
+                }
+              }
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "HTTP status code of the response"
+            }
+          },
+          "schema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "HTTP status code"
+              },
+              "headers": {
+                "type": "object",
+                "description": "Response headers"
+              },
+              "body": {
+                "description": "Response body"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "36934cf7-8988-40de-aed3-a603009f6db4"
+    },
+    {
+      "id": "GetTransferDetailsFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"GetTransferDetails\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: $vars.GetTransferDetails.output.status || null })",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "c3dfb862-d737-49a5-a147-6387a402dcb0"
+    },
+    {
+      "id": "ValidateTransfer",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "ValidateTransfer",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "const response = $vars.GetTransferDetails.output;\n// Designer schema uses code; SDK 6.66.5 documents statusCode. Validate either envelope.\nconst httpStatus = response && (Reflect.get(response, 'code') ?? Reflect.get(response, 'statusCode'));\nconst body = response && response.body;\nif (!response || httpStatus !== 200 || !body || typeof body !== 'object' || Array.isArray(body) ||\n    body.transferId !== $vars.ValidateInput.output.transferId ||\n    !['transferId', 'clientId', 'deliveringFirmId', 'receivingFirmId', 'sourceAccountId', 'destinationAccountId'].every(k => typeof body[k] === 'string' && body[k].length > 0) ||\n    !['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'EXCEPTION_DETECTED', 'INVESTIGATING', 'PENDING_APPROVAL', 'RESOLVED', 'ESCALATED', 'COMPLETED'].includes(body.status) ||\n    !['FULL', 'PARTIAL'].includes(body.transferType)) throw new Error('INVALID_RESPONSE');\n// Preserve the API shape: the lifecycle field is status, not transferStatus.\nreturn body;\n",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "76b91720-6ee9-46ab-9b38-2f5db6a5ece2"
+    },
+    {
+      "id": "ValidateTransferFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateTransfer\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "b847a0fa-4c7c-4386-b5dd-0554ed1f8517"
+    },
+    {
+      "id": "GetDeliveringPositions",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.6",
+      "display": {
+        "label": "GetDeliveringPositions",
+        "icon": "https://cloud.uipath.com/elements_/scaleunit_/58cb4f17-4581-4130-a2ae-52448b37dc03/v3/element/elements/uipath-uipath-http/image"
+      },
+      "inputs": {
+        "branches": [],
+        "timeout": "PT30S",
+        "retryCount": 1,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "GET",
+            "url": "=js:$vars.backendBaseUrl + '/api/delivering/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.sourceAccountId) + '/positions'",
+            "headers": {
+              "Accept": "application/json",
+              "X-Correlation-ID": "=js:$vars.ValidateInput.output.correlationId"
+            },
+            "query": {
+              "limit": "100",
+              "offset": "0"
+            }
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        },
+        "errorHandlingEnabled": true,
+        "defaultBranch": {
+          "enabled": true,
+          "label": ""
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output",
+          "properties": {
+            "body": {
+              "type": "object",
+              "description": "Response body, deserialized by Integration Service",
+              "properties": {
+                "items": {
+                  "type": "array"
+                },
+                "total": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                },
+                "offset": {
+                  "type": "number"
+                }
+              }
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "HTTP status code of the response"
+            }
+          },
+          "schema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "HTTP status code"
+              },
+              "headers": {
+                "type": "object",
+                "description": "Response headers"
+              },
+              "body": {
+                "description": "Response body"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "93ad979d-fcb5-4a95-a061-00f21c5fad56"
+    },
+    {
+      "id": "GetDeliveringPositionsFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"GetDeliveringPositions\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: $vars.GetDeliveringPositions.output.status || null })",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "93a8b369-e18c-4596-a4ed-c90f354acfe8"
+    },
+    {
+      "id": "ValidateDeliveringPositions",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "ValidateDeliveringPositions",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "const response = $vars.GetDeliveringPositions.output;\nconst httpStatus = response && (Reflect.get(response, 'code') ?? Reflect.get(response, 'statusCode'));\nconst page = response && response.body;\nif (!response || httpStatus !== 200 || !page || !Array.isArray(page.items) ||\n    !Number.isSafeInteger(page.total) || page.total < 1 || page.total !== page.items.length || page.offset !== 0 || page.limit !== 100 ||\n    !page.items.every(p => p && typeof p.positionId === 'string' && typeof p.securityId === 'string' &&\n      p.accountId === $vars.ValidateTransfer.output.sourceAccountId && typeof p.quantity === 'string' &&\n      /^\\d+(\\.\\d+)?$/.test(p.quantity) && typeof p.snapshotDate === 'string')) throw new Error('INVALID_RESPONSE');\n// Never silently accept a truncated page. Step 5 supports <=100 rows per side.\nreturn page;\n",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "78aceb78-371a-433e-bc1d-7c5592013fda"
+    },
+    {
+      "id": "ValidateDeliveringPositionsFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateDeliveringPositions\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "bd1c7cfd-f041-4f2e-b039-e4d31991fe59"
+    },
+    {
+      "id": "GetReceivingPositions",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.6",
+      "display": {
+        "label": "GetReceivingPositions",
+        "icon": "https://cloud.uipath.com/elements_/scaleunit_/58cb4f17-4581-4130-a2ae-52448b37dc03/v3/element/elements/uipath-uipath-http/image"
+      },
+      "inputs": {
+        "branches": [],
+        "timeout": "PT30S",
+        "retryCount": 1,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "GET",
+            "url": "=js:$vars.backendBaseUrl + '/api/receiving/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.destinationAccountId) + '/positions'",
+            "headers": {
+              "Accept": "application/json",
+              "X-Correlation-ID": "=js:$vars.ValidateInput.output.correlationId"
+            },
+            "query": {
+              "transferId": "=js:$vars.ValidateInput.output.transferId",
+              "limit": "100",
+              "offset": "0"
+            }
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        },
+        "errorHandlingEnabled": true,
+        "defaultBranch": {
+          "enabled": true,
+          "label": ""
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output",
+          "properties": {
+            "body": {
+              "type": "object",
+              "description": "Response body, deserialized by Integration Service",
+              "properties": {
+                "items": {
+                  "type": "array"
+                },
+                "total": {
+                  "type": "number"
+                },
+                "limit": {
+                  "type": "number"
+                },
+                "offset": {
+                  "type": "number"
+                },
+                "positionKind": {
+                  "type": "string"
+                },
+                "settledHoldings": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "HTTP status code of the response"
+            }
+          },
+          "schema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "HTTP status code"
+              },
+              "headers": {
+                "type": "object",
+                "description": "Response headers"
+              },
+              "body": {
+                "description": "Response body"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "b45a2861-30f7-4d0b-a04a-f5ba8d6b9f45"
+    },
+    {
+      "id": "GetReceivingPositionsFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"GetReceivingPositions\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: $vars.GetReceivingPositions.output.status || null })",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "08cddda7-31a6-4e9f-8bf4-8f33bcdca51f"
+    },
+    {
+      "id": "ValidateReceivingPositions",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "ValidateReceivingPositions",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "const response = $vars.GetReceivingPositions.output;\nconst httpStatus = response && (Reflect.get(response, 'code') ?? Reflect.get(response, 'statusCode'));\nconst page = response && response.body;\nif (!response || httpStatus !== 200 || !page || !Array.isArray(page.items) ||\n    !Number.isSafeInteger(page.total) || page.total < 0 || page.total !== page.items.length || page.offset !== 0 || page.limit !== 100 ||\n    page.positionKind !== 'RECEIVING_TRANSFER_STAGING' || page.settledHoldings !== false ||\n    !page.items.every(p => p && typeof p.stagingPositionId === 'string' && typeof p.securityId === 'string' &&\n      p.transferId === $vars.ValidateInput.output.transferId && typeof p.quantity === 'string' && /^\\d+(\\.\\d+)?$/.test(p.quantity) &&\n      Number.isSafeInteger(p.version) && p.version >= 1 && typeof p.status === 'string')) throw new Error('INVALID_RESPONSE');\n// Empty staging is evidence: the backend must classify missing securities.\nreturn page;\n",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "6bae7fe0-dfcf-4f6b-becf-823c5b363d36"
+    },
+    {
+      "id": "ValidateReceivingPositionsFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateReceivingPositions\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "7de0d2f2-3b17-492d-a9b6-7939218f1004"
+    },
+    {
+      "id": "RunReconciliation",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.6",
+      "display": {
+        "label": "RunReconciliation",
+        "icon": "https://cloud.uipath.com/elements_/scaleunit_/58cb4f17-4581-4130-a2ae-52448b37dc03/v3/element/elements/uipath-uipath-http/image"
+      },
+      "inputs": {
+        "branches": [],
+        "timeout": "PT30S",
+        "retryCount": 1,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "POST",
+            "url": "=js:$vars.backendBaseUrl + '/api/transfers/' + encodeURIComponent($vars.ValidateInput.output.transferId) + '/reconcile'",
+            "headers": {
+              "Accept": "application/json",
+              "X-Correlation-ID": "=js:$vars.ValidateInput.output.correlationId"
+            },
+            "body": "{}"
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        },
+        "errorHandlingEnabled": true,
+        "defaultBranch": {
+          "enabled": true,
+          "label": ""
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output",
+          "properties": {
+            "body": {
+              "type": "object",
+              "description": "Response body, deserialized by Integration Service",
+              "properties": {
+                "transferId": {
+                  "type": "string"
+                },
+                "reconciliationRunId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "executionStatus": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "object"
+                },
+                "positions": {
+                  "type": "array"
+                },
+                "exceptions": {
+                  "type": "array"
+                },
+                "sourceSnapshotVersion": {
+                  "type": "string"
+                },
+                "targetSnapshotVersion": {
+                  "type": "string"
+                },
+                "inputFingerprint": {
+                  "type": "string"
+                },
+                "ruleVersion": {
+                  "type": "string"
+                },
+                "sourceSnapshotDate": {
+                  "type": "string"
+                },
+                "targetSnapshotDates": {
+                  "type": "array"
+                }
+              }
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "HTTP status code of the response"
+            }
+          },
+          "schema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "HTTP status code"
+              },
+              "headers": {
+                "type": "object",
+                "description": "Response headers"
+              },
+              "body": {
+                "description": "Response body"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "85b05113-5d97-46c2-a2d0-2be22c6d8341"
+    },
+    {
+      "id": "RunReconciliationFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"RunReconciliation\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: $vars.RunReconciliation.output.status || null })",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "cf920080-5919-451f-82bf-80276fb34e02"
+    },
+    {
+      "id": "NormalizeReconciliation",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "NormalizeReconciliation",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "const transferId = $vars.ValidateInput.output.transferId;\nconst correlationId = $vars.ValidateInput.output.correlationId;\nconst failed = {\n  transferId, reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { correlationId, transferId, failedStep: 'NormalizeReconciliation' },\n  error: { code: 'INVALID_RECONCILIATION_RESPONSE', summary: 'Reconciliation response is incomplete, malformed or inconsistent.' }\n};\nconst response = $vars.RunReconciliation.output;\nconst httpStatus = response && (Reflect.get(response, 'code') ?? Reflect.get(response, 'statusCode'));\nconst body = response && response.body;\nconst object = x => x && typeof x === 'object' && !Array.isArray(x);\nconst text = x => typeof x === 'string' && x.length > 0;\nconst strings = x => Array.isArray(x) && x.every(text);\nconst quantity = x => x === null || (typeof x === 'string' && /^-?\\d+(\\.\\d+)?$/.test(x));\nif (!response || ![200, 201].includes(httpStatus) || !object(body) || body.transferId !== transferId ||\n    !text(body.reconciliationRunId) || body.executionStatus !== 'COMPLETED' ||\n    !['RECONCILED', 'EXCEPTIONS_DETECTED'].includes(body.status) || !object(body.summary) ||\n    !['totalPositions', 'directlyMatched', 'evidenceExplained', 'unresolved', 'costBasisIssues'].every(k => Number.isSafeInteger(body.summary[k]) && body.summary[k] >= 0) ||\n    !Array.isArray(body.positions) || !Array.isArray(body.exceptions)) return failed;\nconst summary = body.summary;\nif (summary.totalPositions < 1 || summary.totalPositions !== body.positions.length ||\n    summary.totalPositions !== summary.directlyMatched + summary.evidenceExplained + summary.unresolved ||\n    body.status !== (summary.unresolved || summary.costBasisIssues ? 'EXCEPTIONS_DETECTED' : 'RECONCILED')) return failed;\nif (!body.positions.every(p => object(p) && text(p.securityId) && ['MATCHED', 'EXPLAINED', 'UNRESOLVED'].includes(p.classification) &&\n    strings(p.evidenceReferences) && ['sourceQuantity', 'targetQuantity', 'expectedQuantity', 'difference'].every(k => quantity(p[k])) &&\n    (p.classification !== 'EXPLAINED' || p.evidenceReferences.length > 0))) return failed;\nif (new Set(body.positions.map(p => p.securityId)).size !== body.positions.length ||\n    body.positions.filter(p => p.classification === 'MATCHED').length !== summary.directlyMatched ||\n    body.positions.filter(p => p.classification === 'EXPLAINED').length !== summary.evidenceExplained ||\n    body.positions.filter(p => p.classification === 'UNRESOLVED').length !== summary.unresolved) return failed;\nif (!body.exceptions.every(e => object(e) && text(e.exceptionId) && e.transferId === transferId && e.reconciliationRunId === body.reconciliationRunId &&\n    (e.securityId === null || text(e.securityId)) && text(e.exceptionType) && text(e.description) && strings(e.evidenceReferences) &&\n    ['EXPLAINED', 'UNRESOLVED', 'REQUIRES_INVESTIGATION'].includes(e.resolutionStatus) && e.status === e.resolutionStatus &&\n    ['sourceQuantity', 'targetQuantity', 'expectedQuantity', 'normalizedQuantity', 'difference'].every(k => quantity(e[k])))) return failed;\nconst costBasisExceptions = body.exceptions.filter(e => e.exceptionType.startsWith('COST_BASIS_'));\nconst positionExceptions = body.exceptions.filter(e => !e.exceptionType.startsWith('COST_BASIS_'));\nif (costBasisExceptions.length !== summary.costBasisIssues ||\n    positionExceptions.filter(e => e.resolutionStatus === 'EXPLAINED').length !== summary.evidenceExplained ||\n    positionExceptions.filter(e => e.resolutionStatus !== 'EXPLAINED').length !== summary.unresolved ||\n    new Set(body.exceptions.map(e => e.exceptionId)).size !== body.exceptions.length ||\n    !body.positions.every(p => p.classification === 'MATCHED' || positionExceptions.some(e => e.securityId === p.securityId &&\n      (p.classification === 'EXPLAINED' ? e.resolutionStatus === 'EXPLAINED' : e.resolutionStatus !== 'EXPLAINED')))) return failed;\nconst unresolvedExceptions = positionExceptions.filter(e => e.resolutionStatus !== 'EXPLAINED');\nconst evidenceReferences = Array.from(new Set(body.positions.flatMap(p => p.evidenceReferences).concat(body.exceptions.flatMap(e => e.evidenceReferences)))).sort();\nreturn {\n  transferId, reconciliationRunId: body.reconciliationRunId,\n  totalPositions: summary.totalPositions, directlyMatched: summary.directlyMatched,\n  evidenceExplained: summary.evidenceExplained, unresolvedCount: summary.unresolved,\n  exceptions: body.exceptions, workflowOutcome: summary.unresolved > 0 ? 'INVESTIGATION_REQUIRED' : 'CLEAN',\n  costBasisIssues: summary.costBasisIssues, costBasisExceptions,\n  requiresCostBasisReview: summary.costBasisIssues > 0, quantityReconciliationOnly: true,\n  unresolvedExceptions, affectedSecurityIdentifiers: Array.from(new Set(unresolvedExceptions.map(e => e.securityId).filter(text))),\n  exceptionClassifications: Array.from(new Set(unresolvedExceptions.map(e => e.exceptionType))), evidenceReferences,\n  explanation: summary.unresolved > 0 ? 'Unresolved position exceptions require investigation; no correction was applied.' :\n    (summary.costBasisIssues > 0 ? 'Quantities reconcile. Cost-basis evidence still requires separate review.' : 'All positions are directly matched or explained by backend-verified evidence.'),\n  transferStatus: $vars.ValidateTransfer.output.status,\n  sourcePositions: $vars.ValidateDeliveringPositions.output.items,\n  receivingStagingPositions: $vars.ValidateReceivingPositions.output.items,\n  positionKind: 'RECEIVING_TRANSFER_STAGING', settledHoldings: false,\n  correlation: { correlationId, transferId, reconciliationRunId: body.reconciliationRunId }, error: null\n};\n",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "uniqueId": "a5e8b3f5-c437-40d4-8bbc-3c5ff1a2e330"
+    },
+    {
+      "id": "NormalizeReconciliationFailed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"NormalizeReconciliation\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "673f42ce-aa2b-488e-979b-363ea03ffdbf"
+    },
+    {
+      "id": "NormalizationFailed",
+      "type": "core.logic.decision",
+      "typeVersion": "1.3",
+      "display": {
+        "label": "NormalizationFailed",
+        "icon": "trending-up-down"
+      },
+      "inputs": {
+        "trueLabel": "Invalid reconciliation response",
+        "falseLabel": "Validated reconciliation",
+        "expression": "$vars.NormalizeReconciliation.output.workflowOutcome === 'FAILED'"
+      },
+      "uniqueId": "6fdd4b58-c298-4ca2-ae1c-6e89ca4edca7"
+    },
+    {
+      "id": "FailedReconciliation",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "FAILED",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.NormalizeReconciliation.output",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "294bd3b6-d45a-4084-b16c-9407e1ed31eb"
+    },
+    {
+      "id": "RequiresInvestigation",
+      "type": "core.logic.decision",
+      "typeVersion": "1.3",
+      "display": {
+        "label": "RequiresInvestigation",
+        "icon": "trending-up-down"
+      },
+      "inputs": {
+        "trueLabel": "Investigation Required",
+        "falseLabel": "Clean Reconciliation",
+        "expression": "$vars.NormalizeReconciliation.output.unresolvedCount > 0"
+      },
+      "uniqueId": "79cec78a-30d4-4d89-b041-66600ec3db4c"
+    },
+    {
+      "id": "InvestigationRequired",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Investigation Required",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.NormalizeReconciliation.output",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "d50896b5-4ea9-42ef-a0dc-86aca7e3471f"
+    },
+    {
+      "id": "CleanReconciliation",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Clean Reconciliation",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "type": "object",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.NormalizeReconciliation.output",
+            "fieldType": "object"
+          },
+          "var": "result"
+        },
+        "backendBaseUrl": {
+          "type": "string",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendBaseUrl",
+            "fieldType": "string"
+          },
+          "var": "backendBaseUrl"
+        },
+        "backendConnectionConfigured": {
+          "type": "boolean",
+          "description": "",
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.backendConnectionConfigured",
+            "fieldType": "boolean"
+          },
+          "var": "backendConnectionConfigured"
+        }
+      },
+      "uniqueId": "3b6211f3-9281-4cdf-a446-062b395b51af"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_0",
+      "sourceNodeId": "StartTransferInvestigation",
+      "sourcePort": "output",
+      "targetNodeId": "ValidateInput",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_1",
+      "sourceNodeId": "ValidateInput",
+      "sourcePort": "error",
+      "targetNodeId": "InvalidInput",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_2",
+      "sourceNodeId": "ValidateInput",
+      "sourcePort": "success",
+      "targetNodeId": "BackendConfigured",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_3",
+      "sourceNodeId": "BackendConfigured",
+      "sourcePort": "true",
+      "targetNodeId": "ValidateBackendConfiguration",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_4",
+      "sourceNodeId": "ValidateBackendConfiguration",
+      "sourcePort": "error",
+      "targetNodeId": "InvalidConfiguration",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_5",
+      "sourceNodeId": "BackendConfigured",
+      "sourcePort": "false",
+      "targetNodeId": "ConfigurationRequired",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_6",
+      "sourceNodeId": "ValidateBackendConfiguration",
+      "sourcePort": "success",
+      "targetNodeId": "GetTransferDetails",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_7",
+      "sourceNodeId": "GetTransferDetails",
+      "sourcePort": "error",
+      "targetNodeId": "GetTransferDetailsFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_8",
+      "sourceNodeId": "GetTransferDetails",
+      "sourcePort": "default",
+      "targetNodeId": "ValidateTransfer",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_9",
+      "sourceNodeId": "ValidateTransfer",
+      "sourcePort": "error",
+      "targetNodeId": "ValidateTransferFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_10",
+      "sourceNodeId": "ValidateTransfer",
+      "sourcePort": "success",
+      "targetNodeId": "GetDeliveringPositions",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_11",
+      "sourceNodeId": "GetDeliveringPositions",
+      "sourcePort": "error",
+      "targetNodeId": "GetDeliveringPositionsFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_12",
+      "sourceNodeId": "GetDeliveringPositions",
+      "sourcePort": "default",
+      "targetNodeId": "ValidateDeliveringPositions",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_13",
+      "sourceNodeId": "ValidateDeliveringPositions",
+      "sourcePort": "error",
+      "targetNodeId": "ValidateDeliveringPositionsFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_14",
+      "sourceNodeId": "ValidateDeliveringPositions",
+      "sourcePort": "success",
+      "targetNodeId": "GetReceivingPositions",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_15",
+      "sourceNodeId": "GetReceivingPositions",
+      "sourcePort": "error",
+      "targetNodeId": "GetReceivingPositionsFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_16",
+      "sourceNodeId": "GetReceivingPositions",
+      "sourcePort": "default",
+      "targetNodeId": "ValidateReceivingPositions",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_17",
+      "sourceNodeId": "ValidateReceivingPositions",
+      "sourcePort": "error",
+      "targetNodeId": "ValidateReceivingPositionsFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_18",
+      "sourceNodeId": "ValidateReceivingPositions",
+      "sourcePort": "success",
+      "targetNodeId": "RunReconciliation",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_19",
+      "sourceNodeId": "RunReconciliation",
+      "sourcePort": "error",
+      "targetNodeId": "RunReconciliationFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_20",
+      "sourceNodeId": "RunReconciliation",
+      "sourcePort": "default",
+      "targetNodeId": "NormalizeReconciliation",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_21",
+      "sourceNodeId": "NormalizeReconciliation",
+      "sourcePort": "error",
+      "targetNodeId": "NormalizeReconciliationFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_22",
+      "sourceNodeId": "NormalizeReconciliation",
+      "sourcePort": "success",
+      "targetNodeId": "NormalizationFailed",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_23",
+      "sourceNodeId": "NormalizationFailed",
+      "sourcePort": "true",
+      "targetNodeId": "FailedReconciliation",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_24",
+      "sourceNodeId": "NormalizationFailed",
+      "sourcePort": "false",
+      "targetNodeId": "RequiresInvestigation",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_25",
+      "sourceNodeId": "RequiresInvestigation",
+      "sourcePort": "true",
+      "targetNodeId": "InvestigationRequired",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_26",
+      "sourceNodeId": "RequiresInvestigation",
+      "sourcePort": "false",
+      "targetNodeId": "CleanReconciliation",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "fillPanel": true,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 66,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.3",
+      "category": "control-flow",
+      "description": "Branch on a true or false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 61,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}"
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a condition"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "code-editor",
+                "componentProps": {
+                  "singleLine": true,
+                  "mode": "expression",
+                  "toggleable": false,
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "showVariableButton": true,
+                  "placeholder": "$vars.httpRequest1.output.statusCode >= 200 && $vars.httpRequest1.output.statusCode < 300"
+                },
+                "label": "Condition",
+                "description": "The condition must be a JavaScript expression that evaluates to true or false."
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "This label appears on the true branch."
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "This label appears on the false branch."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.http.v2",
+      "version": "2.6",
+      "category": "connector",
+      "description": "HTTP request with managed authentication",
+      "tags": [
+        "connector",
+        "http",
+        "api",
+        "rest",
+        "request"
+      ],
+      "sortOrder": 21,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "HTTP Request",
+        "icon": "https://cloud.uipath.com/elements_/scaleunit_/58cb4f17-4581-4130-a2ae-52448b37dc03/v3/element/elements/uipath-uipath-http/image"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "branch-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.name}",
+              "repeat": "inputs.branches"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.defaultBranch.label}",
+              "visible": "{inputs.branches.length === 0 || inputs.defaultBranch.enabled !== false}"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Intsvc.UnifiedHttpRequest",
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-http"
+          },
+          {
+            "name": "objectName",
+            "type": "string",
+            "value": "http-request"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-http connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-http",
+                "connectorName": "HTTP Request"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ],
+        "expansion": {
+          "processLevelVariables": [
+            {
+              "id": "{nodeId}.output",
+              "name": "output",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "id": "{nodeId}.error",
+              "name": "error",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            }
+          ],
+          "nodes": [
+            {
+              "id": "{nodeId}",
+              "type": "bpmn:SubProcess",
+              "replaceOriginal": true,
+              "data": {
+                "label": "{node.data.label}",
+                "isExpanded": true,
+                "model": {
+                  "serviceType": "BPMN.Variables",
+                  "subprocessVariables": {
+                    "inputOutputs": [
+                      {
+                        "id": "response",
+                        "name": "response",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      },
+                      {
+                        "id": "error",
+                        "name": "error",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      }
+                    ]
+                  },
+                  "outputs": [
+                    {
+                      "name": "output",
+                      "type": "jsonSchema",
+                      "source": "=vars.response",
+                      "var": "{nodeId}.output",
+                      "custom": true
+                    },
+                    {
+                      "name": "error",
+                      "type": "jsonSchema",
+                      "source": "=vars.error",
+                      "var": "{nodeId}.error",
+                      "custom": true
+                    }
+                  ]
+                }
+              },
+              "nodes": [
+                {
+                  "id": "_Implicit_StartEvent_{nodeId}",
+                  "type": "bpmn:StartEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "HTTP Request Start"
+                  }
+                },
+                {
+                  "id": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SendTask",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "propagate": {
+                    "detail": true,
+                    "retry": {
+                      "condition": "node.data.inputs.retryCount > 0",
+                      "maxRetryCount": "node.data.inputs.retryCount",
+                      "retryBackoff": "node.data.inputs.timeout",
+                      "retryBackoffDefault": "PT1S",
+                      "retryAllErrors": "true",
+                      "retryBackoffType": "Static"
+                    }
+                  },
+                  "data": {
+                    "label": "{node.data.label}",
+                    "model": {
+                      "serviceType": "Intsvc.UnifiedHttpRequest",
+                      "context": [
+                        {
+                          "name": "connectorKey",
+                          "type": "string",
+                          "value": "uipath-uipath-http"
+                        },
+                        {
+                          "name": "objectName",
+                          "type": "string",
+                          "value": "http-request"
+                        },
+                        {
+                          "name": "connection",
+                          "type": "string",
+                          "value": "<bindings.uipath-uipath-http connection>"
+                        },
+                        {
+                          "name": "folderKey",
+                          "type": "string",
+                          "value": "<bindings.FolderKey>"
+                        },
+                        {
+                          "name": "activityConfigurationVersion",
+                          "type": "string",
+                          "value": "v1"
+                        },
+                        {
+                          "name": "metadata",
+                          "body": {
+                            "telemetryData": {
+                              "connectorKey": "uipath-uipath-http",
+                              "connectorName": "HTTP Request"
+                            },
+                            "inputMetadata": {},
+                            "errorState": {
+                              "hasError": true
+                            }
+                          },
+                          "type": "json"
+                        }
+                      ],
+                      "outputs": [
+                        {
+                          "name": "response",
+                          "type": "json",
+                          "source": "=response",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:ExclusiveGateway",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "data": {
+                    "label": "Response branch",
+                    "defaultFlowId": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}"
+                  }
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "id": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "id": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "{defaultBranchLabel}"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Failure",
+                    "model": {
+                      "serviceType": "BPMN.Variables",
+                      "outputs": [
+                        {
+                          "name": "error",
+                          "type": "boolean",
+                          "source": "=true",
+                          "var": "error",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_BoundaryError_{nodeId}",
+                  "type": "bpmn:BoundaryEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Error",
+                    "cancelActivity": false,
+                    "attachedToId": "_Implicit_HttpTask_{nodeId}",
+                    "eventDefinition": {
+                      "type": "bpmn:ErrorEventDefinition",
+                      "id": "_Implicit_BoundaryError_{nodeId}_Error"
+                    },
+                    "model": {
+                      "outputs": [
+                        {
+                          "name": "Error",
+                          "type": "jsonSchema",
+                          "source": "=Error",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "edges": [
+                {
+                  "id": "_Implicit_Edge__Implicit_StartEvent_{nodeId}__Implicit_HttpTask_{nodeId}",
+                  "source": "_Implicit_StartEvent_{nodeId}",
+                  "target": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length === 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_Gateway_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_{branchName}_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "conditionExpression": "{branch.conditionExpression}",
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "label": "{defaultBranchLabel}"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_Edge__Implicit_BoundaryError_{nodeId}__Implicit_EndEvent_Failure_{nodeId}",
+                  "source": "_Implicit_BoundaryError_{nodeId}",
+                  "target": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                }
+              ]
+            },
+            {
+              "id": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:ExclusiveGateway",
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "parentId": null,
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "Post-Subprocess Branch"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "id": "_Implicit_Edge_{nodeId}__Implicit_PostSubprocessGateway_{nodeId}",
+              "source": "{nodeId}",
+              "target": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {}
+            },
+            {
+              "forEach": "node.data.inputs.branches",
+              "condition": "node.data.inputs.branches.length > 0",
+              "matchOriginalEdgeByHandle": "branch-{branch.id}",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "{branch.conditionExpression}",
+                "label": "{branch.name}"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "label": "{defaultBranchLabel}"
+              }
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "error",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
+                "label": "Error"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length === 0 && !hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "{nodeId}",
+              "type": "bpmn:SequenceFlow"
+            }
+          ]
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "conditionExpression": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "defaultBranch": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          },
+          "timeout": {
+            "type": "string",
+            "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+            "errorMessage": {
+              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
+            }
+          },
+          "retryCount": {
+            "type": "number"
+          }
+        }
+      },
+      "inputDefaults": {
+        "branches": [],
+        "defaultBranch": {
+          "enabled": true,
+          "label": ""
+        },
+        "timeout": "PT15M",
+        "retryCount": 0
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "HTTP status code"
+              },
+              "headers": {
+                "type": "object",
+                "description": "Response headers"
+              },
+              "body": {
+                "description": "Response body"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "http-v2-properties",
+        "title": "HTTP Request",
+        "metadata": {
+          "propertyPanel": {
+            "tabs": [
+              {
+                "id": "branching",
+                "title": "Branching"
+              }
+            ],
+            "sectionTabs": {
+              "branches": "branching",
+              "advanced": "advanced"
+            }
+          }
+        },
+        "sections": [
+          {
+            "id": "http-config",
+            "title": "Configuration",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.dapHttpToolbar",
+                "type": "custom",
+                "component": "dap-http-toolbar",
+                "label": ""
+              },
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": 196648,
+                    "svgIconUrl": "icons/0dad78c9d04c245b126d8edb4c451aa8a0d395d34731cf5702441f6284c70ccc.svg",
+                    "displayName": "HTTP Request",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.22.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Use HTTP requests to interact with APIs via the selected connector and connection configuration.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"}",
+                    "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-http-HTTP-Request",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "tags": [
+                      ""
+                    ]
+                  },
+                  "fixedValueEditors": {
+                    "body": "json"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "branches",
+            "title": "Branches",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.branches",
+                "type": "custom",
+                "component": "http-branch-editor",
+                "label": "Response branches",
+                "description": "Define conditional branches based on response status or properties",
+                "componentProps": {
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "conditionExpression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ],
+                  "defaultBranchRow": true
+                }
+              }
+            ]
+          },
+          {
+            "id": "advanced",
+            "title": "Advanced",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.timeout",
+                "type": "text",
+                "label": "Timeout",
+                "description": "ISO 8601 duration format (for example, PT15M for 15 minutes, PT1H for 1 hour)"
+              },
+              {
+                "name": "inputs.retryCount",
+                "type": "number",
+                "label": "Retry count",
+                "description": "Number of times to retry on failure"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "transferId",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "StartTransferInvestigation"
+      },
+      {
+        "id": "result",
+        "direction": "out",
+        "type": "object"
+      },
+      {
+        "id": "backendBaseUrl",
+        "direction": "inout",
+        "type": "string",
+        "defaultValue": "http://localhost:8000"
+      },
+      {
+        "id": "backendConnectionConfigured",
+        "direction": "inout",
+        "type": "boolean",
+        "defaultValue": false
+      }
+    ],
+    "nodes": [
+      {
+        "id": "StartTransferInvestigation.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "StartTransferInvestigation",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "ValidateInput.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "ValidateInput",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "ValidateInput.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "ValidateInput",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "InvalidInput.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "InvalidInput",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "InvalidInput.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "InvalidInput",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "InvalidInput.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "InvalidInput",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "BackendConfigured.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "BackendConfigured",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "BackendConfigured.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "BackendConfigured",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "ValidateBackendConfiguration.output",
+        "type": "boolean",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "ValidateBackendConfiguration",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "ValidateBackendConfiguration.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "ValidateBackendConfiguration",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "InvalidConfiguration.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "InvalidConfiguration",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "InvalidConfiguration.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "InvalidConfiguration",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "InvalidConfiguration.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "InvalidConfiguration",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "ConfigurationRequired.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "ConfigurationRequired",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "ConfigurationRequired.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "ConfigurationRequired",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "ConfigurationRequired.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "ConfigurationRequired",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "GetTransferDetails.output",
+        "type": "object",
+        "description": "HTTP response object",
+        "binding": {
+          "nodeId": "GetTransferDetails",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "GetTransferDetails.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "GetTransferDetails",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "GetTransferDetailsFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "GetTransferDetailsFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "GetTransferDetailsFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "GetTransferDetailsFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "GetTransferDetailsFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "GetTransferDetailsFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "ValidateTransfer.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "ValidateTransfer",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "ValidateTransfer.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "ValidateTransfer",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "ValidateTransferFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "ValidateTransferFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "ValidateTransferFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "ValidateTransferFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "ValidateTransferFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "ValidateTransferFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "GetDeliveringPositions.output",
+        "type": "object",
+        "description": "HTTP response object",
+        "binding": {
+          "nodeId": "GetDeliveringPositions",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "GetDeliveringPositions.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "GetDeliveringPositions",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "GetDeliveringPositionsFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "GetDeliveringPositionsFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "GetDeliveringPositionsFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "GetDeliveringPositionsFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "GetDeliveringPositionsFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "GetDeliveringPositionsFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "ValidateDeliveringPositions.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "ValidateDeliveringPositions",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "ValidateDeliveringPositions.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "ValidateDeliveringPositions",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "ValidateDeliveringPositionsFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "ValidateDeliveringPositionsFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "ValidateDeliveringPositionsFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "ValidateDeliveringPositionsFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "ValidateDeliveringPositionsFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "ValidateDeliveringPositionsFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "GetReceivingPositions.output",
+        "type": "object",
+        "description": "HTTP response object",
+        "binding": {
+          "nodeId": "GetReceivingPositions",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "GetReceivingPositions.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "GetReceivingPositions",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "GetReceivingPositionsFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "GetReceivingPositionsFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "GetReceivingPositionsFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "GetReceivingPositionsFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "GetReceivingPositionsFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "GetReceivingPositionsFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "ValidateReceivingPositions.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "ValidateReceivingPositions",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "ValidateReceivingPositions.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "ValidateReceivingPositions",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "ValidateReceivingPositionsFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "ValidateReceivingPositionsFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "ValidateReceivingPositionsFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "ValidateReceivingPositionsFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "ValidateReceivingPositionsFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "ValidateReceivingPositionsFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "RunReconciliation.output",
+        "type": "object",
+        "description": "HTTP response object",
+        "binding": {
+          "nodeId": "RunReconciliation",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "RunReconciliation.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "RunReconciliation",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "RunReconciliationFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "RunReconciliationFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "RunReconciliationFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "RunReconciliationFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "RunReconciliationFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "RunReconciliationFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "NormalizeReconciliation.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "NormalizeReconciliation",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "NormalizeReconciliation.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "NormalizeReconciliation",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "NormalizeReconciliationFailed.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "NormalizeReconciliationFailed",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "NormalizeReconciliationFailed.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "NormalizeReconciliationFailed",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "NormalizeReconciliationFailed.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "NormalizeReconciliationFailed",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "NormalizationFailed.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "NormalizationFailed",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "NormalizationFailed.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "NormalizationFailed",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "FailedReconciliation.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "FailedReconciliation",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "FailedReconciliation.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "FailedReconciliation",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "FailedReconciliation.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "FailedReconciliation",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "RequiresInvestigation.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "RequiresInvestigation",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "RequiresInvestigation.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "RequiresInvestigation",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "InvestigationRequired.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "InvestigationRequired",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "InvestigationRequired.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "InvestigationRequired",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "InvestigationRequired.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "InvestigationRequired",
+          "outputId": "backendConnectionConfigured"
+        }
+      },
+      {
+        "id": "CleanReconciliation.result",
+        "type": "object",
+        "binding": {
+          "nodeId": "CleanReconciliation",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "CleanReconciliation.backendBaseUrl",
+        "type": "string",
+        "binding": {
+          "nodeId": "CleanReconciliation",
+          "outputId": "backendBaseUrl"
+        }
+      },
+      {
+        "id": "CleanReconciliation.backendConnectionConfigured",
+        "type": "boolean",
+        "binding": {
+          "nodeId": "CleanReconciliation",
+          "outputId": "backendConnectionConfigured"
+        }
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "id": "bUipathuipathhttpConnection",
+      "name": "uipath-uipath-http connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "default": "ImplicitConnection",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bUipathuipathhttpFolderKey",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "StartTransferInvestigation": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateInput": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "InvalidInput": {
+        "position": {
+          "x": 640,
+          "y": 320
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "BackendConfigured": {
+        "position": {
+          "x": 640,
+          "y": 128
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateBackendConfiguration": {
+        "position": {
+          "x": 832,
+          "y": 112
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "InvalidConfiguration": {
+        "position": {
+          "x": 1024,
+          "y": 288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ConfigurationRequired": {
+        "position": {
+          "x": 832,
+          "y": 304
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "GetTransferDetails": {
+        "position": {
+          "x": 1024,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "GetTransferDetailsFailed": {
+        "position": {
+          "x": 1216,
+          "y": 272
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateTransfer": {
+        "position": {
+          "x": 1216,
+          "y": 80
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateTransferFailed": {
+        "position": {
+          "x": 1408,
+          "y": 256
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "GetDeliveringPositions": {
+        "position": {
+          "x": 1408,
+          "y": 64
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "GetDeliveringPositionsFailed": {
+        "position": {
+          "x": 1600,
+          "y": 240
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateDeliveringPositions": {
+        "position": {
+          "x": 1600,
+          "y": 48
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateDeliveringPositionsFailed": {
+        "position": {
+          "x": 1792,
+          "y": 224
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "GetReceivingPositions": {
+        "position": {
+          "x": 1792,
+          "y": 32
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "GetReceivingPositionsFailed": {
+        "position": {
+          "x": 1984,
+          "y": 208
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateReceivingPositions": {
+        "position": {
+          "x": 1984,
+          "y": 16
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "ValidateReceivingPositionsFailed": {
+        "position": {
+          "x": 2176,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "RunReconciliation": {
+        "position": {
+          "x": 2176,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "RunReconciliationFailed": {
+        "position": {
+          "x": 2368,
+          "y": 176
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "NormalizeReconciliation": {
+        "position": {
+          "x": 2368,
+          "y": -16
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "NormalizeReconciliationFailed": {
+        "position": {
+          "x": 2560,
+          "y": 160
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "NormalizationFailed": {
+        "position": {
+          "x": 2560,
+          "y": -32
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "FailedReconciliation": {
+        "position": {
+          "x": 2752,
+          "y": -48
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "RequiresInvestigation": {
+        "position": {
+          "x": 2752,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "InvestigationRequired": {
+        "position": {
+          "x": 2944,
+          "y": 128
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "CleanReconciliation": {
+        "position": {
+          "x": 2944,
+          "y": 320
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

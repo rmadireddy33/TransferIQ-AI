@@ -1,0 +1,57 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+
+# Persistent runtime data (also covers custom data directories' SQLite files)
+/data/
+/mock_documents/generated/
+/tmp/pdfs/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Python environments, caches, build and test artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Frontend dependencies and generated artifacts
+node_modules/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Local logs, editor and OS artifacts
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
+# UiPath tenant-specific configuration and runtime traces
+maestro/**/.flow-sdk/runtime.local.json
+maestro/**/.flow-sdk/bindings.json
+maestro/**/userProfile/
+maestro/**/out/
+maestro/**/.local/

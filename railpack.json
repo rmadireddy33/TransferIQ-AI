@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "python",
+  "steps": {
+    "install": {
+      "inputs": [
+        "...",
+        { "local": true, "include": ["backend/requirements.txt"] }
+      ]
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# Optional local PDF rendering for visual QA; not required by the API service.
+pypdfium2>=5,<6

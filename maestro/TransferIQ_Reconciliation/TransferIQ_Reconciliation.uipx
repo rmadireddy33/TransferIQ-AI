@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "fb55bfad-0b98-431a-91ec-3cea863c403a",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "TransferIQ_Reconciliation/project.uiproj",
+      "Id": "80a7046c-0d44-4b13-bf11-b0fe7d23d6db"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Railpack detects Python here; keep dependencies in the existing backend file.
+-r backend/requirements.txt
