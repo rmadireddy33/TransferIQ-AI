@@ -44,7 +44,8 @@ class Settings(BaseModel):
     @classmethod
     def from_environment(cls):
         # Process environment overrides .env; never mutate the process environment.
-        local = {} if os.environ.get('RAILWAY_ENVIRONMENT_ID') else dotenv_values(PROJECT_ROOT / '.env')
+        hosted = bool(os.environ.get('RAILWAY_ENVIRONMENT_ID')) or os.environ.get('RENDER') == 'true'
+        local = {} if hosted else dotenv_values(PROJECT_ROOT / '.env')
         values = {**local, **os.environ}
         return cls(
             data_dir=values.get("DATA_DIR", PROJECT_ROOT / "data"),

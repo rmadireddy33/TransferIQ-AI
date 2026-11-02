@@ -9,7 +9,7 @@
 ## Architecture and data
 
 - Use Python, FastAPI, SQLAlchemy, Pydantic, and SQLite. Keep the eight logical systems within one backend. Frontend stack: React, TypeScript, Vite, Tailwind CSS.
-- Never introduce PostgreSQL, MySQL, MongoDB, Redis, or any external database server. Avoid additional external services beyond Railway and required UiPath services.
+- Never introduce PostgreSQL, MySQL, MongoDB, Redis, or any external database server. Use the requested hosting platform (Render or Railway) and required UiPath services; avoid additional services.
 - Resolve configurable DATA_DIR consistently: repository-relative ./data locally and /data in cloud. Keep SQLite, documents, and durable operation state there. Never silently use ephemeral storage in cloud.
 - Use fictional clients, firms, securities, documents, and financial information only. Never implement real securities transfers, real ACATS connectivity, or external trading.
 - Keep original mock custody positions immutable. Use versioned adjustment records with evidence and authorization; enforce immutability in the database and application and test it.

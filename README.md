@@ -6,6 +6,8 @@ A hackathon demonstration using fictional clients, firms, securities, accounts, 
 
 ## Current status
 
+Render Starter deployment preparation is now available using the same backend launcher and one persistent disk at `/data`. Render startup requires the mounted disk and production API key; local `.env` files are ignored in cloud. **No Render deployment has occurred.** All 252 backend tests passed. Follow [the exact Render settings and manual deployment guide](docs/RENDER_DEPLOYMENT.md).
+
 Railway backend deployment preparation is complete: Railpack configuration, one-worker startup, `/data` volume enforcement, runtime migrations, opt-in missing-only demo seeding, readiness, and structured logs. **No Railway deployment has occurred.** The current backend suite passes 243 tests, including real HTTP startup/restart and uploaded-PDF persistence. See [exact Railway setup, environment variables, verification and troubleshooting](docs/RAILWAY_DEPLOYMENT.md).
 
 Step 5 adds a real, locally validated **Maestro Automate Flow** under `maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/`. Its four HTTP calls use existing API contracts; Python retains all financial calculations. The default artifact fails closed until a secure UiPath HTTP connection and hosted HTTPS backend are configured. **No UiPath runtime execution, upload or deployment has occurred.** Verification passed 218 tests and ten actual local HTTP/graph checks. See [Step 5 setup and VS Code instructions](docs/MAESTRO_STEP5_SETUP.md) and [test evidence and blocked runtime cases](docs/MAESTRO_STEP5_TEST_CASES.md). References below to unimplemented UiPath integration mean cloud integration; the local Flow now exists.
@@ -98,6 +100,10 @@ Invoke-RestMethod http://127.0.0.1:8000/api/transfers/TRF-1001
 
 `verify-backend.ps1` makes real HTTP requests to all requested GET routes plus Swagger/OpenAPI and checks matching seeded positions. It expects the Step 2 fixtures. Use `-BaseUrl http://127.0.0.1:8001` for another port. Pytest uses `tmp_path` databases and explicit settings, never the persistent development database.
 
+## Render startup
+
+Use a **Starter Web Service**, **Python 3**, and leave **Root Directory blank**. Build with `python -m pip install -r backend/requirements.txt` and start with `python -m backend.start`. Attach one persistent disk at `/data`; set `APP_ENV=production`, `DATA_DIR=/data`, a strong `API_KEY`, and `SEED_DEMO_DATA=1`. The existing launcher reads Render's `PORT` and uses one worker. Health Check Path is `/health`; leave Pre-Deploy Command blank. See [all environment variables, disk setup, smoke tests and persistence checks](docs/RENDER_DEPLOYMENT.md).
+
 ## Railway startup
 
 Configure root `/`, Railpack, one replica, one volume at `/data`, and start command `python -m backend.start`. Leave build and pre-deploy command overrides unset. Set `APP_ENV=production`, `DATA_DIR=/data`, a strong `API_KEY`, and `SEED_DEMO_DATA=1`. The launcher binds `0.0.0.0` using Railway's `PORT`, with one worker. `/health` becomes ready only after initialization, migrations, recovery and optional seeding succeed. See the [complete deployment guide](docs/RAILWAY_DEPLOYMENT.md) for all settings and manual acceptance checks.
@@ -184,6 +190,6 @@ tests/
 - **Unsupported schema:** preserve the database, make a SQLite-consistent backup, and implement an explicit migration. Do not delete or reset it as a startup workaround.
 - **Test warning:** the tested Starlette version emits an upstream deprecation warning for its httpx TestClient. Tests still pass; no warning is suppressed.
 
-Next step: follow the Railway guide to deploy, verify public HTTPS and persistence on the actual volume, then configure the secure UiPath HTTP connection and run the five Maestro scenarios. Cloud acceptance remains unverified. IXP, agents, approvals and financial corrections remain later increments.
+Next step: manually create the Render Starter service using the Render guide, verify public HTTPS and persistence on its actual disk, then configure the secure UiPath HTTP connection and run the five Maestro scenarios. Cloud acceptance remains unverified. The earlier Railway setup remains an alternative. IXP, agents, approvals and financial corrections remain later increments.
 
 

@@ -38,6 +38,6 @@ Use UiPath platform guidance before making UiPath API calls, IXP guidance for ex
 
 ## Immediate next implementation step
 
-Deploy the prepared backend to Railway with one /data volume and complete the documented HTTPS, authentication and redeployment-persistence checks. Then complete Step 5 cloud acceptance: configure the HTTP connection with the actual HTTPS backend and X-API-Key, rebuild/validate, run real Maestro scenarios and review traces. IXP/agent implementation and approval enforcement remain separate later work.
+Render backend preparation is complete, with 252 local tests passing. The user will manually create one Starter Web Service and /data persistent disk using [RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md). Complete actual Render build, HTTPS/authentication and redeployment-persistence checks before claiming deployment acceptance. The earlier Railway preparation remains an alternative. Then complete Step 5 cloud acceptance: configure the HTTP connection with the actual HTTPS backend and X-API-Key, rebuild/validate, run real Maestro scenarios and review traces. IXP/agent implementation and approval enforcement remain separate later work.
 
 

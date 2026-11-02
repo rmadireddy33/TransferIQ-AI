@@ -1,4 +1,4 @@
-"""Railway entry point. All migrations/seed work remains in FastAPI's lifespan."""
+"""Render/Railway entry point. Migrations/seed work stays in FastAPI's lifespan."""
 import logging
 from logging.config import dictConfig
 import os

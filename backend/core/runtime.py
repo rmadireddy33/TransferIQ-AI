@@ -10,14 +10,18 @@ from backend.services.document_storage import private_path
 def validate_runtime_environment(settings, environ=None):
     env = os.environ if environ is None else environ
     railway = bool(env.get('RAILWAY_ENVIRONMENT_ID'))
-    if (railway or settings.app_env == 'production') and not settings.api_key.get_secret_value().strip():
+    render = env.get('RENDER') == 'true'
+    if (railway or render or settings.app_env == 'production') and not settings.api_key.get_secret_value().strip():
         raise RuntimeError('Production requires API_KEY')
-    if railway:
+    if railway or render:
+        platform = 'Render' if render else 'Railway'
         if settings.app_env != 'production':
-            raise RuntimeError('Railway requires APP_ENV=production')
+            raise RuntimeError(f'{platform} requires APP_ENV=production')
         if env.get('DATA_DIR') != '/data' or settings.data_dir != Path('/data').resolve():
-            raise RuntimeError('Railway requires DATA_DIR=/data')
-        if env.get('RAILWAY_VOLUME_MOUNT_PATH') != '/data' or not settings.data_dir.is_mount():
+            raise RuntimeError(f'{platform} requires DATA_DIR=/data')
+        if not settings.data_dir.is_mount():
+            raise RuntimeError(f'{platform} persistent disk must be mounted at /data')
+        if railway and env.get('RAILWAY_VOLUME_MOUNT_PATH') != '/data':
             raise RuntimeError('Railway persistent volume must be mounted at /data')
 
 
