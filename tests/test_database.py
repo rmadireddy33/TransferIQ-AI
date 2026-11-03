@@ -38,8 +38,8 @@ def test_persistence_across_app_restart(settings, transfer_payload):
         created = client.post("/api/transfers", headers=headers, json=transfer_payload)
         assert created.status_code == 201
     with TestClient(create_app(settings)) as restarted:
-        assert restarted.get(created.headers["Location"]).json() == created.json()
-        assert restarted.get("/api/clients").json()["total"] == 2
+        assert restarted.get(created.headers["Location"], headers=headers).json() == created.json()
+        assert restarted.get("/api/clients", headers=headers).json()["total"] == 2
         assert restarted.post("/api/transfers", headers=headers, json=transfer_payload).status_code == 200
 
 
@@ -84,14 +84,14 @@ def test_immutable_orm_records(client, app, delete):
 
 
 @pytest.mark.parametrize("replacement_id", ["POS-001", "REPLACEMENT-ID"])
-def test_replace_cannot_bypass_snapshot_immutability(client, app, replacement_id):
+def test_replace_cannot_bypass_snapshot_immutability(client, app, auth, replacement_id):
     with app.state.engine.begin() as connection:
         with pytest.raises(IntegrityError, match="immutable"):
             connection.execute(text("""INSERT OR REPLACE INTO position_snapshots
                 (position_id, account_id, security_id, quantity, snapshot_date, source_system, created_at)
                 SELECT :identifier, account_id, security_id, '999', snapshot_date, source_system, created_at
                 FROM position_snapshots WHERE position_id='POS-001'"""), {"identifier": replacement_id})
-    assert client.get("/api/delivering/accounts/ACC-SRC-001/positions").json()["items"][0]["quantity"] == "100.12500000"
+    assert client.get("/api/delivering/accounts/ACC-SRC-001/positions", headers=auth).json()["items"][0]["quantity"] == "100.12500000"
 
 
 def test_inactive_client_cannot_create(client, app, auth, transfer_payload):
@@ -156,13 +156,13 @@ def test_unique_staging_security(client, app):
             session.flush()
 
 
-def test_transaction_rollback(client, app):
+def test_transaction_rollback(client, app, auth):
     with pytest.raises(RuntimeError):
         with app.state.session_factory.begin() as session:
             session.get(Client, "CLI-001").first_name = "MustRollback"
             session.flush()
             raise RuntimeError("test interrupted transaction")
-    assert client.get("/api/clients/CLI-001").json()["firstName"] == "Avery"
+    assert client.get("/api/clients/CLI-001", headers=auth).json()["firstName"] == "Avery"
 
 
 def test_unsupported_schema_not_reset(settings):

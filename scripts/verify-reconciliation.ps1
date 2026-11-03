@@ -13,11 +13,11 @@ $expected = @{
     'TRF-1005' = @(1, 0, 0, 1, 0)
 }
 foreach ($transferId in ($expected.Keys | Sort-Object)) {
-    $transfer = Invoke-RestMethod "$BaseUrl/api/transfers/$transferId"
+    $transfer = Invoke-RestMethod "$BaseUrl/api/transfers/$transferId" -Headers $headers
     $positionsUrl = "$BaseUrl/api/delivering/accounts/$($transfer.sourceAccountId)/positions"
     $stagingUrl = "$BaseUrl/api/transfers/$transferId/assets"
-    $sourceBefore = Invoke-RestMethod $positionsUrl | ConvertTo-Json -Depth 20 -Compress
-    $stagingBefore = Invoke-RestMethod $stagingUrl | ConvertTo-Json -Depth 20 -Compress
+    $sourceBefore = Invoke-RestMethod $positionsUrl -Headers $headers | ConvertTo-Json -Depth 20 -Compress
+    $stagingBefore = Invoke-RestMethod $stagingUrl -Headers $headers | ConvertTo-Json -Depth 20 -Compress
     $result = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/transfers/$transferId/reconcile" -Headers $headers -ContentType 'application/json' -Body '{}'
     $s = $result.summary
     $actual = @($s.totalPositions, $s.directlyMatched, $s.evidenceExplained, $s.unresolved, $s.costBasisIssues)
@@ -30,8 +30,8 @@ foreach ($transferId in ($expected.Keys | Sort-Object)) {
     if ($exceptions.total -ne @($result.exceptions).Count) { throw 'Exception count changed after replay' }
     if (($exceptions.items.exceptionId -join ',') -ne ($result.exceptions.exceptionId -join ',')) { throw 'Exception identities changed on replay' }
     if ($latest.reconciliationRunId -ne $history.reconciliationRunId) { throw 'Latest and historical run do not agree' }
-    $sourceAfter = Invoke-RestMethod $positionsUrl | ConvertTo-Json -Depth 20 -Compress
-    $stagingAfter = Invoke-RestMethod $stagingUrl | ConvertTo-Json -Depth 20 -Compress
+    $sourceAfter = Invoke-RestMethod $positionsUrl -Headers $headers | ConvertTo-Json -Depth 20 -Compress
+    $stagingAfter = Invoke-RestMethod $stagingUrl -Headers $headers | ConvertTo-Json -Depth 20 -Compress
     if ($sourceBefore -ne $sourceAfter -or $stagingBefore -ne $stagingAfter) { throw 'Reconciliation changed position data' }
     Write-Output "PASS $transferId : total=$($s.totalPositions) direct=$($s.directlyMatched) explained=$($s.evidenceExplained) unresolved=$($s.unresolved) basisIssues=$($s.costBasisIssues); replay reused run; positions unchanged"
 }

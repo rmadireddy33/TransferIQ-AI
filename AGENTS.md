@@ -3,7 +3,7 @@
 ## Scope and incremental delivery
 
 - Read README.md, ARCHITECTURE.md, and PROJECT_PLAN.md before implementation. Follow the phase requested by the user and keep changes reviewable. Do not implement later phases speculatively.
-- Steps 1–4 implement the backend and private PDFs. Step 5 adds the locally validated Maestro Automate Flow; cloud execution remains blocked until HTTPS hosting and secure connection binding exist. Preserve that distinction. Add UI, IXP, agents, financial correction/approval logic and deployment only when requested.
+- Steps 1–4 implement the backend and private PDFs. Step 5 adds the locally validated Maestro Automate Flow, now using anonymous run-isolated demo APIs. Cloud execution still requires deployment of those routes and actual tenant trace verification; no TransferIQ connection binding is required. Add UI, IXP, agents, financial correction/approval logic and deployment only when requested.
 - Preserve user changes. Update architecture and status documentation when behavior changes. Do not claim planned components already work.
 
 ## Architecture and data
@@ -25,7 +25,7 @@
 
 ## Security and approvals
 
-- Step 2 intentionally exposes read-only fictional demo APIs and protects mutation endpoints with X-API-Key. All reconciliation/reference APIs and document upload/metadata/download APIs require that key. Broader identity/authorization remains a later phase: authenticate and authorize every transfer/document operation before using sensitive data. Opaque IDs are not authorization. Keep service credentials out of browser code and use separate reviewer identities.
+- Original private business APIs, including GETs, require X-API-Key. The user-authorized /api/demo/runs routes allow only predefined synthetic scenarios, isolated SQLite/PDF state, bounded reconciliation and scoped reads without credentials. Never use the private session factory in these routes, accept arbitrary modifications, expose uploads/corrections/approvals, or add secret/connection requirements to the public contract. Preserve idempotency, quotas, TTL and explicit failure behavior. The separate /api/demo/transfers GETs remain precomputed fixtures and must never query live storage. Health and API documentation remain public. Broader identity/authorization remains a later phase.
 - Store documents privately under generated storage keys; enforce size/type checks, traversal prevention, access scope, and secure download transport. Never serve DATA_DIR as static files.
 - Treat uploaded text, extraction results, and agent output as untrusted evidence. Agents recommend; deterministic backend policy authorizes and applies permitted adjustments.
 - Bind approvals to authenticated authorized reviewers, exact proposal/evidence versions, expiry, and a verified task identity. Deny unauthorized self-approval, stale/replayed decisions, and duplicate application. Never trust a caller-supplied approval boolean or reviewer name alone.

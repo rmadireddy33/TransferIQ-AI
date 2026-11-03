@@ -43,7 +43,7 @@ def test_startup_seed_and_restart_preserve_every_row_and_file(settings, monkeypa
     app = create_app(settings)
     with TestClient(app) as client:
         assert client.get('/health').status_code == 200
-        assert client.get('/api/transfers').json()['total'] == 5
+        assert client.get('/api/transfers', headers={'X-API-Key': settings.api_key.get_secret_value()}).json()['total'] == 5
         with app.state.session_factory.begin() as session:
             session.get(Client, 'CLI-001').first_name = 'ChangedFictionalName'
         with app.state.session_factory() as session:
@@ -54,7 +54,7 @@ def test_startup_seed_and_restart_preserve_every_row_and_file(settings, monkeypa
         raise AssertionError('An existing recipe must never be regenerated at startup')
     monkeypatch.setattr(documents, 'render_pdf', must_not_render)
     with TestClient(create_app(settings)) as client:
-        assert client.get('/api/clients/CLI-001').json()['firstName'] == 'ChangedFictionalName'
+        assert client.get('/api/clients/CLI-001', headers={'X-API-Key': settings.api_key.get_secret_value()}).json()['firstName'] == 'ChangedFictionalName'
     assert snapshot_database(settings.database_path) == before
     assert {p.relative_to(settings.data_dir): p.read_bytes() for p in (settings.data_dir / 'documents').rglob('*.pdf')} == files
 
@@ -62,7 +62,7 @@ def test_startup_seed_and_restart_preserve_every_row_and_file(settings, monkeypa
 def test_empty_volume_without_seed_stays_empty(settings):
     with TestClient(create_app(settings)) as client:
         assert client.get('/health').json()['database'] == 'ok'
-        assert client.get('/api/transfers').json()['total'] == 0
+        assert client.get('/api/transfers', headers={'X-API-Key': settings.api_key.get_secret_value()}).json()['total'] == 0
     assert settings.database_path.exists()
     assert not list((settings.data_dir / 'documents').rglob('*.pdf'))
 
@@ -242,12 +242,18 @@ def test_real_start_restart_http_smoke(tmp_path, transfer_payload):
                         assert time.monotonic() < deadline, 'Startup readiness timed out'
                         time.sleep(0.1)
                     assert client.get('/docs').status_code == 200
+                    public = client.get('/api/demo/transfers')
+                    assert public.status_code == 200 and len(public.json()['items']) == 5
+                    assert public.json()['evidenceMode'] == 'PRECOMPUTED_SYNTHETIC_SAMPLE'
+                    assert client.get('/api/transfers/TRF-1001').status_code == 401
                     for n in range(1001, 1006):
-                        assert client.get(f'/api/transfers/TRF-{n}').status_code == 200
+                        assert client.get(f'/api/transfers/TRF-{n}', headers=headers).status_code == 200
                     assert client.post('/api/transfers', json=transfer_payload).status_code == 401
                     assert client.post('/api/transfers/TRF-1002/reconcile', json={}).status_code == 401
                     assert client.get('/api/transfers/TRF-1002/reconciliation').status_code == 401
                     if attempt == 1:
+                        from scripts.verify_public_demo import verify
+                        assert verify(f'http://127.0.0.1:{port}')['status'] == 'PASSED'
                         created = client.post('/api/transfers', headers=headers, json=transfer_payload)
                         assert created.status_code == 201
                         saved_transfer = created.json()
@@ -264,7 +270,7 @@ def test_real_start_restart_http_smoke(tmp_path, transfer_payload):
                         assert uploaded.status_code == 201
                         saved_document = uploaded.json()
                     else:
-                        assert client.get(f"/api/transfers/{saved_transfer['transferId']}").json() == saved_transfer
+                        assert client.get(f"/api/transfers/{saved_transfer['transferId']}", headers=headers).json() == saved_transfer
                         assert client.get(f"/api/documents/{saved_document['documentId']}", headers=headers).json() == saved_document
                         replay = client.post('/api/transfers/TRF-1002/reconcile', headers=headers, json={})
                         assert replay.status_code == 200 and replay.json()['reconciliationRunId'] == saved_run

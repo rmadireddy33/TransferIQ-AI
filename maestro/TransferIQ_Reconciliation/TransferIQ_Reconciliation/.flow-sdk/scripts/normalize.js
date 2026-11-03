@@ -45,7 +45,7 @@ if (costBasisExceptions.length !== summary.costBasisIssues ||
 const unresolvedExceptions = positionExceptions.filter(e => e.resolutionStatus !== 'EXPLAINED');
 const evidenceReferences = Array.from(new Set(body.positions.flatMap(p => p.evidenceReferences).concat(body.exceptions.flatMap(e => e.evidenceReferences)))).sort();
 return {
-  transferId, reconciliationRunId: body.reconciliationRunId,
+  transferId, demoRunId: $vars.ValidateDemoRun.output.runId, reconciliationRunId: body.reconciliationRunId,
   totalPositions: summary.totalPositions, directlyMatched: summary.directlyMatched,
   evidenceExplained: summary.evidenceExplained, unresolvedCount: summary.unresolved,
   exceptions: body.exceptions, workflowOutcome: summary.unresolved > 0 ? 'INVESTIGATION_REQUIRED' : 'CLEAN',

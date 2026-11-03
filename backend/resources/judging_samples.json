@@ -1,0 +1,321 @@
+{
+  "fictionalDemo": true,
+  "readOnly": true,
+  "evidenceMode": "PRECOMPUTED_SYNTHETIC_SAMPLE",
+  "notice": "Offline fictional fixture results, not live Maestro executions. CLEAN describes quantities only; cost basis may still require review. No custody correction or settlement occurs.",
+  "items": [
+    {
+      "transferId": "TRF-1001",
+      "title": "Matching positions",
+      "evidenceMode": "PRECOMPUTED_SYNTHETIC_SAMPLE",
+      "liveExecution": false,
+      "reconciliationRunId": null,
+      "ruleVersion": "reconciliation-1",
+      "totalPositions": 7,
+      "directlyMatched": 7,
+      "evidenceExplained": 0,
+      "unresolvedCount": 0,
+      "costBasisIssues": 0,
+      "expectedWorkflowOutcome": "CLEAN",
+      "requiresCostBasisReview": false,
+      "quantityReconciliationOnly": true,
+      "positions": [
+        {
+          "securityId": "SEC-001",
+          "classification": "MATCHED",
+          "sourceQuantity": "100.125",
+          "targetQuantity": "100.125",
+          "expectedQuantity": "100.125",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-002",
+          "classification": "MATCHED",
+          "sourceQuantity": "75",
+          "targetQuantity": "75",
+          "expectedQuantity": "75",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-003",
+          "classification": "MATCHED",
+          "sourceQuantity": "42.5",
+          "targetQuantity": "42.5",
+          "expectedQuantity": "42.5",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-004",
+          "classification": "MATCHED",
+          "sourceQuantity": "200",
+          "targetQuantity": "200",
+          "expectedQuantity": "200",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-005",
+          "classification": "MATCHED",
+          "sourceQuantity": "18.00000001",
+          "targetQuantity": "18.00000001",
+          "expectedQuantity": "18.00000001",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-006",
+          "classification": "MATCHED",
+          "sourceQuantity": "310.75",
+          "targetQuantity": "310.75",
+          "expectedQuantity": "310.75",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-007",
+          "classification": "MATCHED",
+          "sourceQuantity": "64",
+          "targetQuantity": "64",
+          "expectedQuantity": "64",
+          "difference": "0"
+        }
+      ],
+      "exceptions": []
+    },
+    {
+      "transferId": "TRF-1002",
+      "title": "Split timing and unexplained quantity mismatch",
+      "evidenceMode": "PRECOMPUTED_SYNTHETIC_SAMPLE",
+      "liveExecution": false,
+      "reconciliationRunId": null,
+      "ruleVersion": "reconciliation-1",
+      "totalPositions": 7,
+      "directlyMatched": 5,
+      "evidenceExplained": 1,
+      "unresolvedCount": 1,
+      "costBasisIssues": 0,
+      "expectedWorkflowOutcome": "INVESTIGATION_REQUIRED",
+      "requiresCostBasisReview": false,
+      "quantityReconciliationOnly": true,
+      "positions": [
+        {
+          "securityId": "SEC-101",
+          "classification": "MATCHED",
+          "sourceQuantity": "20",
+          "targetQuantity": "20",
+          "expectedQuantity": "20",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-102",
+          "classification": "MATCHED",
+          "sourceQuantity": "30",
+          "targetQuantity": "30",
+          "expectedQuantity": "30",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-103",
+          "classification": "EXPLAINED",
+          "sourceQuantity": "40",
+          "targetQuantity": "80",
+          "expectedQuantity": "80",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-104",
+          "classification": "UNRESOLVED",
+          "sourceQuantity": "120",
+          "targetQuantity": "100",
+          "expectedQuantity": "120",
+          "difference": "-20"
+        },
+        {
+          "securityId": "SEC-105",
+          "classification": "MATCHED",
+          "sourceQuantity": "60",
+          "targetQuantity": "60",
+          "expectedQuantity": "60",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-106",
+          "classification": "MATCHED",
+          "sourceQuantity": "70",
+          "targetQuantity": "70",
+          "expectedQuantity": "70",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-107",
+          "classification": "MATCHED",
+          "sourceQuantity": "80",
+          "targetQuantity": "80",
+          "expectedQuantity": "80",
+          "difference": "0"
+        }
+      ],
+      "exceptions": [
+        {
+          "securityId": "SEC-103",
+          "exceptionType": "CORPORATE_ACTION_TIMING",
+          "resolutionStatus": "EXPLAINED",
+          "description": "Verified reference evidence explains the difference; no position was changed"
+        },
+        {
+          "securityId": "SEC-104",
+          "exceptionType": "QUANTITY_MISMATCH",
+          "resolutionStatus": "UNRESOLVED",
+          "description": "Receiving minus expected quantity differs. No verified evidence explains the remaining difference."
+        }
+      ]
+    },
+    {
+      "transferId": "TRF-1003",
+      "title": "Verified identifier change",
+      "evidenceMode": "PRECOMPUTED_SYNTHETIC_SAMPLE",
+      "liveExecution": false,
+      "reconciliationRunId": null,
+      "ruleVersion": "reconciliation-1",
+      "totalPositions": 1,
+      "directlyMatched": 0,
+      "evidenceExplained": 1,
+      "unresolvedCount": 0,
+      "costBasisIssues": 0,
+      "expectedWorkflowOutcome": "CLEAN",
+      "requiresCostBasisReview": false,
+      "quantityReconciliationOnly": true,
+      "positions": [
+        {
+          "securityId": "SEC-201",
+          "classification": "EXPLAINED",
+          "sourceQuantity": "25",
+          "targetQuantity": "25",
+          "expectedQuantity": "25",
+          "difference": "0"
+        }
+      ],
+      "exceptions": [
+        {
+          "securityId": "SEC-201",
+          "exceptionType": "SECURITY_IDENTIFIER_CHANGE",
+          "resolutionStatus": "EXPLAINED",
+          "description": "Verified reference evidence explains the difference; no position was changed"
+        }
+      ]
+    },
+    {
+      "transferId": "TRF-1004",
+      "title": "Missing cost-basis evidence",
+      "evidenceMode": "PRECOMPUTED_SYNTHETIC_SAMPLE",
+      "liveExecution": false,
+      "reconciliationRunId": null,
+      "ruleVersion": "reconciliation-1",
+      "totalPositions": 7,
+      "directlyMatched": 7,
+      "evidenceExplained": 0,
+      "unresolvedCount": 0,
+      "costBasisIssues": 1,
+      "expectedWorkflowOutcome": "CLEAN",
+      "requiresCostBasisReview": true,
+      "quantityReconciliationOnly": true,
+      "positions": [
+        {
+          "securityId": "SEC-001",
+          "classification": "MATCHED",
+          "sourceQuantity": "10",
+          "targetQuantity": "10",
+          "expectedQuantity": "10",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-002",
+          "classification": "MATCHED",
+          "sourceQuantity": "20",
+          "targetQuantity": "20",
+          "expectedQuantity": "20",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-003",
+          "classification": "MATCHED",
+          "sourceQuantity": "30",
+          "targetQuantity": "30",
+          "expectedQuantity": "30",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-004",
+          "classification": "MATCHED",
+          "sourceQuantity": "40",
+          "targetQuantity": "40",
+          "expectedQuantity": "40",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-005",
+          "classification": "MATCHED",
+          "sourceQuantity": "50",
+          "targetQuantity": "50",
+          "expectedQuantity": "50",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-006",
+          "classification": "MATCHED",
+          "sourceQuantity": "60",
+          "targetQuantity": "60",
+          "expectedQuantity": "60",
+          "difference": "0"
+        },
+        {
+          "securityId": "SEC-007",
+          "classification": "MATCHED",
+          "sourceQuantity": "70",
+          "targetQuantity": "70",
+          "expectedQuantity": "70",
+          "difference": "0"
+        }
+      ],
+      "exceptions": [
+        {
+          "securityId": "SEC-007",
+          "exceptionType": "COST_BASIS_MISSING",
+          "resolutionStatus": "UNRESOLVED",
+          "description": "Cost-basis data is absent or incomplete; quantity outcome is independent"
+        }
+      ]
+    },
+    {
+      "transferId": "TRF-1005",
+      "title": "Unsupported quantity correction",
+      "evidenceMode": "PRECOMPUTED_SYNTHETIC_SAMPLE",
+      "liveExecution": false,
+      "reconciliationRunId": null,
+      "ruleVersion": "reconciliation-1",
+      "totalPositions": 1,
+      "directlyMatched": 0,
+      "evidenceExplained": 0,
+      "unresolvedCount": 1,
+      "costBasisIssues": 0,
+      "expectedWorkflowOutcome": "INVESTIGATION_REQUIRED",
+      "requiresCostBasisReview": false,
+      "quantityReconciliationOnly": true,
+      "positions": [
+        {
+          "securityId": "SEC-301",
+          "classification": "UNRESOLVED",
+          "sourceQuantity": "120",
+          "targetQuantity": "100",
+          "expectedQuantity": "120",
+          "difference": "-20"
+        }
+      ],
+      "exceptions": [
+        {
+          "securityId": "SEC-301",
+          "exceptionType": "QUANTITY_MISMATCH",
+          "resolutionStatus": "UNRESOLVED",
+          "description": "Receiving minus expected quantity differs. No verified evidence explains the remaining difference."
+        }
+      ]
+    }
+  ]
+}

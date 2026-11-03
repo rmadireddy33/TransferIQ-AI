@@ -47,7 +47,7 @@ def test_scenario_results(scenario_client, auth, app, tid, total, direct, explai
     assert body["executionStatus"] == "COMPLETED"
     assert stored_snapshot(app, "position_snapshots") == before
     assert stored_snapshot(app, "receiving_transfer_staging_positions") == staging
-    assert scenario_client.get(f"/api/transfers/{tid}").json()["status"] == "DRAFT"
+    assert scenario_client.get(f"/api/transfers/{tid}", headers=auth).json()["status"] == "DRAFT"
 
 
 def test_split_and_shortage_details(scenario_client, auth):

@@ -1,5 +1,7 @@
 # Step 5 test cases and observed evidence
 
+Historical increment: current anonymous-run verification is recorded in [ZERO_CREDENTIAL_VERIFICATION.md](ZERO_CREDENTIAL_VERIFICATION.md). Earlier connection requirements below do not apply to the current Flow.
+
 All observations below are from 2026-11-01. PASSED means the named test layer passed, not that UiPath Cloud executed the Flow. No runtime run, instance ID, upload, deployment or published package exists from this step.
 
 ## Verification layers

@@ -3,10 +3,13 @@ import copy
 import json
 from pathlib import Path
 import subprocess
+from uuid import uuid4
 
 import pytest
 
-from backend.database.seed import seed_demo
+from fastapi.testclient import TestClient
+from backend.core.config import Settings
+from backend.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
 FLOW = ROOT / 'maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/TransferIQ_Reconciliation.flow'
@@ -19,23 +22,27 @@ def run_graph(transfer_id='TRF-1001', responses=None, **kwargs):
     return json.loads(result.stdout)
 
 
-def collect(client, auth, tid):
+def collect(client, tid):
     def request(method, url):
-        response = client.request(method, url, headers=auth, **({'json': {}} if method == 'POST' else {}))
+        response = client.request(method, url, **({'json': {}} if method == 'POST' else {}))
         assert response.status_code in (200, 201)
         return dict(code=response.status_code, body=response.json())
-    transfer = request('GET', f'/api/transfers/{tid}')
+    created = client.post('/api/demo/runs', json={'transferId': tid}, headers={'Idempotency-Key': uuid4().hex})
+    assert created.status_code == 201, created.text
+    root = '/api/demo/runs/' + created.json()['runId']
+    transfer = request('GET', root + '/transfer')
     body = transfer['body']
-    return dict(GetTransferDetails=transfer,
-        GetDeliveringPositions=request('GET', f"/api/delivering/accounts/{body['sourceAccountId']}/positions?limit=100&offset=0"),
-        GetReceivingPositions=request('GET', f"/api/receiving/accounts/{body['destinationAccountId']}/positions?transferId={tid}&limit=100&offset=0"),
-        RunReconciliation=request('POST', f'/api/transfers/{tid}/reconcile'))
+    return dict(CreateDemoRun=dict(code=created.status_code, body=created.json()), GetTransferDetails=transfer,
+        GetDeliveringPositions=request('GET', f"{root}/delivering/accounts/{body['sourceAccountId']}/positions?limit=100&offset=0"),
+        GetReceivingPositions=request('GET', f"{root}/receiving/accounts/{body['destinationAccountId']}/positions?limit=100&offset=0"),
+        RunReconciliation=request('POST', root + '/reconcile'))
 
 
-@pytest.fixture
-def scenarios(client, app, auth):
-    seed_demo(app.state.session_factory, include_scenarios=True)
-    return {f'TRF-{n}': collect(client, auth, f'TRF-{n}') for n in range(1001, 1006)}
+@pytest.fixture(scope='module')
+def scenarios(tmp_path_factory):
+    settings = Settings(data_dir=tmp_path_factory.mktemp('maestro-public'))
+    with TestClient(create_app(settings)) as client:
+        return {f'TRF-{n}': collect(client, f'TRF-{n}') for n in range(1001, 1006)}
 
 
 @pytest.mark.parametrize('tid,direct,explained,unresolved,basis,outcome', [
@@ -54,8 +61,8 @@ def test_real_backend_contract(scenarios, tid, direct, explained, unresolved, ba
     assert result['transferStatus'] == 'DRAFT'
     assert result['reconciliationRunId'] == scenarios[tid]['RunReconciliation']['body']['reconciliationRunId']
     assert run['trace'][-1] == ('CleanReconciliation' if not unresolved else 'InvestigationRequired')
-    assert len(run['calls']) == 4
-    assert 'transferId=' + tid in run['calls'][2]['path']
+    assert len(run['calls']) == 5
+    assert scenarios[tid]['CreateDemoRun']['body']['runId'] in run['calls'][3]['path']
     if explained:
         assert result['evidenceReferences']
     if basis:
@@ -71,10 +78,28 @@ def test_invalid_input_never_calls_http(tid):
     assert run['calls'] == []
 
 
-def test_unconfigured_artifact_fails_closed():
-    run = run_graph()
-    assert run['result']['error']['code'] == 'CONFIGURATION_REQUIRED'
-    assert run['calls'] == []
+def test_artifact_needs_no_backend_credentials(scenarios):
+    run = run_graph(responses=scenarios['TRF-1001'], localTransport=True)
+    assert run['result']['workflowOutcome'] == 'CLEAN'
+    artifact = FLOW.read_text()
+    assert 'backendConnectionConfigured' not in artifact
+    assert 'transferiqHttp' not in artifact
+    assert 'Authorization' not in artifact and 'X-API-Key' not in artifact
+
+
+@pytest.mark.parametrize('change', ['missing', 'wrong_transfer', 'invalid_id', 'not_synthetic', 'invalid_expiry'])
+def test_invalid_run_response_stops_before_private_or_business_calls(scenarios, change):
+    responses = copy.deepcopy(scenarios['TRF-1001'])
+    body = responses['CreateDemoRun']['body']
+    if change == 'missing': responses['CreateDemoRun']['body'] = None
+    elif change == 'wrong_transfer': body['transferId'] = 'TRF-1002'
+    elif change == 'invalid_id': body['runId'] = '../../private'
+    elif change == 'not_synthetic': body['fictionalDemo'] = False
+    elif change == 'invalid_expiry': body['expiresAt'] = 'tomorrow'
+    result = run_graph(responses=responses, localTransport=True)
+    assert result['result']['workflowOutcome'] == 'FAILED'
+    assert result['trace'][-1] == 'ValidateDemoRunFailed'
+    assert len(result['calls']) == 1
 
 
 @pytest.mark.parametrize('field', ['code', 'statusCode'])
@@ -86,13 +111,15 @@ def test_http_envelope_compatibility(scenarios, field):
     assert run_graph(responses=responses, localTransport=True)['result']['workflowOutcome'] == 'CLEAN'
 
 
-@pytest.mark.parametrize('stage', ['GetTransferDetails', 'GetDeliveringPositions', 'GetReceivingPositions', 'RunReconciliation'])
-@pytest.mark.parametrize('status', [401, 404, 422, 503, 0])
-def test_error_edges_never_enter_clean(scenarios, stage, status):
-    run = run_graph(responses=scenarios['TRF-1001'], localTransport=True, fault=dict(nodeId=stage, status=status))
+@pytest.mark.parametrize('stage', ['CreateDemoRun', 'GetTransferDetails', 'GetDeliveringPositions', 'GetReceivingPositions', 'RunReconciliation'])
+@pytest.mark.parametrize('status', [401, 403, 404, 422, 503, 0])
+@pytest.mark.parametrize('envelope', ['output', 'error'])
+def test_error_edges_never_enter_clean(scenarios, stage, status, envelope):
+    run = run_graph(responses=scenarios['TRF-1001'], localTransport=True, errorEnvelope=envelope, fault=dict(nodeId=stage, status=status))
     assert run['result']['workflowOutcome'] == 'FAILED'
     assert run['result']['error']['code'] == 'HTTP_REQUEST_FAILED'
     assert run['result']['correlation']['failedStep'] == stage
+    assert run['result']['httpStatus'] == (status or None)
     assert 'RequiresInvestigation' not in run['trace']
     assert len([r for r in run['calls'] if r['nodeId'] == stage]) == (2 if status in (0, 503) else 1)
 
@@ -166,4 +193,11 @@ def test_emitted_graph_integrity():
             assert n['inputs']['errorHandlingEnabled'] is True
             assert any(e['sourceNodeId'] == n['id'] and e['sourcePort'] == 'error' for e in flow['edges'])
             assert 'X-API-Key' not in n['inputs']['detail']['bodyParameters'].get('headers', {})
+            detail = n['inputs']['detail']
+            assert detail['connectionId'] == 'ImplicitConnection'
+            assert detail['connectionResourceId'] is None and detail['connectionFolderKey'] is None
+            assert detail['bodyParameters']['authentication'] == 'manual'
+            assert 'Authorization' not in detail['bodyParameters']['headers']
+            if detail['bodyParameters']['method'] == 'POST':
+                assert detail['bodyParameters']['headers']['Content-Type'] == 'application/json'
     assert nodes['StartTransferInvestigation']['display']['label'] == 'StartTransferInvestigation'

@@ -5,7 +5,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from backend.api.routes import router
+from backend.api.routes import router, health_router
+from backend.api.judging import router as judging_router, catalog
+from backend.api.public_limits import PublicLimits
+from backend.api.demo_execution import router as demo_execution_router
+from backend.services.demo_runs import DemoRuns
 from backend.api.reconciliation import router as reconciliation_router
 from backend.api.documents import router as document_router
 from backend.api.upload_limit import UploadBodyLimit
@@ -22,6 +26,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         engine = None
+        demo_runs = None
         phase = 'configuration'
         app.state.ready = False
         try:
@@ -36,6 +41,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 app.state.settings = configuration
                 app.state.engine = engine
                 app.state.session_factory = session_factory(engine)
+                if configuration.public_demo_enabled:
+                    phase = 'public_demo_catalog'
+                    catalog()
+                if configuration.demo_execution_enabled:
+                    phase = 'demo_registry'
+                    demo_runs = DemoRuns(configuration)
+                    app.state.demo_runs = demo_runs
                 phase = 'document_recovery'
                 recover_pending_documents(app.state.session_factory, configuration)
                 if configuration.seed_demo_data:
@@ -58,15 +70,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.ready = False
             if engine is not None:
                 engine.dispose()
+            if demo_runs is not None:
+                demo_runs.engine.dispose()
             logger.info('application_stopped')
 
     application = FastAPI(title="TransferIQ AI", version="0.4.0", lifespan=lifespan,
         description="Fictional demonstration only. Receiving positions are staging records, not settled custody holdings.")
     application.state.ready = False
     application.include_router(router)
+    application.include_router(health_router)
+    application.include_router(judging_router)
+    application.include_router(demo_execution_router)
     application.include_router(reconciliation_router)
     application.include_router(document_router)
     application.add_middleware(UploadBodyLimit)
+    application.add_middleware(PublicLimits)
 
     @application.exception_handler(OSError)
     async def storage_error(request: Request, exc: OSError):

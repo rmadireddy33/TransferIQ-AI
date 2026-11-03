@@ -1,5 +1,7 @@
-param([string]$BaseUrl = 'http://127.0.0.1:8000')
+param([string]$BaseUrl = 'http://127.0.0.1:8000', [string]$ApiKey = $env:API_KEY)
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($ApiKey)) { throw 'Set API_KEY to your own backend key before verifying live business APIs.' }
+$headers = @{ 'X-API-Key' = $ApiKey }
 $paths = @(
     '/health', '/api/clients', '/api/clients/CLI-001', '/api/firms',
     '/api/accounts/ACC-SRC-001', '/api/transfers', '/api/transfers/TRF-1001',
@@ -9,7 +11,7 @@ $paths = @(
 )
 $responses = @{}
 foreach ($path in $paths) {
-    $response = Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl$path"
+    $response = Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl$path" -Headers $headers
     if ($response.StatusCode -ne 200) { throw "GET $path failed: $($response.StatusCode)" }
     if ($path -ne '/docs') { $responses[$path] = $response.Content | ConvertFrom-Json }
     Write-Output "PASS GET $path : $($response.StatusCode)"

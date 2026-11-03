@@ -9,6 +9,13 @@ from backend.main import create_app
 from backend.models.entities import AuditEvent, IdempotencyRecord, Transfer
 
 
+@pytest.fixture
+def client(client, auth):
+    # Business API regression tests authenticate; public-access tests use a raw client.
+    client.headers.update(auth)
+    return client
+
+
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -94,9 +101,10 @@ def test_invalid_roles(client, auth, transfer_payload):
 
 
 @pytest.mark.parametrize("headers", [{}, {"X-API-Key": "incorrect"}])
-def test_unauthorized_creation(client, transfer_payload, headers):
+def test_unauthorized_creation(client, auth, transfer_payload, headers):
+    client.headers.pop('X-API-Key', None)
     assert client.post("/api/transfers", headers=headers, json=transfer_payload).status_code == 401
-    assert client.get("/api/transfers").json()["total"] == 1
+    assert client.get("/api/transfers", headers=auth).json()["total"] == 1
 
 
 def test_unconfigured_auth_fails_closed(tmp_path, transfer_payload):

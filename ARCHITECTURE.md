@@ -2,11 +2,13 @@
 
 ## Scope and status
 
+Judging now supports real anonymous execution under `/api/demo/runs`. Each public run owns SQLite and seeded PDF storage under DATA_DIR/competition, separately from the private root database/documents. Existing reconciliation logic is reused with a run-specific session. The run registry persists request idempotency and expiry; scoped endpoints, bounded work and retention quotas constrain public execution. Original private APIs retain X-API-Key. `/api/demo/transfers` still serves explicitly precomputed fixtures. See [the complete public/private boundary](docs/ZERO_CREDENTIAL_DEMO.md). Render needs this revision redeployed before the Flow can use it.
+
 Render is now the requested manual deployment target: one Starter Python Web Service, one `/data` disk, and the existing `python -m backend.start` entry point. Render supplies `RENDER=true` and `PORT`; startup validates production configuration and the real disk mount, then uses the same migrations, seeding, recovery, authentication and readiness behavior. Build only installs `backend/requirements.txt` from repository root. Render preparation passed 252 local tests; no live Render deployment or disk validation was performed. See [Render deployment guide](docs/RENDER_DEPLOYMENT.md). Railway remains an alternative; the platforms do not share a database or documents automatically.
 
 Railway backend preparation now supplies Railpack configuration at repository root, `python -m backend.start`, and a single service/worker/replica using one `/data` volume. Startup validates the mounted volume and production secret, initializes/migrates SQLite, recovers pending documents, optionally adds missing fictional fixtures/PDFs (`SEED_DEMO_DATA=1`), then enables `/health` readiness. Existing data and document IDs are preserved; migration failures stop startup. JSON console logging omits raw exception details and credentials. Local verification passed 243 tests; cloud deployment and volume acceptance remain unperformed. See [deployment guide](docs/RAILWAY_DEPLOYMENT.md).
 
-Step 5 adds a manually triggered Maestro Automate Flow artifact, locally validated but not deployed or cloud-executed. It calls the concrete `/api` transfer, source-position, transfer-filtered receiving-staging and reconciliation endpoints. Normalization maps `summary.unresolved` to `unresolvedCount`; the decision separates quantity CLEAN from INVESTIGATION_REQUIRED with independent cost-basis review flags. Errors produce FAILED; no financial calculation or correction occurs in JavaScript. Secure HTTP connection binding and hosted HTTPS reachability remain prerequisites. See [Step 5 setup](docs/MAESTRO_STEP5_SETUP.md). Broader IXP/agent/approval orchestration below remains planned.
+Step 5's manually triggered Maestro Automate Flow creates an anonymous demo run, validates its runId, and calls run-scoped transfer, source-position, receiving-staging and reconciliation endpoints. All five HTTP nodes use Manual authentication with no credentials. Normalization maps `summary.unresolved` to `unresolvedCount`; quantity CLEAN and INVESTIGATION_REQUIRED retain independent cost-basis review flags. Errors produce FAILED; no calculation or correction occurs in JavaScript. The hosted backend must support these routes, and UiPath runtime permissions remain required. Broader IXP/agent/approval orchestration below remains planned.
 
 Step 4 implements the private PDF document repository and deterministic generation from stored fictional records. SQLite schema v3 adds TransferDocument metadata; bytes live under DATA_DIR/documents in generated transfer buckets. All document routes require X-API-Key. Pending writes recover on startup, and downloads verify size and checksum before returning actual PDF bytes. See [DOCUMENT_API.md](docs/DOCUMENT_API.md) for storage/versioning/validation details and [IXP_INTEGRATION_PLAN.md](docs/IXP_INTEGRATION_PLAN.md) for the unimplemented future file handoff.
 
@@ -18,7 +20,7 @@ Step 2 implements the local FastAPI/SQLite foundation, core reference and transf
 
 - The database filename is `transferiq.db`, as requested for Step 2.
 - Implemented routes use `/api`, exactly as requested; `/api/v1` remains a future versioning decision.
-- API keys protect mutations through `X-API-Key` and `API_KEY`. Existing Step 2 GET endpoints expose fictional demonstration data without authentication; Step 3 reconciliation and evidence GET endpoints require the key. Reviewer sessions and resource-level access control are not implemented.
+- API keys protect original private business routes through `X-API-Key` and `API_KEY`. Anonymous run-isolated demo routes never receive a private database session or arbitrary user financial data. Precomputed samples and health/docs are public. Reviewer sessions and broader resource-level access control remain unimplemented.
 - New transfer creation records intent only, starts in DRAFT, and does not generate positions, perform ACATS processing, submit, settle, or alter source records. PARTIAL is metadata only until later asset-selection rules exist.
 - `/api/transfers/{transferId}/assets` returns receiving staging positions. Receiving account positions are transfer-specific staging rows, never settled or aggregated custody holdings. Delivering positions return the latest snapshot date for that account.
 - Status transitions are validated by a service validator and SQLite triggers; no status-mutation API is exposed. The initial graph is listed below. Business gates for approvals and reconciliation are deferred.
@@ -30,6 +32,20 @@ Step 2 implements the local FastAPI/SQLite foundation, core reference and transf
 The system simulates transfer exception resolution using fictional data only. Eight logical systems share one FastAPI application and SQLite database; they are module boundaries, not separate cloud services. No PostgreSQL, MySQL, MongoDB, Redis, external database server, trading connection, or real ACATS connection is permitted.
 
 ## Architecture diagram
+
+The competition execution boundary extends the private application without opening its database:
+
+```mermaid
+flowchart LR
+    Judge[Judge's Maestro Automate Flow] -->|Manual HTTP, no credentials| Demo[Allowlisted /api/demo/runs APIs]
+    Demo --> Registry[(DATA_DIR/competition registry)]
+    Demo --> Engine[Existing deterministic reconciliation services]
+    Engine --> Runs[(Run-specific SQLite and synthetic PDFs)]
+    Private[Original APIs with X-API-Key] --> Custody[(Private root SQLite and documents)]
+    Samples[Public /api/demo/transfers] --> Fixture[Labelled precomputed fixture]
+```
+
+Run creation accepts only the five seed IDs. Public reconciliation records an actual backend result/audit in the selected run; it never changes custody or applies corrections. Quotas and expiry cleanup bound synthetic storage. This does not prove a UiPath execution or implement IXP, agents or human approvals.
 
 ```mermaid
 flowchart TD
@@ -148,9 +164,9 @@ Database transactions and filesystem writes are not atomic together. Stage and h
 
 ## Security, approvals, and audit
 
-Authenticate all business APIs and authorize access to each transfer and document. Service bearer credentials must map to bounded roles; browser bundles must never contain service tokens or UiPath secrets. Implement operator/reviewer sessions separately with secure, HTTP-only cookies and CSRF protection for cookie-authenticated writes. Configure exact local origins if Vite runs separately; cloud should use same-origin hosting.
+Authenticate private business APIs and authorize access to each private transfer/document. The explicitly allowlisted synthetic run APIs above are anonymous and isolated; they never authorize access to private data. Future service credentials should map to bounded roles; browser bundles must never contain them or UiPath secrets. Operator/reviewer sessions remain planned, with secure HTTP-only cookies and CSRF protection for cookie-authenticated writes. Configure exact local origins if Vite runs separately; cloud should use same-origin hosting.
 
-Documents are private: validate file size/type, sanitize display filenames, generate storage keys, reject path traversal, and stream through authorization checks. If UiPath requires a download link, use short-lived, narrowly scoped access and redact credentials from logs. Treat uploaded text and agent output as untrusted data, including instructions embedded in statements.
+Uploaded documents are private: validate file size/type, sanitize display filenames, generate storage keys, reject path traversal, and stream through authorization checks. Public run downloads serve only fixed synthetic PDFs from that run's selected transfer; they cannot retrieve private uploads. Future private UiPath document transport must use narrowly scoped authorized access with credential redaction. Treat uploaded text and agent output as untrusted data, including instructions embedded in statements.
 
 An approval is a persisted decision tied to an authenticated authorized reviewer, transfer, exception, proposal version/hash, evidence version, expiry, outcome, and reason. A posted `approved=true` or reviewer name is not proof of approval. Verify the UiPath task and trusted decision identity through the supported integration; fail closed until this is possible. Prevent unauthorized self-approval, stale proposals, replay, double application, and approval after expiry. Revalidate policy and state at application time; changed proposals require a new approval.
 
@@ -164,6 +180,6 @@ Before the relevant implementation phases, specify correction allowlists and tol
 
 ## Next steps
 
-Steps 1–4 are implemented. Step 5 has a real Flow artifact and local evidence; cloud acceptance remains blocked pending HTTPS hosting and a secure HTTP connection. Follow [PROJECT_PLAN.md](PROJECT_PLAN.md) and [Step 5 setup](docs/MAESTRO_STEP5_SETUP.md) before runtime acceptance or later IXP/agent/approval work.
+Steps 1–4 are implemented. Step 5 has a real Flow artifact and local evidence; cloud acceptance requires deployment of the anonymous run APIs and actual tenant traces. Follow [PROJECT_PLAN.md](PROJECT_PLAN.md) and [Step 5 setup](docs/MAESTRO_STEP5_SETUP.md) before runtime acceptance or later IXP/agent/approval work.
 
 

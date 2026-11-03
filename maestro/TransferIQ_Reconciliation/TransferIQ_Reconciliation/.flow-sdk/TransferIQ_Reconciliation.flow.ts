@@ -1,25 +1,21 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { flow, manual, http, script, types, out, v, js, err } from '@uipath/maestro-builder-sdk';
+import { flow, manual, http, script, types, out, v, js } from '@uipath/maestro-builder-sdk';
 
-// Credentials belong only in Integration Service. Local settings are ignored by Git.
+// Public synthetic run APIs use Manual authentication with no credentials or bindings.
 const root = fileURLToPath(new URL('.', import.meta.url));
 const code = (name: string) => readFileSync(root + 'scripts/' + name + '.js', 'utf8');
 const config = existsSync(root + 'runtime.local.json') ? JSON.parse(readFileSync(root + 'runtime.local.json', 'utf8')) : {};
-const bindings = existsSync(root + 'bindings.json') ? JSON.parse(readFileSync(root + 'bindings.json', 'utf8')).bindings : [];
-const bound = ['transferiqHttp', 'transferiqFolder'].every(name => bindings?.some((b: any) =>
-  b.name === name && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(b.resourceKey)));
 if (Object.keys(config).some(k => k !== 'backendBaseUrl')) throw new Error('Only backendBaseUrl belongs in runtime.local.json');
-if (bindings.length && !bound) throw new Error('Both verified connection and folder bindings are required');
-const baseUrl = config.backendBaseUrl || 'http://localhost:8000';
-if (bound && !/^https:\/\/[^/?#@\s]+(?:\/[^?#\s]*)?$/.test(baseUrl)) throw new Error('Cloud binding requires an HTTPS backend URL');
-const connection = bound ? { connection: 'transferiqHttp', folder: 'transferiqFolder' } : {};
-const path = (suffix: any) => bound ? suffix : js`${v('backendBaseUrl')} + ${suffix}`;
-const request = (method: 'GET' | 'POST', url: any, returns: any, query?: any) => http({
-  managed: true, ...connection, method, url: path(url), returns, query,
+const baseUrl = config.backendBaseUrl || 'https://transferiq-api.onrender.com';
+if (!/^https:\/\/[^/?#@\s]+(?:\/[^?#\s]*)?$/.test(baseUrl)) throw new Error('Cloud runtime requires an HTTPS backend URL');
+const path = (suffix: any) => js`${v('backendBaseUrl')} + ${suffix}`;
+const request = (method: 'GET' | 'POST', url: any, returns: any, query?: any, body: any = '{}') => http({
+  managed: true, method, url: path(url), returns, query,
   timeout: 'PT30S', retryCount: 1,
-  headers: { Accept: 'application/json', 'X-Correlation-ID': out('ValidateInput', 'correlationId') },
-  ...(method === 'POST' ? { body: '{}', contentType: 'application/json' } : {}),
+  headers: { Accept: 'application/json', 'Idempotency-Key': out('ValidateInput', 'correlationId'),
+    ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
+  ...(method === 'POST' ? { body, contentType: 'application/json' } : {}),
 });
 const failure = (stage: string, errorCode: string, summary: string) => js`({
   transferId: $vars.StartTransferInvestigation.output.transferId || null,
@@ -30,7 +26,13 @@ const failure = (stage: string, errorCode: string, summary: string) => js`({
   error: { code: ${errorCode}, summary: ${summary} }
 })`;
 const httpFailure = (stage: string) => (h: any) => h.return({
-  result: js`Object.assign(${failure(stage, 'HTTP_REQUEST_FAILED', 'Backend request failed: check HTTP status, availability, authentication and timeout.')}, { httpStatus: ${err(stage, 'status')} || null })`,
+  // Designer exposes Error under .error; older managed-HTTP runtimes use .output.
+  // Read both defensively without assuming a success-response schema contains status.
+  result: js`Object.assign(${failure(stage, 'HTTP_REQUEST_FAILED', 'Backend request failed: check HTTP status, availability, authentication and timeout.')}, { httpStatus: (() => {
+    const node = Reflect.get($vars, ${stage});
+    const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;
+    return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;
+  })() })`,
 }, { name: stage + 'Failed' });
 const invalid = (stage: string) => (h: any) => h.return({
   result: failure(stage, 'INVALID_RESPONSE', 'Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.'),
@@ -42,33 +44,33 @@ export default flow('fa7de741-ad8f-441f-8f3d-9bf96e5f3497')
   .triggerId('StartTransferInvestigation')
   .input({ transferId: types.string }).output({ result: types.object })
   .var('backendBaseUrl', types.string, baseUrl)
-  .var('backendConnectionConfigured', types.boolean, bound)
   .step('ValidateInput', script({ code: code('validate-input'), returns: { transferId: 'string', correlationId: 'string' } }))
   .onError((h) => h.return({ result: failure('ValidateInput', 'INVALID_TRANSFER_INPUT', 'Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters).') }, { name: 'InvalidInput' }))
-  .branch('BackendConfigured', v('backendConnectionConfigured'),
-    yes => yes.label('Secure HTTP connection configured')
-      .step('ValidateBackendConfiguration', script({ code: "if (typeof $vars.backendBaseUrl !== 'string' || !/^https:\\/\\//.test($vars.backendBaseUrl)) throw new Error('INVALID_CONFIGURATION'); return true;", returns: 'boolean' }))
-      .onError(h => h.return({ result: failure('ValidateBackendConfiguration', 'INVALID_CONFIGURATION', 'A configured cloud connection requires an HTTPS backend URL.') }, { name: 'InvalidConfiguration' })),
-    no => no.label('Configuration required').return({ result: failure('BackendConfigured', 'CONFIGURATION_REQUIRED', 'Configure a reachable HTTPS backend and bind its UiPath HTTP connection; localhost is not reachable from UiPath Cloud.') }, { name: 'ConfigurationRequired' }))
-  .step('GetTransferDetails', request('GET', js`'/api/transfers/' + encodeURIComponent($vars.ValidateInput.output.transferId)`, {
+  .step('CreateDemoRun', request('POST', '/api/demo/runs', {
+    runId: 'string', transferId: 'string', expiresAt: 'number', fictionalDemo: 'boolean', evidenceMode: 'string',
+  }, undefined, js`JSON.stringify({ transferId: $vars.ValidateInput.output.transferId })`))
+  .onError(httpFailure('CreateDemoRun'))
+  .step('ValidateDemoRun', script({ code: code('validate-demo-run'), returns: 'object' }))
+  .onError(invalid('ValidateDemoRun'))
+  .step('GetTransferDetails', request('GET', js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/transfer'`, {
     transferId: 'string', clientId: 'string', deliveringFirmId: 'string', receivingFirmId: 'string', sourceAccountId: 'string', destinationAccountId: 'string', status: 'string', transferType: 'string',
   }))
   .onError(httpFailure('GetTransferDetails'))
   .step('ValidateTransfer', script({ code: code('validate-transfer'), returns: 'object' }))
   .onError(invalid('ValidateTransfer'))
-  .step('GetDeliveringPositions', request('GET', js`'/api/delivering/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.sourceAccountId) + '/positions'`, {
+  .step('GetDeliveringPositions', request('GET', js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/delivering/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.sourceAccountId) + '/positions'`, {
     items: 'array', total: 'number', limit: 'number', offset: 'number',
   }, { limit: '100', offset: '0' }))
   .onError(httpFailure('GetDeliveringPositions'))
   .step('ValidateDeliveringPositions', script({ code: code('validate-delivering'), returns: 'object' }))
   .onError(invalid('ValidateDeliveringPositions'))
-  .step('GetReceivingPositions', request('GET', js`'/api/receiving/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.destinationAccountId) + '/positions'`, {
+  .step('GetReceivingPositions', request('GET', js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/receiving/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.destinationAccountId) + '/positions'`, {
     items: 'array', total: 'number', limit: 'number', offset: 'number', positionKind: 'string', settledHoldings: 'boolean',
-  }, { transferId: out('ValidateInput', 'transferId'), limit: '100', offset: '0' }))
+  }, { limit: '100', offset: '0' }))
   .onError(httpFailure('GetReceivingPositions'))
   .step('ValidateReceivingPositions', script({ code: code('validate-receiving'), returns: 'object' }))
   .onError(invalid('ValidateReceivingPositions'))
-  .step('RunReconciliation', request('POST', js`'/api/transfers/' + encodeURIComponent($vars.ValidateInput.output.transferId) + '/reconcile'`, {
+  .step('RunReconciliation', request('POST', js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/reconcile'`, {
     transferId: 'string', reconciliationRunId: 'string', status: 'string', executionStatus: 'string', summary: 'object', positions: 'array', exceptions: 'array',
     sourceSnapshotVersion: 'string', targetSnapshotVersion: 'string', inputFingerprint: 'string', ruleVersion: 'string', sourceSnapshotDate: 'string', targetSnapshotDates: 'array',
   }))

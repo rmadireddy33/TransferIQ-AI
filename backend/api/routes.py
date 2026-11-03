@@ -12,7 +12,9 @@ from backend.schemas.contracts import (AccountResponse, ClientResponse, ErrorRes
     TransferCreate, TransferResponse)
 from backend.services.transfers import create_transfer, require_record
 
-router = APIRouter(responses={404: {"model": ErrorResponse}, 503: {"model": ErrorResponse}})
+router = APIRouter(dependencies=[Depends(require_api_key)],
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}, 503: {"model": ErrorResponse}})
+health_router = APIRouter()
 
 
 def page(session, statement, bounds):
@@ -21,7 +23,7 @@ def page(session, statement, bounds):
     return {"items": items, "total": total, **bounds}
 
 
-@router.get("/health", response_model=HealthResponse, tags=["Health"])
+@health_router.get("/health", response_model=HealthResponse, tags=["Health"])
 def health(request: Request, session: DatabaseSession):
     if not request.app.state.ready:
         fail(503, 'not_ready', 'Application initialization is incomplete')

@@ -1,6 +1,6 @@
 # TransferIQ AI — manual Render deployment
 
-Use one **Starter Python Web Service** and one persistent disk. This guide matches the existing `backend` package and its `backend.main:app` FastAPI application. No Render deployment has been performed. No database server, Docker, frontend, or additional worker is needed.
+Use one **Starter Python Web Service** and one persistent disk. This guide matches the existing `backend` package and its `backend.main:app` FastAPI application. The user has deployed https://transferiq-api.onrender.com. Redeploy the [credential-free judging revision](ZERO_CREDENTIAL_DEMO.md) to expose its new run-isolated synthetic APIs; private APIs remain protected. No database server, Docker, frontend, or additional worker is needed.
 
 ## Exact dashboard settings
 
@@ -38,6 +38,13 @@ Add these under the service's Environment settings before deployment:
 | `MAX_DOCUMENT_BYTES` | `10485760` |
 | `PYTHONDONTWRITEBYTECODE` | `1` |
 | `PYTHONUNBUFFERED` | `1` |
+| `PUBLIC_DEMO_ENABLED` | `1` |
+| `PUBLIC_DEMO_REQUESTS_PER_MINUTE` | `60` |
+| `PUBLIC_DEMO_GLOBAL_REQUESTS_PER_MINUTE` | `300` |
+| `DEMO_EXECUTION_ENABLED` | `1` |
+| `DEMO_MAX_RUNS` | `50` |
+| `DEMO_RUN_TTL_HOURS` | `24` |
+| `DEMO_STORAGE_LIMIT_MB` | `128` |
 
 Render supplies `PORT` (normally `10000`) and `RENDER=true`. **Do not manually add `RENDER`, Railway variables, or a fake disk marker.** The application checks that `/data` is an actual mount. `PORT` does not need a manual override. Render's fully qualified `PYTHON_VERSION` overrides the existing `.python-version` file (`3.13`). See [Render environment variables](https://render.com/docs/environment-variables), [port binding](https://render.com/docs/web-services), and [Python version selection](https://render.com/docs/python-version).
 
@@ -71,7 +78,7 @@ The existing lifespan runs initialization/migrations **after** the disk check. A
 
 Startup recovers pending document writes, then optionally adds missing fixture IDs for TRF-1001 through TRF-1005. Existing customers, transfers, exceptions, source holdings, uploaded documents, and sample references are preserved. Registered sample recipes are checked without re-rendering; only missing recipes generate PDFs. Missing/corrupt registered sample bytes stop opt-in seeding for operator repair instead of silently changing a document ID. Recovery can mark previously pending uploads READY or FAILED based on their stored bytes.
 
-Explicit developer seed/export commands remain available, but are unnecessary for deployment. Startup does not generate `sample_exports/` or execute the development seed CLI. Initialization is never part of the build command. Authentication on mutation, reconciliation/reference, and document routes remains unchanged. Core fictional read APIs stay public. No reset or financial-correction endpoint is introduced.
+Explicit developer seed/export commands remain available, but are unnecessary for deployment. Initialization never runs during build. Original private business APIs require X-API-Key, including GETs. Anonymous `/api/demo/runs` operations create isolated synthetic SQLite/PDF state under `/data/competition`; `/api/demo/transfers` list/detail remains precomputed. No reset or financial-correction endpoint is introduced. Follow [credential-free judge rollout and verification](ZERO_CREDENTIAL_DEMO.md); judges do not need the private key used in the operator checks below.
 
 ## Verify the live service
 
@@ -85,7 +92,7 @@ try { $apiKey = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
 finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
 $headers = @{ 'X-API-Key' = $apiKey }
 Invoke-RestMethod "$baseUrl/health"
-1001..1005 | ForEach-Object { Invoke-RestMethod "$baseUrl/api/transfers/TRF-$_" }
+1001..1005 | ForEach-Object { Invoke-RestMethod "$baseUrl/api/transfers/TRF-$_" -Headers $headers }
 (Invoke-WebRequest -UseBasicParsing "$baseUrl/docs").StatusCode
 $run = Invoke-RestMethod -Method Post "$baseUrl/api/transfers/TRF-1002/reconcile" `
     -Headers $headers -ContentType 'application/json' -Body '{}'
@@ -122,7 +129,7 @@ Use **Manual Deploy → Deploy latest commit** on the same Render service, retai
 
 ```powershell
 Invoke-RestMethod "$baseUrl/health"
-$after = Invoke-RestMethod "$baseUrl/api/transfers/$($created.transferId)"
+$after = Invoke-RestMethod "$baseUrl/api/transfers/$($created.transferId)" -Headers $headers
 if (($after | ConvertTo-Json -Depth 20 -Compress) -ne $beforeTransfer) { throw 'Transfer was lost or changed' }
 $afterRun = Invoke-RestMethod "$baseUrl/api/transfers/TRF-1002/reconciliation" -Headers $headers
 if ($afterRun.reconciliationRunId -ne $run.reconciliationRunId) { throw 'Reconciliation history changed' }

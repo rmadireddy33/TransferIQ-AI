@@ -6,11 +6,13 @@ A hackathon demonstration using fictional clients, firms, securities, accounts, 
 
 ## Current status
 
-Render Starter deployment preparation is now available using the same backend launcher and one persistent disk at `/data`. Render startup requires the mounted disk and production API key; local `.env` files are ignored in cloud. **No Render deployment has occurred.** All 252 backend tests passed. Follow [the exact Render settings and manual deployment guide](docs/RENDER_DEPLOYMENT.md).
+Judges can execute real synthetic reconciliation through anonymous `/api/demo/runs` APIs. Each run has isolated SQLite/PDF state, retries are idempotent, and fixed scenarios/quotas prevent unrestricted modifications. **The Flow needs no TransferIQ key, secret or HTTP connection.** Original private APIs retain X-API-Key authentication; `/api/demo/transfers` remains a separately labelled precomputed view. This revision needs redeployment to Render. See [judge setup, endpoint inventory and reproduction](docs/ZERO_CREDENTIAL_DEMO.md) and [actual verification](docs/ZERO_CREDENTIAL_VERIFICATION.md).
+
+The user deployed the backend at https://transferiq-api.onrender.com; earlier live checks confirmed health and sample API responses. Render uses the same backend launcher and one persistent disk at `/data`. Subsequent local changes are not automatically deployed. Follow [the Render settings and manual deployment guide](docs/RENDER_DEPLOYMENT.md).
 
 Railway backend deployment preparation is complete: Railpack configuration, one-worker startup, `/data` volume enforcement, runtime migrations, opt-in missing-only demo seeding, readiness, and structured logs. **No Railway deployment has occurred.** The current backend suite passes 243 tests, including real HTTP startup/restart and uploaded-PDF persistence. See [exact Railway setup, environment variables, verification and troubleshooting](docs/RAILWAY_DEPLOYMENT.md).
 
-Step 5 adds a real, locally validated **Maestro Automate Flow** under `maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/`. Its four HTTP calls use existing API contracts; Python retains all financial calculations. The default artifact fails closed until a secure UiPath HTTP connection and hosted HTTPS backend are configured. **No UiPath runtime execution, upload or deployment has occurred.** Verification passed 218 tests and ten actual local HTTP/graph checks. See [Step 5 setup and VS Code instructions](docs/MAESTRO_STEP5_SETUP.md) and [test evidence and blocked runtime cases](docs/MAESTRO_STEP5_TEST_CASES.md). References below to unimplemented UiPath integration mean cloud integration; the local Flow now exists.
+Step 5 provides the existing **Maestro Automate Flow** under `maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/`. Its five Manual HTTP calls create an isolated run, fetch transfer/source/staging context and reconcile using actual previous-node outputs. Python retains all financial calculations. The generated Flow passes product validation; actual UiPath execution remains unverified until this backend revision is deployed and cloud traces are inspected. No upload/deployment was performed. See [designer setup](docs/MAESTRO_STEP5_SETUP.md).
 
 ```powershell
 # From repository root; no cloud execution:
@@ -43,7 +45,7 @@ Set `API_KEY` to a strong locally generated secret in `.env`, or supply it in th
 $env:API_KEY = ([guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N'))
 ```
 
-Process environment overrides the repository-root `.env`. Do not commit or log the key. A blank key permits demo reads but makes mutation requests return 503; a missing or incorrect `X-API-Key` returns 401 when a key is configured. No authentication bypass switch exists. Other reserved UiPath/frontend/session settings in `.env.example` are not consumed in Step 2.
+Process environment overrides the repository-root `.env`. Do not commit or log the key. A blank key makes private business requests return 503 locally and prevents production startup; a missing or incorrect `X-API-Key` returns 401 on private routes when a key is configured. Anonymous demo routes operate independently on fixed samples or isolated run storage; private authentication is never disabled. Reserved UiPath/frontend/session settings in `.env.example` are not consumed by the backend.
 
 ## Database initialization and fictional sample data
 
@@ -93,7 +95,7 @@ In a second PowerShell terminal:
 Set-Location C:\Projects\TransferIQ-AI
 .\scripts\verify-backend.ps1
 Invoke-RestMethod http://127.0.0.1:8000/health
-Invoke-RestMethod http://127.0.0.1:8000/api/transfers/TRF-1001
+Invoke-RestMethod http://127.0.0.1:8000/api/demo/transfers/TRF-1001
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m pip check
 ```
@@ -109,6 +111,8 @@ Use a **Starter Web Service**, **Python 3**, and leave **Root Directory blank**.
 Configure root `/`, Railpack, one replica, one volume at `/data`, and start command `python -m backend.start`. Leave build and pre-deploy command overrides unset. Set `APP_ENV=production`, `DATA_DIR=/data`, a strong `API_KEY`, and `SEED_DEMO_DATA=1`. The launcher binds `0.0.0.0` using Railway's `PORT`, with one worker. `/health` becomes ready only after initialization, migrations, recovery and optional seeding succeed. See the [complete deployment guide](docs/RAILWAY_DEPLOYMENT.md) for all settings and manual acceptance checks.
 
 ## API contract
+
+Every live `/api` route in the table below requires `X-API-Key`. `/health` is public. The separate `/api/demo/transfers` list/detail routes expose only the fixed five-scenario sample artifact, with explicit precomputed labels and rate limits. Swagger/OpenAPI remain public, but protected API execution requires Authorize.
 
 All list responses use `{items, total, limit, offset}`. `limit` defaults to 50 and is capped at 100; `offset` defaults to zero. Pydantic responses use camelCase and reject extra creation fields. Lookup failures return 404; invalid creation references, ownership, firm roles, inactive records, or types return 422; database conflicts and mismatched idempotency payloads return 409. Domain errors contain `detail.code` and `detail.message`; request-schema validation uses FastAPI's standard 422 detail list.
 
@@ -190,6 +194,6 @@ tests/
 - **Unsupported schema:** preserve the database, make a SQLite-consistent backup, and implement an explicit migration. Do not delete or reset it as a startup workaround.
 - **Test warning:** the tested Starlette version emits an upstream deprecation warning for its httpx TestClient. Tests still pass; no warning is suppressed.
 
-Next step: manually create the Render Starter service using the Render guide, verify public HTTPS and persistence on its actual disk, then configure the secure UiPath HTTP connection and run the five Maestro scenarios. Cloud acceptance remains unverified. The earlier Railway setup remains an alternative. IXP, agents, approvals and financial corrections remain later increments.
+Next step: manually redeploy this revision to Render, run `python -m scripts.verify_public_demo --base-url https://transferiq-api.onrender.com`, then execute TRF-1001/TRF-1002 in Maestro and retain actual instance/trace evidence. No TransferIQ connection binding is needed. UiPath tenant access, IXP, agents, approvals and financial corrections are not eliminated by anonymous backend access.
 
 

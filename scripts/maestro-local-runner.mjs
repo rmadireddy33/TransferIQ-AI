@@ -11,11 +11,9 @@ export const flow = JSON.parse(fs.readFileSync(artifact, 'utf8'));
 const expression = (code, vars) => vm.runInNewContext(code, { $vars: vars }, { timeout: 1000 });
 const dynamic = (x, vars) => typeof x === 'string' && x.startsWith('=js:') ? expression(x.slice(4), vars) : x;
 
-export async function runLocal({ transferId, responses, localTransport = false, baseUrl, apiKey, fault }) {
+export async function runLocal({ transferId, responses, localTransport = false, baseUrl, fault, errorEnvelope = 'output' }) {
   const vars = Object.fromEntries(flow.variables.globals.map(v => [v.id, v.defaultValue]));
   vars.StartTransferInvestigation = { output: { transferId } };
-  // This explicit test adapter bypasses cloud-only configuration checks, never the business/error decisions.
-  if (localTransport) vars.backendConnectionConfigured = true;
   const calls = [], trace = [];
   let id = 'StartTransferInvestigation';
   for (let budget = 0; budget < 100; budget++) {
@@ -26,7 +24,7 @@ export async function runLocal({ transferId, responses, localTransport = false, 
     try {
       if (node.type === 'core.trigger.manual') port = 'output';
       else if (node.type === 'core.action.script') {
-        const value = localTransport && id === 'ValidateBackendConfiguration' ? true : expression('(function(){' + node.inputs.script + '\n})()', vars);
+        const value = expression('(function(){' + node.inputs.script + '\n})()', vars);
         vars[id] = { output: value }; port = 'success';
       } else if (node.type === 'core.logic.decision') port = expression(node.inputs.expression, vars) ? 'true' : 'false';
       else if (node.type === 'core.control.end') {
@@ -50,13 +48,12 @@ export async function runLocal({ transferId, responses, localTransport = false, 
               response = responses[id];
             } else {
               if (!baseUrl) throw new Error('Missing local backend URL');
-              const headers = { Accept: 'application/json' };
-              if (apiKey) headers['X-API-Key'] = apiKey;
-              if (params.method === 'POST') headers['Content-Type'] = 'application/json';
-              const r = await fetch(url, { method: params.method, headers, body: params.method === 'POST' ? '{}' : undefined, signal: AbortSignal.timeout(30000), redirect: 'error' });
+              const headers = Object.fromEntries(Object.entries(params.headers || {}).map(([k, v]) => [k, dynamic(v, vars)]));
+              const r = await fetch(url, { method: params.method, headers, body: params.method === 'POST' ? dynamic(params.body, vars) : undefined, signal: AbortSignal.timeout(30000), redirect: 'error' });
               response = { code: r.status, body: await r.json() };
             }
             const status = response?.code ?? response?.statusCode;
+            calls[calls.length - 1].status = status || null;
             if (!Number.isInteger(status) || status < 200 || status >= 300) throw Object.assign(new Error('HTTP failed'), { status: status || 0 });
             break;
           } catch (e) {
@@ -67,8 +64,10 @@ export async function runLocal({ transferId, responses, localTransport = false, 
         vars[id] = { output: response }; port = 'default';
       } else throw new Error('Unsupported graph node ' + node.type);
     } catch (e) {
-      // Managed HTTP publishes its error envelope under output; scripts under error.
-      vars[id] = node.type === 'core.action.http.v2' ? { output: { status: e.status || null }, error: true } : { error: { code: 'SCRIPT_FAILURE' } };
+      // Explicit test doubles for both managed-HTTP error envelope versions.
+      vars[id] = node.type === 'core.action.http.v2'
+        ? (errorEnvelope === 'error' ? { error: { status: e.status || null } } : { output: { status: e.status || null }, error: true })
+        : { error: { code: 'SCRIPT_FAILURE' } };
       port = 'error';
     }
     const edges = flow.edges.filter(e => e.sourceNodeId === id && e.sourcePort === port);
@@ -80,7 +79,6 @@ export async function runLocal({ transferId, responses, localTransport = false, 
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const input = JSON.parse(fs.readFileSync(0, 'utf8'));
-  // Secret is read from process environment only, never from graph or command arguments.
-  const result = await runLocal({ ...input, apiKey: process.env.API_KEY });
+  const result = await runLocal(input);
   process.stdout.write(JSON.stringify(result));
 }
