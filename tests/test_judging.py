@@ -78,6 +78,7 @@ def test_openapi_security_inventory(client):
         '/api/demo/runs/{runId}/receiving/accounts/{accountId}/positions',
         '/api/demo/runs/{runId}/reconcile', '/api/demo/runs/{runId}/reconciliation',
         '/api/demo/runs/{runId}/exceptions', '/api/demo/runs/{runId}/documents',
+        '/api/demo/runs/{runId}/corporate-actions',
         '/api/demo/runs/{runId}/documents/{documentId}/download', '/api/demo/runs/{runId}/audit'}
     for path, methods in spec['paths'].items():
         for operation in methods.values():

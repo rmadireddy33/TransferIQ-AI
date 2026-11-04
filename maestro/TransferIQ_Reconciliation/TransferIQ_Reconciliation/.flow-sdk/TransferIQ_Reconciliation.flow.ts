@@ -38,11 +38,29 @@ const invalid = (stage: string) => (h: any) => h.return({
   result: failure(stage, 'INVALID_RESPONSE', 'Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.'),
 }, { name: stage + 'Failed' });
 
+// This is an explicit configuration stop, NOT an extractor or successful mock.
+// Replace this Script in Studio Web with Document > Extract > Extract document
+// (new model in this Flow), retaining its ID and outgoing success/error edges.
+// CLI 1.205 cannot provision that model. Never invent deployment identifiers.
+const extractionUnavailable = (reason: string, outcome = 'EVIDENCE_REVIEW_REQUIRED') => js`({
+  ...$vars.NormalizeReconciliation.output, evidenceOutcome: ${outcome},
+  extractionResult: {
+    transferId: $vars.NormalizeReconciliation.output.transferId,
+    documentType: 'CORPORATE_ACTION_NOTICE', extractedFields: {}, evidenceReference: null,
+    validationStatus: 'REVIEW_REQUIRED', discrepancies: [${reason}], extractionStatus: 'EXTRACTION_FAILED'
+  }
+})`;
+const extractionError = (reason: string, name: string) => (h: any) => h.return({
+  result: extractionUnavailable(reason),
+}, { name, label: 'Evidence Review Required' });
+
 export default flow('fa7de741-ad8f-441f-8f3d-9bf96e5f3497')
   .schemaVersion('1.9').name('TransferIQ_Reconciliation')
   .trigger(manual(), { label: 'StartTransferInvestigation' })
   .triggerId('StartTransferInvestigation')
-  .input({ transferId: types.string }).output({ result: types.object })
+  .input({ transferId: types.string, corporateActionPdf: {
+    type: types.file, default: null, description: 'Optional real corporate-action PDF. Missing evidence never clears an exception.'
+  } }).output({ result: types.object })
   .var('backendBaseUrl', types.string, baseUrl)
   .step('ValidateInput', script({ code: code('validate-input'), returns: { transferId: 'string', correlationId: 'string' } }))
   .onError((h) => h.return({ result: failure('ValidateInput', 'INVALID_TRANSFER_INPUT', 'Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters).') }, { name: 'InvalidInput' }))
@@ -80,6 +98,21 @@ export default flow('fa7de741-ad8f-441f-8f3d-9bf96e5f3497')
   .branch('NormalizationFailed', js`$vars.NormalizeReconciliation.output.workflowOutcome === 'FAILED'`,
     yes => yes.label('Invalid reconciliation response').return({ result: out('NormalizeReconciliation') }, { name: 'FailedReconciliation', label: 'FAILED' }),
     no => no.label('Validated reconciliation').branch('RequiresInvestigation', js`$vars.NormalizeReconciliation.output.unresolvedCount > 0`,
-      investigation => investigation.label('Investigation Required').return({ result: out('NormalizeReconciliation') }, { name: 'InvestigationRequired', label: 'Investigation Required' }),
+      investigation => investigation.label('Investigation Required')
+        .branch('HasCorporateActionPdf', js`$vars.StartTransferInvestigation.output.corporateActionPdf != null`,
+          withFile => withFile.label('PDF supplied')
+            .step('CorporateActionExtractor', script({ code: "throw new Error('IXP_MODEL_SETUP_REQUIRED: replace this explicit setup stop with an in-Flow Extract document node; see docs/IXP_STEP7_SETUP.md');", returns: 'object' }), { label: 'IXP setup required - replace with Extract document' })
+            .onError(extractionError('IXP_EXTRACTION_FAILED_OR_NOT_CONFIGURED', 'ExtractionFailed'))
+            .step('GetCorporateActionReference', request('GET', js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/corporate-actions'`, {
+              runId: 'string', transferId: 'string', fictionalDemo: 'boolean', referenceSource: 'string',
+              items: 'array', total: 'number', limit: 'number', offset: 'number',
+            }, { limit: '100', offset: '0' }))
+            .onError(extractionError('REFERENCE_REQUEST_FAILED', 'ReferenceUnavailable'))
+            .step('ValidateCorporateAction', script({ code: code('validate-corporate-action'), returns: 'object' }))
+            .onError(extractionError('EVIDENCE_VALIDATION_FAILED', 'EvidenceValidationFailed'))
+            .branch('CorporateActionVerified', js`$vars.ValidateCorporateAction.output.extractionResult.validationStatus === 'VERIFIED'`,
+              verified => verified.label('Notice verified; investigation still required').return({ result: out('ValidateCorporateAction') }, { name: 'InvestigationRequired', label: 'Evidence Verified - Investigation Required' }),
+              review => review.label('Evidence Review Required').return({ result: out('ValidateCorporateAction') }, { name: 'EvidenceReviewRequired', label: 'Evidence Review Required' })),
+          missing => missing.label('No PDF supplied').return({ result: extractionUnavailable('MISSING_PDF', 'EVIDENCE_UNAVAILABLE') }, { name: 'EvidenceUnavailable', label: 'Evidence Unavailable - Investigation Required' })),
       clean => clean.label('Clean Reconciliation').return({ result: out('NormalizeReconciliation') }, { name: 'CleanReconciliation', label: 'Clean Reconciliation' })))
   .build();

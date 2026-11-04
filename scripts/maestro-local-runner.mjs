@@ -11,9 +11,9 @@ export const flow = JSON.parse(fs.readFileSync(artifact, 'utf8'));
 const expression = (code, vars) => vm.runInNewContext(code, { $vars: vars }, { timeout: 1000 });
 const dynamic = (x, vars) => typeof x === 'string' && x.startsWith('=js:') ? expression(x.slice(4), vars) : x;
 
-export async function runLocal({ transferId, responses, localTransport = false, baseUrl, fault, errorEnvelope = 'output' }) {
+export async function runLocal({ transferId, corporateActionPdf = null, responses, localTransport = false, baseUrl, fault, errorEnvelope = 'output' }) {
   const vars = Object.fromEntries(flow.variables.globals.map(v => [v.id, v.defaultValue]));
-  vars.StartTransferInvestigation = { output: { transferId } };
+  vars.StartTransferInvestigation = { output: { transferId, corporateActionPdf } };
   const calls = [], trace = [];
   let id = 'StartTransferInvestigation';
   for (let budget = 0; budget < 100; budget++) {

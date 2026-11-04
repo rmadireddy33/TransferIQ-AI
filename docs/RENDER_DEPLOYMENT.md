@@ -1,6 +1,6 @@
 # TransferIQ AI — manual Render deployment
 
-Use one **Starter Python Web Service** and one persistent disk. This guide matches the existing `backend` package and its `backend.main:app` FastAPI application. The user has deployed https://transferiq-api.onrender.com. Redeploy the [credential-free judging revision](ZERO_CREDENTIAL_DEMO.md) to expose its new run-isolated synthetic APIs; private APIs remain protected. No database server, Docker, frontend, or additional worker is needed.
+Use one **Starter Python Web Service** and one persistent disk. This guide matches the existing `backend` package and its `backend.main:app` FastAPI application. The user has deployed https://transferiq-api.onrender.com; its anonymous run APIs now have [real Maestro execution evidence](MAESTRO_LIVE_EXECUTION.md). Private APIs remain protected. The settings below apply when reproducing or redeploying the service. No database server, Docker, frontend, or additional worker is needed.
 
 ## Exact dashboard settings
 

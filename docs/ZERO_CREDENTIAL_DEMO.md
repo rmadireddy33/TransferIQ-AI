@@ -1,6 +1,6 @@
 # Credential-free TransferIQ judging
 
-The existing Maestro Automate Flow calls real, anonymous synthetic-run APIs. Judges supply only `transferId`; no TransferIQ API key, HTTP connection, token, secret or owner credentials are required. **The updated backend must first be deployed to Render.** UiPath still requires the judge's own signed-in account, an entitled tenant and permission to import/run Maestro Automate projects.
+The existing Maestro Automate Flow calls real, anonymous synthetic-run APIs. Judges supply only `transferId`; no TransferIQ API key, HTTP connection, token, secret or owner credentials are required. **These routes are now deployed and valid scenarios have run in Maestro.** See [cloud results, rate-limit limitation and Studio Web link](MAESTRO_LIVE_EXECUTION.md). UiPath still requires the judge's own signed-in account, an entitled tenant and permission to import/run Maestro Automate projects.
 
 ## Owner rollout
 
@@ -47,7 +47,7 @@ uip maestro flow debug .\maestro\TransferIQ_Reconciliation\TransferIQ_Reconcilia
 uip maestro flow debug .\maestro\TransferIQ_Reconciliation\TransferIQ_Reconciliation --inputs '{"transferId":"TRF-1002"}' --output json
 ```
 
-Wait for each debug to finish before starting another. These commands execute real HTTP operations against the synthetic sandbox. A successful local validation alone does not establish runtime success. No solution was uploaded or cloud run executed as part of this revision; see [verification](ZERO_CREDENTIAL_VERIFICATION.md).
+Wait for each debug to finish before starting another. These commands execute real HTTP operations against the synthetic sandbox. A successful local validation alone does not establish runtime success; the subsequent [cloud verification](MAESTRO_LIVE_EXECUTION.md) contains actual instance IDs and observed results, including the unknown-ID rate-limit limitation.
 
 The supplied artifact defaults to `https://transferiq-api.onrender.com`. Only developers changing hosts need `scripts/configure-maestro.ps1 -BackendBaseUrl https://YOUR-HOST` followed by a rebuild. No ConnectionId argument is required.
 

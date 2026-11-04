@@ -3,7 +3,7 @@
 ## Scope and incremental delivery
 
 - Read README.md, ARCHITECTURE.md, and PROJECT_PLAN.md before implementation. Follow the phase requested by the user and keep changes reviewable. Do not implement later phases speculatively.
-- Steps 1–4 implement the backend and private PDFs. Step 5 adds the locally validated Maestro Automate Flow, now using anonymous run-isolated demo APIs. Cloud execution still requires deployment of those routes and actual tenant trace verification; no TransferIQ connection binding is required. Add UI, IXP, agents, financial correction/approval logic and deployment only when requested.
+- Steps 1–4 implement the backend and private PDFs. Step 5 uses anonymous run-isolated demo APIs and now has actual cloud traces for TRF-1001/TRF-1002/TRF-1005. Unknown-ID cloud attempts safely failed with 429; capturing their expected 422 validation response remains open. No TransferIQ connection binding is required. Add UI, IXP, agents, financial correction/approval logic and deployment only when requested.
 - Preserve user changes. Update architecture and status documentation when behavior changes. Do not claim planned components already work.
 
 ## Architecture and data

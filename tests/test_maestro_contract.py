@@ -60,7 +60,7 @@ def test_real_backend_contract(scenarios, tid, direct, explained, unresolved, ba
     assert result['settledHoldings'] is False
     assert result['transferStatus'] == 'DRAFT'
     assert result['reconciliationRunId'] == scenarios[tid]['RunReconciliation']['body']['reconciliationRunId']
-    assert run['trace'][-1] == ('CleanReconciliation' if not unresolved else 'InvestigationRequired')
+    assert run['trace'][-1] == ('CleanReconciliation' if not unresolved else 'EvidenceUnavailable')
     assert len(run['calls']) == 5
     assert scenarios[tid]['CreateDemoRun']['body']['runId'] in run['calls'][3]['path']
     if explained:

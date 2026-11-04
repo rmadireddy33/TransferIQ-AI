@@ -20,7 +20,8 @@ def verify(base_url):
         spec = client.get('/openapi.json').raise_for_status().json()
         if '/api/demo/runs' not in spec['paths']:
             return dict(report, status='BLOCKED', reason='Deployed backend lacks /api/demo/runs; redeploy this revision first')
-        for tid, expected in [('TRF-1001', (7, 0, 0)), ('TRF-1002', (5, 1, 1)), ('TRF-NOT-FOUND', None)]:
+        for tid, expected in [('TRF-1001', (7, 0, 0)), ('TRF-1002', (5, 1, 1)),
+                              ('TRF-1005', (0, 0, 1)), ('TRF-NOT-FOUND', None)]:
             execution = subprocess.run(['node', str(ROOT / 'scripts/maestro-local-runner.mjs')],
                 input=json.dumps(dict(transferId=tid, baseUrl=base_url, localTransport=True)),
                 capture_output=True, text=True, check=True, timeout=180, cwd=ROOT)

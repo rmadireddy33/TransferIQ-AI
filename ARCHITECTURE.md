@@ -2,7 +2,9 @@
 
 ## Scope and status
 
-Judging now supports real anonymous execution under `/api/demo/runs`. Each public run owns SQLite and seeded PDF storage under DATA_DIR/competition, separately from the private root database/documents. Existing reconciliation logic is reused with a run-specific session. The run registry persists request idempotency and expiry; scoped endpoints, bounded work and retention quotas constrain public execution. Original private APIs retain X-API-Key. `/api/demo/transfers` still serves explicitly precomputed fixtures. See [the complete public/private boundary](docs/ZERO_CREDENTIAL_DEMO.md). Render needs this revision redeployed before the Flow can use it.
+Step 7 adds a read-only `/api/demo/runs/{runId}/corporate-actions` reference view over the run's isolated database, scoped to the selected transfer's securities. The Flow accepts an optional manual File input and preserves the reconciliation outcome while reporting evidence status separately. Validation compares extracted fields against a corporate-action exception and independently fetched reference rows; it never writes positions or resolves exceptions. IXP model creation and the actual output adapter require Studio Web completion; the current artifact deliberately fails at a labelled setup stop when a file is supplied. Extraction results currently live in the Flow result/trace, not a new backend extraction table. See [Step 7 status and setup](docs/IXP_STEP7_SETUP.md).
+
+Judging now supports real anonymous execution under `/api/demo/runs`. Each public run owns SQLite and seeded PDF storage under DATA_DIR/competition, separately from the private root database/documents. Existing reconciliation logic is reused with a run-specific session. The run registry persists request idempotency and expiry; scoped endpoints, bounded work and retention quotas constrain public execution. Original private APIs retain X-API-Key. `/api/demo/transfers` still serves explicitly precomputed fixtures. See [the complete public/private boundary](docs/ZERO_CREDENTIAL_DEMO.md). The deployed Render routes now have [actual Maestro execution evidence](docs/MAESTRO_LIVE_EXECUTION.md).
 
 Render is now the requested manual deployment target: one Starter Python Web Service, one `/data` disk, and the existing `python -m backend.start` entry point. Render supplies `RENDER=true` and `PORT`; startup validates production configuration and the real disk mount, then uses the same migrations, seeding, recovery, authentication and readiness behavior. Build only installs `backend/requirements.txt` from repository root. Render preparation passed 252 local tests; no live Render deployment or disk validation was performed. See [Render deployment guide](docs/RENDER_DEPLOYMENT.md). Railway remains an alternative; the platforms do not share a database or documents automatically.
 
@@ -180,6 +182,6 @@ Before the relevant implementation phases, specify correction allowlists and tol
 
 ## Next steps
 
-Steps 1–4 are implemented. Step 5 has a real Flow artifact and local evidence; cloud acceptance requires deployment of the anonymous run APIs and actual tenant traces. Follow [PROJECT_PLAN.md](PROJECT_PLAN.md) and [Step 5 setup](docs/MAESTRO_STEP5_SETUP.md) before runtime acceptance or later IXP/agent/approval work.
+Steps 1–4 are implemented. Step 5 now has real cloud traces for the three requested valid scenarios and safe FAILED traces for rate-limited unknown-ID attempts. Capturing the unknown-ID 422 response in Maestro remains a verification limitation. Follow [PROJECT_PLAN.md](PROJECT_PLAN.md) and [Step 5 setup](docs/MAESTRO_STEP5_SETUP.md) before later IXP/agent/approval work.
 
 

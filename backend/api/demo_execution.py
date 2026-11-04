@@ -1,16 +1,17 @@
 """Anonymous allowlisted synthetic operations; no private session dependency."""
 from typing import Annotated, Literal
-from datetime import datetime
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, Header, Request, Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from backend.api import routes, reconciliation, documents
 from backend.api.dependencies import Pagination, fail
-from backend.models.entities import Transfer, AuditEvent
+from backend.models.entities import Transfer, AuditEvent, Security, PositionSnapshot, ReceivingTransferStagingPosition
+from backend.models.reconciliation import CorporateAction
 from backend.models.documents import TransferDocument
 from backend.schemas.contracts import Contract, TransferResponse, Page, PositionResponse, StagingPage
 from backend.schemas.documents import DocumentResponse
-from backend.schemas.reconciliation import ReconciliationResponse, ExceptionPage
+from backend.schemas.reconciliation import ReconciliationResponse, ExceptionPage, CorporateActionResponse
 from backend.services.document_storage import read_document
 
 router = APIRouter(prefix='/api/demo/runs', tags=['Live synthetic demo execution'])
@@ -45,6 +46,19 @@ class DemoAudit(Contract):
 
 class EmptyRequest(Contract):
     pass
+
+
+class DemoCorporateAction(CorporateActionResponse):
+    security_name: str
+    notice_date: date
+    notice_date_source: Literal['REFERENCE_CREATED_AT'] = 'REFERENCE_CREATED_AT'
+
+
+class DemoCorporateActions(Page[DemoCorporateAction]):
+    transfer_id: str
+    run_id: str
+    fictional_demo: Literal[True] = True
+    reference_source: Literal['SEEDED_REFERENCE_DATABASE'] = 'SEEDED_REFERENCE_DATABASE'
 
 
 def manager(request: Request):
@@ -122,6 +136,30 @@ def exceptions(ctx: Context, bounds: Pagination):
 def sample_documents(ctx: Context, bounds: Pagination):
     row, _, session = ctx
     return documents.list_documents(row['transfer_id'], session, bounds)
+
+
+@router.get('/{runId}/corporate-actions', response_model=DemoCorporateActions)
+def corporate_actions(ctx: Context, bounds: Pagination):
+    """Independent read-only reference evidence, scoped to this run's securities.
+
+    Never reads a PDF or accepts extraction fields. The synthetic notice date
+    uses the same documented reference timestamp as the existing PDF generator.
+    """
+    row, _, session = ctx
+    transfer = session.get(Transfer, row['transfer_id'])
+    security_ids = select(PositionSnapshot.security_id).where(
+        PositionSnapshot.account_id == transfer.source_account_id).union(
+        select(ReceivingTransferStagingPosition.security_id).where(
+            ReceivingTransferStagingPosition.transfer_id == transfer.transfer_id))
+    predicate = CorporateAction.security_id.in_(security_ids)
+    total = session.scalar(select(func.count()).select_from(CorporateAction).where(predicate))
+    records = session.execute(select(CorporateAction, Security.security_name)
+        .join(Security, Security.security_id == CorporateAction.security_id).where(predicate)
+        .order_by(CorporateAction.corporate_action_id).limit(bounds['limit']).offset(bounds['offset'])).all()
+    return DemoCorporateActions(transfer_id=transfer.transfer_id, run_id=row['run_id'],
+        total=total, **bounds, items=[DemoCorporateAction(
+            **CorporateActionResponse.model_validate(action).model_dump(),
+            security_name=name, notice_date=action.created_at.date()) for action, name in records])
 
 
 @router.get('/{runId}/documents/{documentId}/download', response_class=Response)

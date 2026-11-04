@@ -6,13 +6,15 @@ A hackathon demonstration using fictional clients, firms, securities, accounts, 
 
 ## Current status
 
-Judges can execute real synthetic reconciliation through anonymous `/api/demo/runs` APIs. Each run has isolated SQLite/PDF state, retries are idempotent, and fixed scenarios/quotas prevent unrestricted modifications. **The Flow needs no TransferIQ key, secret or HTTP connection.** Original private APIs retain X-API-Key authentication; `/api/demo/transfers` remains a separately labelled precomputed view. This revision needs redeployment to Render. See [judge setup, endpoint inventory and reproduction](docs/ZERO_CREDENTIAL_DEMO.md) and [actual verification](docs/ZERO_CREDENTIAL_VERIFICATION.md).
+Step 7 preparation extends the existing Flow with optional `corporateActionPdf`, explicit missing-evidence/failure outcomes and deterministic reference validation. **The real in-Flow IXP model still needs Studio Web configuration; extraction has not succeeded or been claimed.** The current `CorporateActionExtractor` Script is a labelled setup-required stop, not an extractor. The new run-scoped corporate-action GET must also be deployed to Render. Follow [the exact Step 7 setup and test boundaries](docs/IXP_STEP7_SETUP.md) before replacing that stop with the real Extract document node.
+
+Judges can execute real synthetic reconciliation through the live anonymous `/api/demo/runs` APIs. Each run has isolated SQLite/PDF state, idempotent retries and quotas. **The Flow needs no TransferIQ key, secret or HTTP connection.** Actual Maestro debug runs returned CLEAN for TRF-1001 and INVESTIGATION_REQUIRED for TRF-1002/TRF-1005. Unknown-ID cloud attempts safely returned FAILED but were masked by HTTP 429; direct API validation returned 422. Private APIs retain X-API-Key authentication. See [actual cloud evidence and Studio Web link](docs/MAESTRO_LIVE_EXECUTION.md) and [judge setup](docs/ZERO_CREDENTIAL_DEMO.md).
 
 The user deployed the backend at https://transferiq-api.onrender.com; earlier live checks confirmed health and sample API responses. Render uses the same backend launcher and one persistent disk at `/data`. Subsequent local changes are not automatically deployed. Follow [the Render settings and manual deployment guide](docs/RENDER_DEPLOYMENT.md).
 
 Railway backend deployment preparation is complete: Railpack configuration, one-worker startup, `/data` volume enforcement, runtime migrations, opt-in missing-only demo seeding, readiness, and structured logs. **No Railway deployment has occurred.** The current backend suite passes 243 tests, including real HTTP startup/restart and uploaded-PDF persistence. See [exact Railway setup, environment variables, verification and troubleshooting](docs/RAILWAY_DEPLOYMENT.md).
 
-Step 5 provides the existing **Maestro Automate Flow** under `maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/`. Its five Manual HTTP calls create an isolated run, fetch transfer/source/staging context and reconcile using actual previous-node outputs. Python retains all financial calculations. The generated Flow passes product validation; actual UiPath execution remains unverified until this backend revision is deployed and cloud traces are inspected. No upload/deployment was performed. See [designer setup](docs/MAESTRO_STEP5_SETUP.md).
+Step 5 provides the existing **Maestro Automate Flow** under `maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/`. Its five Manual HTTP calls create an isolated run, fetch transfer/source/staging context and reconcile using actual previous-node outputs. Python retains all financial calculations. Product validation and real cloud debug executions are now verified; the debug CLI uploaded the existing solution to Studio Web. No permanent Orchestrator publication or new Render deployment was performed in this execution task. See [designer setup](docs/MAESTRO_STEP5_SETUP.md).
 
 ```powershell
 # From repository root; no cloud execution:
@@ -194,6 +196,6 @@ tests/
 - **Unsupported schema:** preserve the database, make a SQLite-consistent backup, and implement an explicit migration. Do not delete or reset it as a startup workaround.
 - **Test warning:** the tested Starlette version emits an upstream deprecation warning for its httpx TestClient. Tests still pass; no warning is suppressed.
 
-Next step: manually redeploy this revision to Render, run `python -m scripts.verify_public_demo --base-url https://transferiq-api.onrender.com`, then execute TRF-1001/TRF-1002 in Maestro and retain actual instance/trace evidence. No TransferIQ connection binding is needed. UiPath tenant access, IXP, agents, approvals and financial corrections are not eliminated by anonymous backend access.
+Next verification: capture the unknown-ID 422 response in Maestro without public rate-limit interference. Valid scenarios already have actual instance/trace evidence. No TransferIQ connection binding is needed. UiPath tenant access, IXP, agents, approvals and financial corrections are not eliminated by anonymous backend access.
 
 

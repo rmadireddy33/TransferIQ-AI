@@ -1,5 +1,7 @@
 # Anonymous demo execution verification — 2026-11-02
 
+Historical implementation checkpoint. Subsequent [real Maestro cloud executions](MAESTRO_LIVE_EXECUTION.md) verified the deployed run APIs and expected valid-scenario outcomes. The blocked-deployment statements below describe the earlier check, not current status.
+
 This revision is implemented locally. It has **not** been deployed to Render or executed in the UiPath cloud runtime. Local graph results are not represented as Maestro instance traces.
 
 ## Executed checks
