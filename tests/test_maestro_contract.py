@@ -22,12 +22,12 @@ def run_graph(transfer_id='TRF-1001', responses=None, **kwargs):
     return json.loads(result.stdout)
 
 
-def collect(client, tid):
+def collect(client, tid, review=False):
     def request(method, url):
         response = client.request(method, url, **({'json': {}} if method == 'POST' else {}))
         assert response.status_code in (200, 201)
         return dict(code=response.status_code, body=response.json())
-    created = client.post('/api/demo/runs', json={'transferId': tid}, headers={'Idempotency-Key': uuid4().hex})
+    created = client.post('/api/demo/runs/review' if review else '/api/demo/runs', json={'transferId': tid}, headers={'Idempotency-Key': uuid4().hex})
     assert created.status_code == 201, created.text
     root = '/api/demo/runs/' + created.json()['runId']
     transfer = request('GET', root + '/transfer')
@@ -191,7 +191,7 @@ def test_emitted_graph_integrity():
         if n['type'] == 'core.control.end': assert 'result' in n['outputs']
         if n['type'] == 'core.action.http.v2':
             assert n['inputs']['timeout'] == 'PT30S'
-            assert n['inputs']['retryCount'] == 1
+            assert n['inputs']['retryCount'] == (0 if n['id'] in ('PreviewResolutionPlan','RecordReviewDecision','ExecuteDemoDisposition') else 1)
             assert n['inputs']['errorHandlingEnabled'] is True
             assert any(e['sourceNodeId'] == n['id'] and e['sourcePort'] == 'error' for e in flow['edges'])
             assert 'X-API-Key' not in n['inputs']['detail']['bodyParameters'].get('headers', {})

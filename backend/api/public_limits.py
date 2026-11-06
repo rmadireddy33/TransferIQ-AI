@@ -50,15 +50,16 @@ class PublicLimits:
             client = (scope.get('client') or ('unknown',))[0]
             allowed, retry = self.budget.allow(client, settings.public_demo_requests_per_minute,
                                                 settings.public_demo_global_requests_per_minute)
-            if allowed and path.rstrip('/') == '/api/demo/runs' and scope['method'] == 'POST':
+            if allowed and path.rstrip('/') in ('/api/demo/runs', '/api/demo/runs/review') and scope['method'] == 'POST':
                 allowed, retry = self.creation_budget.allow(client, 5, 20)
             status, code = (None, None) if allowed else (429, 'rate_limited')
             if len(path) > 512 or len(scope.get('query_string', b'')) > 1024:
                 status, code = 414, 'request_too_long'
             headers = dict(scope.get('headers', []))
             is_demo_write = path.startswith('/api/demo/runs') and scope['method'] == 'POST'
+            body_limit = 32768 if path.endswith('/resolution-plans/preview') else (8192 if '/resolution-plans/' in path and path.endswith('/decision') else 4096)
             if is_demo_write and (not headers.get(b'content-length', b'0').isdigit() or
-                                 int(headers.get(b'content-length', b'0')) > 4096):
+                                 int(headers.get(b'content-length', b'0')) > body_limit):
                 status, code = 413, 'body_too_large'
             if scope['method'] in ('GET', 'HEAD') and (
                 headers.get(b'content-length', b'0') != b'0' or b'transfer-encoding' in headers):
@@ -74,8 +75,8 @@ class PublicLimits:
                     nonlocal received
                     message = await original_receive()
                     received += len(message.get('body', b''))
-                    if received > 4096:
-                        raise HTTPException(413, detail={'code': 'body_too_large', 'message': 'Demo request exceeds 4096 bytes'})
+                    if received > body_limit:
+                        raise HTTPException(413, detail={'code': 'body_too_large', 'message': 'Demo request exceeds bounded body size'})
                     return message
                 receive = bounded_receive
         return await self.app(scope, receive, send)

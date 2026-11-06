@@ -8,6 +8,7 @@ import hashlib
 import re
 import shutil
 import threading
+import secrets
 import time
 from uuid import uuid4
 
@@ -22,7 +23,8 @@ from backend.services.document_storage import private_path, recover_pending_docu
 metadata = MetaData()
 runs = Table('demo_runs', metadata,
     Column('run_id', String, primary_key=True), Column('request_hash', String, unique=True, nullable=False),
-    Column('transfer_id', String, nullable=False), Column('expires_at', Float, nullable=False))
+    Column('transfer_id', String, nullable=False), Column('expires_at', Float, nullable=False),
+    Column('review_token', String, nullable=True))
 RUN_PATTERN = re.compile(r'^DEMO-[0-9a-f]{32}$')
 
 
@@ -39,8 +41,11 @@ class DemoRuns:
             tables = set(inspect(connection).get_table_names())
             if version == 0 and not tables:
                 metadata.create_all(connection)
-                connection.exec_driver_sql('PRAGMA user_version=1')
-            elif version != 1 or tables != {'demo_runs'}:
+                connection.exec_driver_sql('PRAGMA user_version=2')
+            elif version == 1 and tables == {'demo_runs'}:
+                connection.exec_driver_sql('ALTER TABLE demo_runs ADD COLUMN review_token VARCHAR')
+                connection.exec_driver_sql('PRAGMA user_version=2')
+            elif version != 2 or tables != {'demo_runs'}:
                 raise RuntimeError('Unsupported demo registry schema; no reset performed')
 
     @contextmanager
@@ -73,7 +78,7 @@ class DemoRuns:
             with self.engine.begin() as connection:
                 connection.execute(delete(runs).where(runs.c.run_id == row['run_id']))
 
-    def create(self, transfer_id, request_id):
+    def create(self, transfer_id, request_id, with_review=False):
         digest = hashlib.sha256(request_id.encode()).hexdigest()
         with self.locked():
             self.cleanup()
@@ -83,6 +88,8 @@ class DemoRuns:
             created = row is None
             if row and row['transfer_id'] != transfer_id:
                 fail(409, 'idempotency_conflict', 'Request ID already belongs to a different demo transfer')
+            if row and bool(row['review_token']) != with_review:
+                fail(409, 'idempotency_conflict', 'Request ID belongs to a different demo mode')
             if created:
                 if count >= self.settings.demo_max_runs:
                     fail(429, 'demo_quota', 'Demo run capacity reached; retry after existing runs expire')
@@ -90,7 +97,8 @@ class DemoRuns:
                 if used + 5 * 1024 * 1024 > self.settings.demo_storage_limit_mb * 1024 * 1024:
                     fail(429, 'demo_storage_quota', 'Demo storage capacity reached')
                 row = dict(run_id='DEMO-' + uuid4().hex, request_hash=digest,
-                    transfer_id=transfer_id, expires_at=time.time() + self.settings.demo_run_ttl_hours * 3600)
+                    transfer_id=transfer_id, expires_at=time.time() + self.settings.demo_run_ttl_hours * 3600,
+                    review_token=secrets.token_urlsafe(32) if with_review else None)
                 with self.engine.begin() as connection:
                     connection.execute(runs.insert().values(**row))
             settings = self.run_settings(row['run_id'])
@@ -103,8 +111,11 @@ class DemoRuns:
                 seed_missing_documents(factory, settings)
             finally:
                 engine.dispose()
-            return dict(runId=row['run_id'], transferId=transfer_id, expiresAt=row['expires_at'],
-                        fictionalDemo=True, evidenceMode='LIVE_SYNTHETIC_BACKEND'), created
+            result = dict(runId=row['run_id'], transferId=transfer_id, expiresAt=row['expires_at'],
+                          fictionalDemo=True, evidenceMode='LIVE_SYNTHETIC_BACKEND')
+            if with_review:
+                result['reviewCapability'] = row['review_token']
+            return result, created
 
     @contextmanager
     def open(self, run_id):

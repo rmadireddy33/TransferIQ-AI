@@ -5,7 +5,12 @@ import pytest
 from fastapi.testclient import TestClient
 from backend.core.config import Settings
 from backend.main import create_app
-from tests.test_maestro_contract import collect, run_graph, FLOW
+from tests.test_maestro_contract import collect, run_graph as run_full_graph, FLOW
+
+
+def run_graph(*args, **kwargs):
+    """Keep Step 8 coverage scoped to its subgraph; Step 9 tests exercise review."""
+    return run_full_graph(*args, stopAfterInvestigation=True, **kwargs)
 
 
 @pytest.fixture(scope='module')

@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from sqlalchemy import (CheckConstraint, Date, Enum, ForeignKey, ForeignKeyConstraint,
-                        Integer, String, UniqueConstraint, event)
+                        Integer, JSON, String, UniqueConstraint, event)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from backend.models.types import ExactQuantity, UTCDateTime, utcnow
@@ -150,6 +150,9 @@ class AuditEvent(Base):
     previous_status: Mapped[str | None] = mapped_column(String(32))
     new_status: Mapped[str] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    plan_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    event_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class IdempotencyRecord(Base):

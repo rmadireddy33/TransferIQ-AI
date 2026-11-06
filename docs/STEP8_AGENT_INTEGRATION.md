@@ -2,7 +2,7 @@
 
 The existing Flow now includes a real `uipath.agent.autonomous` node named `TransferInvestigationAgent`. It uses `gpt-4.1-2025-04-14`, returned by the tenant's `uip agent model list --output json` on 2026-11-05 America/New_York. It has no financial mutation tools, escalation resources, or private backend credentials. The original solution and deterministic financial engine are retained.
 
-Real cloud execution has verified the clean branch and TRF-1002/TRF-1004/TRF-1005 agent invocation, input, output and validation. TRF-1002 explained the SEC-103 2-for-1 split and preserved the SEC-104 20-share shortage. Its final outcome is `INVESTIGATION_REVIEW_REQUIRED`: the supplemental reference endpoint has not been deployed to Render and returned 404. The agent itself completed with no output validation errors. See [actual test evidence](STEP8_AGENT_TEST_CASES.md).
+Real cloud execution has verified the clean branch and TRF-1002/TRF-1004/TRF-1005 agent invocation, input, output and validation. TRF-1002 explained the SEC-103 2-for-1 split and preserved the SEC-104 20-share shortage. The initial run required review because supplemental references returned 404. After deployment, the new run returned `INVESTIGATION_COMPLETED` with HTTP 200 references, no missing supplemental evidence and no output validation errors. See [post-deployment verification](STEP8_DEPLOYED_VERIFICATION.md). See [actual test evidence](STEP8_AGENT_TEST_CASES.md).
 
 ## Contracts and data flow
 
@@ -86,7 +86,7 @@ Evaluate the saved trace's `PrepareInvestigationContext`, agent inputs/outputs, 
 
 ## Limitations and next step
 
-Deploy this backend revision to the existing Render service so the new supplemental-reference GET is available, then rerun the investigation scenarios. No Render deployment was performed here. IXP remains disabled and permission-blocked. Model prose quality is checked through the observed scenarios; structural validation is not proof that every possible natural-language claim is correct. Runtime invocation failures are handled; no custom timer, cancellation service or unbounded retry loop is introduced. Agent iteration limit is 3, response limit 4096 tokens, temperature 0.
+The user deployed the backend revision; the supplemental-reference GET and TRF-1002 agent input/output are now live-verified. See [post-deployment results](STEP8_DEPLOYED_VERIFICATION.md). The assistant performed verification, not a Render deployment. IXP remains disabled and permission-blocked. Model prose quality is checked through the observed scenarios; structural validation is not proof that every possible natural-language claim is correct. Runtime invocation failures are handled; no custom timer, cancellation service or unbounded retry loop is introduced. Agent iteration limit is 3, response limit 4096 tokens, temperature 0.
 
 Investigation reports currently live in Maestro results/traces. The backend persists reconciliation/correlation in its existing isolated SQLite run; no new agent-result table, backend dispatcher or outbox is implemented. No Human Quick Forms, financial corrections, settlement, frontend, new database system or new IXP model is included. The workspace has no `.git` repository, so version-control diff/history was unavailable; local and downloaded cloud baselines are retained under ignored `data/verification/step8/`.
 

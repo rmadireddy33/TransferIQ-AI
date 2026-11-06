@@ -11,9 +11,9 @@ export const flow = JSON.parse(fs.readFileSync(artifact, 'utf8'));
 const expression = (code, vars) => vm.runInNewContext(code, { $vars: vars }, { timeout: 1000 });
 const dynamic = (x, vars) => typeof x === 'string' && x.startsWith('=js:') ? expression(x.slice(4), vars) : x;
 
-export async function runLocal({ transferId, enableIXP = false, corporateActionPdf = null, responses, localTransport = false, baseUrl, fault, agentTestDouble, errorEnvelope = 'output' }) {
+export async function runLocal({ transferId, enableIXP = false, corporateActionPdf = null, reviewerReference = '', responses, localTransport = false, baseUrl, fault, agentTestDouble, humanTestDouble, testCorrelationId, stopAfterInvestigation = false, errorEnvelope = 'output' }) {
   const vars = Object.fromEntries(flow.variables.globals.map(v => [v.id, v.defaultValue]));
-  vars.StartTransferInvestigation = { output: { transferId, enableIXP, corporateActionPdf } };
+  vars.StartTransferInvestigation = { output: { transferId, enableIXP, corporateActionPdf, reviewerReference } };
   const calls = [], trace = [];
   let id = 'StartTransferInvestigation';
   for (let budget = 0; budget < 100; budget++) {
@@ -26,6 +26,9 @@ export async function runLocal({ transferId, enableIXP = false, corporateActionP
       else if (node.type === 'core.action.script') {
         const value = expression('(function(){' + node.inputs.script + '\n})()', vars);
         vars[id] = { output: value }; port = 'success';
+        if (id === 'ValidateInput' && testCorrelationId) vars[id].output.correlationId = testCorrelationId;
+        if (id === 'ValidateInvestigation' && stopAfterInvestigation) return {
+          result:value,trace,calls,evidenceMode:'LOCAL_STEP8_SUBGRAPH_TEST_NOT_UIPATH_RUNTIME'};
       } else if (node.type === 'core.logic.decision') port = expression(node.inputs.expression, vars) ? 'true' : 'false';
       else if (node.type === 'core.control.end') {
         return { result: expression(node.outputs.result.source.expression, vars), trace, calls, evidenceMode: 'LOCAL_CONTRACT_HARNESS_NOT_UIPATH_RUNTIME' };
@@ -66,7 +69,11 @@ export async function runLocal({ transferId, enableIXP = false, corporateActionP
         // Explicit unit-test injection only; never synthesize an agent answer.
         if (!agentTestDouble || fault?.nodeId === id) throw new Error('AGENT_TEST_DOUBLE_UNAVAILABLE');
         vars[id] = { output: agentTestDouble }; port = 'success';
+      } else if (node.type === 'uipath.human-in-the-loop.quick-form') {
+        if (!humanTestDouble) throw new Error('REAL_HUMAN_REQUIRED_NO_TEST_DOUBLE');
+        vars[id] = {output:humanTestDouble.output}; port = 'outcome-' + humanTestDouble.outcome;
       } else throw new Error('Unsupported graph node ' + node.type);
+      for (const update of flow.variables.variableUpdates?.[id] || []) vars[update.variableId] = expression(update.expression.expression,vars);
     } catch (e) {
       // Explicit test doubles for both managed-HTTP error envelope versions.
       vars[id] = node.type === 'core.action.http.v2'

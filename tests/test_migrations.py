@@ -2,10 +2,18 @@ import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from backend.database.migrations import initialize_database, V2_TABLES, V3_TABLES, SCHEMA_VERSION
+from backend.database.migrations import initialize_database, V2_TABLES, V3_TABLES, V4_TABLES, SCHEMA_VERSION
 from backend.database.seed import seed_demo
 from backend.database.session import create_database_engine, session_factory
 from backend.models.entities import Base
+
+
+def remove_v4(connection):
+    for table in reversed(Base.metadata.sorted_tables):
+        if table.name in V4_TABLES:
+            table.drop(connection)
+    for column in ('plan_id','event_data','correlation_id'):
+        connection.exec_driver_sql(f'ALTER TABLE audit_events DROP COLUMN {column}')
 
 
 def make_legacy_database(settings):
@@ -14,6 +22,7 @@ def make_legacy_database(settings):
     initialize_database(engine)
     seed_demo(session_factory(engine))
     with engine.begin() as connection:
+        remove_v4(connection)
         for table in reversed(Base.metadata.sorted_tables):
             if table.name in V2_TABLES | V3_TABLES:
                 table.drop(connection)
@@ -22,6 +31,27 @@ def make_legacy_database(settings):
         connection.exec_driver_sql("ALTER TABLE receiving_transfer_staging_positions DROP COLUMN observed_identifier")
         connection.exec_driver_sql("PRAGMA user_version=1")
     return engine
+
+
+def test_populated_v3_additive_review_migration(settings):
+    engine=create_database_engine(settings)
+    initialize_database(engine)
+    seed_demo(session_factory(engine))
+    with engine.begin() as connection:
+        remove_v4(connection)
+        connection.exec_driver_sql('PRAGMA user_version=3')
+        tables=set(inspect(connection).get_table_names())
+        before={table:connection.exec_driver_sql(f'SELECT * FROM {table}').fetchall() for table in tables}
+    initialize_database(engine)
+    initialize_database(engine)
+    with engine.connect() as connection:
+        for table,rows in before.items():
+            actual=connection.exec_driver_sql(f'SELECT * FROM {table}').fetchall()
+            if table=='audit_events':actual=[tuple(r[:-3]) for r in actual]
+            assert actual==rows
+        assert connection.exec_driver_sql('PRAGMA foreign_key_check').fetchall()==[]
+        assert connection.exec_driver_sql('PRAGMA user_version').scalar_one()==4
+    engine.dispose()
 
 
 def test_migrate_populated_v1_without_overwrite(settings):
@@ -69,6 +99,7 @@ def test_v2_to_v3_adds_documents_without_modifying_records(settings):
         initialize_database(engine)
         seed_demo(session_factory(engine), include_scenarios=True)
         with engine.begin() as connection:
+            remove_v4(connection)
             Base.metadata.tables["transfer_documents"].drop(connection)
             connection.exec_driver_sql("PRAGMA user_version=2")
             before = connection.exec_driver_sql("SELECT * FROM position_snapshots ORDER BY position_id").fetchall()

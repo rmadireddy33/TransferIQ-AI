@@ -1,5 +1,7 @@
 # Step 8 verification
 
+These are the initial implementation results. The later [post-deployment verification](STEP8_DEPLOYED_VERIFICATION.md) supersedes the supplemental-reference deployment blocker: HTTP 200 and TRF-1002 INVESTIGATION_COMPLETED are now verified.
+
 Executed 2026-11-05 America/New_York (cloud traces are dated 2026-11-06 UTC). All live runs use `enableIXP=false` and omit the optional PDF. The existing solution was reused; a cloud export and local baseline were preserved under ignored `data/verification/step8/` before debug uploaded the revised Flow. The cloud/local baseline differences were designer HTTP metadata and equivalent expression formatting, not different business operations.
 
 ## Actual Maestro results

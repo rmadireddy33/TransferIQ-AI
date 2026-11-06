@@ -73,7 +73,13 @@ def test_mutations_remain_protected(client, path):
 def test_openapi_security_inventory(client):
     spec = client.get('/openapi.json').json()
     public = {'/health', '/api/demo/transfers', '/api/demo/transfers/{transferId}',
-        '/api/demo/runs', '/api/demo/runs/{runId}/transfer',
+        '/api/demo/runs', '/api/demo/runs/review', '/api/demo/runs/{runId}/transfer',
+        '/api/demo/runs/{runId}/resolution-plans/preview',
+        '/api/demo/runs/{runId}/resolution-plans/{planId}',
+        '/api/demo/runs/{runId}/resolution-plans/{planId}/decision',
+        '/api/demo/runs/{runId}/resolution-plans/{planId}/execute',
+        '/api/demo/runs/{runId}/resolution-plans/{planId}/verify',
+        '/api/demo/runs/{runId}/resolution-plans/{planId}/audit',
         '/api/demo/runs/{runId}/delivering/accounts/{accountId}/positions',
         '/api/demo/runs/{runId}/receiving/accounts/{accountId}/positions',
         '/api/demo/runs/{runId}/reconcile', '/api/demo/runs/{runId}/reconciliation',

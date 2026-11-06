@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { flow, manual, http, script, inlineAgent, types, out, v, js } from '@uipath/maestro-builder-sdk';
+import { flow, manual, http, script, inlineAgent, hitl, types, out, v, js } from '@uipath/maestro-builder-sdk';
 
 // Public synthetic run APIs use Manual authentication with no credentials or bindings.
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -10,11 +10,12 @@ if (Object.keys(config).some(k => k !== 'backendBaseUrl')) throw new Error('Only
 const baseUrl = config.backendBaseUrl || 'https://transferiq-api.onrender.com';
 if (!/^https:\/\/[^/?#@\s]+(?:\/[^?#\s]*)?$/.test(baseUrl)) throw new Error('Cloud runtime requires an HTTPS backend URL');
 const path = (suffix: any) => js`${v('backendBaseUrl')} + ${suffix}`;
-const request = (method: 'GET' | 'POST', url: any, returns: any, query?: any, body: any = '{}') => http({
+const request = (method: 'GET' | 'POST', url: any, returns: any, query?: any, body: any = '{}', reviewWrite = false) => http({
   managed: true, method, url: path(url), returns, query,
-  timeout: 'PT30S', retryCount: 1,
+  timeout: 'PT30S', retryCount: reviewWrite ? 0 : 1,
   headers: { Accept: 'application/json', 'Idempotency-Key': out('ValidateInput', 'correlationId'),
-    ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
+    ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}),
+    ...(reviewWrite ? { 'X-Demo-Capability': out('CreateDemoRun', 'body.reviewCapability') } : {}) },
   ...(method === 'POST' ? { body, contentType: 'application/json' } : {}),
 });
 const failure = (stage: string, errorCode: string, summary: string) => js`({
@@ -67,18 +68,36 @@ const continueAfterReferenceFailure = (name: string, next: string) => (h: any) =
   .step(name + 'Unavailable', script({ code: "return {status: 'REFERENCE_REQUEST_FAILED'};", returns: 'object' }))
   .stepToRef(next);
 
+const planPath = (suffix = '') => js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/resolution-plans/' + encodeURIComponent($vars.ValidateResolutionPlan.output.planId) + ${suffix}`;
+const reviewFailure = (stage: string) => (h: any) => h.return({ result: js`({
+  ...$vars.ValidateInvestigation.output, workflowOutcome:'REVIEW_FAILED', verificationStatus:'NOT_VERIFIED',
+  planId:(() => {const n=Reflect.get($vars,'ValidateResolutionPlan');return n && Reflect.get(n,'output')?.planId || null;})(), planStatus:null,
+  humanReviewOutcome:null, reviewedDispositions:[], auditReference:null,
+  demoOnly:true, identityVerification:'UNVERIFIED_DEMO_REFERENCE', error:{code:'REVIEW_STEP_FAILED',failedStep:${stage}}
+})` }, { name: stage + 'Failed' });
+const planReturns = { contractVersion:'string', demoOnly:'boolean', identityVerification:'string', planId:'string',
+  transferId:'string', reconciliationRunId:'string', planVersion:'number', planHash:'string', status:'string',
+  proposedActions:'array', evidenceReferences:'array', investigationSummary:'string', overallRiskLevel:'string',
+  clientReference:'string', documentEvidenceStatus:'string', expiresAt:'number', decision:'object' } as const;
+const reviewArm = (name: string, outcome: string) => (b: any) => b
+  .step(name, script({ code: code('record-review-input').replace('__OUTCOME__',outcome), returns:'object' }),
+    { updates:{ reviewDecision:out(name) } })
+  .onError(reviewFailure(name));
+
 export default flow('fa7de741-ad8f-441f-8f3d-9bf96e5f3497')
   .schemaVersion('1.9').name('TransferIQ_Reconciliation')
   .trigger(manual(), { label: 'StartTransferInvestigation' })
   .triggerId('StartTransferInvestigation')
-  .input({ transferId: types.string, enableIXP: { type: types.boolean, default: false, description: 'Enable configured IXP evidence path; disabled by default.' }, corporateActionPdf: {
+  .input({ transferId: types.string, reviewerReference: { type:types.string, default:'', description:'UiPath reviewer email or user ID for Action Center assignment. Backend records an unverified demo reference.' }, enableIXP: { type: types.boolean, default: false, description: 'Enable configured IXP evidence path; disabled by default.' }, corporateActionPdf: {
     type: types.file, default: null, description: 'Optional real corporate-action PDF. Missing evidence never clears an exception.'
   } }).output({ result: types.object })
   .var('backendBaseUrl', types.string, baseUrl)
+  .var('reviewDecision', types.object)
   .step('ValidateInput', script({ code: code('validate-input'), returns: { transferId: 'string', correlationId: 'string' } }))
   .onError((h) => h.return({ result: failure('ValidateInput', 'INVALID_TRANSFER_INPUT', 'Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters).') }, { name: 'InvalidInput' }))
-  .step('CreateDemoRun', request('POST', '/api/demo/runs', {
+  .step('CreateDemoRun', request('POST', '/api/demo/runs/review', {
     runId: 'string', transferId: 'string', expiresAt: 'number', fictionalDemo: 'boolean', evidenceMode: 'string',
+    reviewCapability:'string',
   }, undefined, js`JSON.stringify({ transferId: $vars.ValidateInput.output.transferId })`))
   .onError(httpFailure('CreateDemoRun'))
   .step('ValidateDemoRun', script({ code: code('validate-demo-run'), returns: 'object' }))
@@ -159,7 +178,62 @@ export default flow('fa7de741-ad8f-441f-8f3d-9bf96e5f3497')
     maxIterations: 3, maxTokenPerResponse: 4096, temperature: 0,
   }))
   .onError(h => h.return({ result: review('TransferInvestigationAgent', 'AGENT_FAILED') }, { name: 'AgentFailed' }))
-  .step('ValidateInvestigation', script({ code: code('validate-investigation'), returns: 'object' }))
+  .step('ValidateInvestigation', script({ code: code('validate-investigation'), returns: {
+    transferId:'string',reconciliationRunId:'string',exceptions:'array',workflowOutcome:'string',investigationStatus:'string',
+    documentEvidenceStatus:'string',investigationSummary:'string',overallRiskLevel:'string',
+  } }))
   .onError(h => h.return({ result: review('ValidateInvestigation', 'INVALID_AGENT_OUTPUT') }, { name: 'AgentValidationFailed' }))
-  .return({ result: out('ValidateInvestigation') }, { name: 'InvestigationResult', label: 'Investigation report - no financial changes' })
+  .branch('InvestigationValidated', js`$vars.ValidateInvestigation.output.workflowOutcome === 'INVESTIGATION_COMPLETED'`,
+    valid => valid.label('Validated investigation'),
+    invalid => invalid.return({ result:out('ValidateInvestigation') }, {name:'InvestigationResult',label:'Investigation needs evidence'}))
+  .step('BuildResolutionPlan', script({ code:code('build-resolution-plan'), returns:'object' }))
+  .onError(reviewFailure('BuildResolutionPlan'))
+  .step('PreviewResolutionPlan', request('POST', js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/resolution-plans/preview'`,
+    planReturns, undefined, js`JSON.stringify($vars.BuildResolutionPlan.output)`, true))
+  .onError(reviewFailure('PreviewResolutionPlan'))
+  .step('ValidateResolutionPlan', script({ code:code('validate-resolution-plan'), returns:{...planReturns,
+    exceptionCount:'string',corporateActionExplanation:'string',shortageExplanation:'string',evidenceDisplay:'string',dispositionDisplay:'string',demoNotice:'string'} }))
+  .onError(reviewFailure('ValidateResolutionPlan'))
+  .step('TransferOperationsReview', hitl({
+    variant:'quick-form', outcomePorts:true, title:js`'TransferOperationsReview - ' + $vars.ValidateResolutionPlan.output.transferId`,
+    priority:'High', labels:'TransferIQ, synthetic demo',
+    recipient:{channels:['ActionCenter'],assignee:{type:'user',value:out('StartTransferInvestigation','reviewerReference')}},
+    fields:[
+      ...[['transferId','Transfer ID'],['clientReference','Fictional client reference'],['exceptionCount','Exception count'],
+        ['investigationSummary','Agent investigation summary (untrusted narrative)'],['corporateActionExplanation','SEC-103 verified corporate action'],
+        ['shortageExplanation','SEC-104 unresolved shortage'],['evidenceDisplay','Verified evidence IDs'],
+        ['dispositionDisplay','Proposed investigation dispositions (backend validated)'],['planId','Plan ID'],['planHash','Exact plan hash'],
+        ['overallRiskLevel','Overall risk'],['demoNotice','Demo scope']].map(([id,label]) => ({id,label,type:'string' as const,direction:'input' as const,value:out('ValidateResolutionPlan',id)})),
+      {id:'reviewerComments',label:'Reviewer comments',type:'string',direction:'output'},
+      {id:'additionalInformation',label:'Request for additional information',type:'string',direction:'output'},
+    ], outcomes:['Approve Disposition','Request Evidence','Escalate','Reject'],
+  }))
+  // Quick Form 1.0 has no error handle. Task-service faults remain native incidents;
+  // every downstream API/validation failure has a controlled REVIEW_FAILED path.
+  .stepToList('outcome-request-evidence', b => reviewArm('RequestEvidence','REQUEST_EVIDENCE')(b).stepToRef('RecordReviewDecision'))
+  .stepToList('outcome-escalate', b => reviewArm('EscalateDisposition','ESCALATE')(b).stepToRef('RecordReviewDecision'))
+  .stepToList('outcome-reject', b => reviewArm('RejectDisposition','REJECT')(b).stepToRef('RecordReviewDecision'))
+  .step('ApproveDisposition',script({code:code('record-review-input').replace('__OUTCOME__','APPROVE'),returns:'object'}),{updates:{reviewDecision:out('ApproveDisposition')}})
+  .onError(reviewFailure('ApproveDisposition'))
+  .step('RecordReviewDecision', request('POST', planPath('/decision'),planReturns,undefined,js`JSON.stringify($vars.reviewDecision)`,true))
+  .onError(reviewFailure('RecordReviewDecision'))
+  .step('ExecuteDemoDisposition', request('POST', planPath('/execute'),planReturns,undefined,
+    js`JSON.stringify({planVersion:$vars.ValidateResolutionPlan.output.planVersion,planHash:$vars.ValidateResolutionPlan.output.planHash})`,true))
+  .onError(reviewFailure('ExecuteDemoDisposition'))
+  .step('ReadResolutionPlan', request('GET',planPath(),planReturns))
+  .onError(reviewFailure('ReadResolutionPlan'))
+  .step('ReadLatestReconciliation', request('GET',js`'/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/reconciliation'`,
+    {transferId:'string',reconciliationRunId:'string',inputFingerprint:'string',exceptions:'array'}))
+  .onError(reviewFailure('ReadLatestReconciliation'))
+  .step('VerifyDemoDisposition',request('GET',planPath('/verify'),{
+    transferId:'string',reconciliationRunId:'string',investigationSummary:'string',planId:'string',planStatus:'string',humanReviewOutcome:'string',
+    evidenceReferences:'array',reviewedDispositions:'array',unresolvedExceptions:'array',documentEvidenceStatus:'string',verificationStatus:'string',
+    workflowOutcome:'string',auditReference:'string',auditEventIds:'array',positionsUnchanged:'boolean',transferCompleted:'boolean',identityVerification:'string',demoOnly:'boolean',
+  }))
+  .onError(reviewFailure('VerifyDemoDisposition'))
+  .step('ReadReviewAudit',request('GET',planPath('/audit'),{demoOnly:'boolean',identityVerification:'string',planId:'string',items:'array'}))
+  .onError(reviewFailure('ReadReviewAudit'))
+  .step('ValidateReviewResult',script({code:code('validate-review-result'),returns:'object'}))
+  .onError(reviewFailure('ValidateReviewResult'))
+  .return({result:out('ValidateReviewResult')},{name:'ReviewReport',label:'Verified demo review and audit'})
   .build();

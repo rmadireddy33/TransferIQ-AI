@@ -77,7 +77,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(title="TransferIQ AI", version="0.4.0", lifespan=lifespan,
         description="Fictional demonstration only. Receiving positions are staging records, not settled custody holdings.")
     application.state.ready = False
+    from backend.api.resolution import router as review_router, private_router as private_review_router
     application.include_router(router)
+    application.include_router(review_router)
+    application.include_router(private_review_router)
     application.include_router(health_router)
     application.include_router(judging_router)
     application.include_router(demo_execution_router)
