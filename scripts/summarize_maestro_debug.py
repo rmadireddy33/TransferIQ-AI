@@ -6,10 +6,13 @@ from pathlib import Path
 import httpx
 
 HTTP_NODES = ('CreateDemoRun', 'GetTransferDetails', 'GetDeliveringPositions',
-              'GetReceivingPositions', 'RunReconciliation')
+              'GetReceivingPositions', 'RunReconciliation', 'GetCorporateActionReference', 'GetInvestigationReferences')
 RESULT_FIELDS = ('transferId', 'demoRunId', 'reconciliationRunId', 'totalPositions',
                  'directlyMatched', 'evidenceExplained', 'unresolvedCount',
-                 'workflowOutcome', 'evidenceOutcome', 'extractionResult', 'httpStatus', 'error')
+                 'workflowOutcome', 'evidenceOutcome', 'extractionResult', 'httpStatus', 'error',
+                 'documentEvidenceStatus', 'investigationStatus', 'investigationSummary', 'findings',
+                 'unresolvedExceptions', 'recommendedNextActions', 'humanReviewRequired',
+                 'missingEvidence', 'validationErrors', 'correctionsApplied', 'transferCompleted')
 
 
 def read_envelope(path):

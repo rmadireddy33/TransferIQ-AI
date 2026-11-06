@@ -35,7 +35,9 @@ def collect(client, tid):
     return dict(CreateDemoRun=dict(code=created.status_code, body=created.json()), GetTransferDetails=transfer,
         GetDeliveringPositions=request('GET', f"{root}/delivering/accounts/{body['sourceAccountId']}/positions?limit=100&offset=0"),
         GetReceivingPositions=request('GET', f"{root}/receiving/accounts/{body['destinationAccountId']}/positions?limit=100&offset=0"),
-        RunReconciliation=request('POST', root + '/reconcile'))
+        RunReconciliation=request('POST', root + '/reconcile'),
+        GetCorporateActionReference=request('GET', root + '/corporate-actions?limit=100&offset=0'),
+        GetInvestigationReferences=request('GET', root + '/investigation-references'))
 
 
 @pytest.fixture(scope='module')
@@ -47,10 +49,10 @@ def scenarios(tmp_path_factory):
 
 @pytest.mark.parametrize('tid,direct,explained,unresolved,basis,outcome', [
     ('TRF-1001', 7, 0, 0, 0, 'CLEAN'),
-    ('TRF-1002', 5, 1, 1, 0, 'INVESTIGATION_REQUIRED'),
+    ('TRF-1002', 5, 1, 1, 0, 'INVESTIGATION_REVIEW_REQUIRED'),
     ('TRF-1003', 0, 1, 0, 0, 'CLEAN'),
-    ('TRF-1004', 7, 0, 0, 1, 'CLEAN'),
-    ('TRF-1005', 0, 0, 1, 0, 'INVESTIGATION_REQUIRED'),
+    ('TRF-1004', 7, 0, 0, 1, 'INVESTIGATION_REVIEW_REQUIRED'),
+    ('TRF-1005', 0, 0, 1, 0, 'INVESTIGATION_REVIEW_REQUIRED'),
 ])
 def test_real_backend_contract(scenarios, tid, direct, explained, unresolved, basis, outcome):
     run = run_graph(tid, scenarios[tid], localTransport=True)
@@ -60,8 +62,8 @@ def test_real_backend_contract(scenarios, tid, direct, explained, unresolved, ba
     assert result['settledHoldings'] is False
     assert result['transferStatus'] == 'DRAFT'
     assert result['reconciliationRunId'] == scenarios[tid]['RunReconciliation']['body']['reconciliationRunId']
-    assert run['trace'][-1] == ('CleanReconciliation' if not unresolved else 'EvidenceUnavailable')
-    assert len(run['calls']) == 5
+    assert run['trace'][-1] == ('AgentFailed' if unresolved or basis else 'CleanReconciliation')
+    assert len(run['calls']) == (7 if unresolved or basis else 5)
     assert scenarios[tid]['CreateDemoRun']['body']['runId'] in run['calls'][3]['path']
     if explained:
         assert result['evidenceReferences']

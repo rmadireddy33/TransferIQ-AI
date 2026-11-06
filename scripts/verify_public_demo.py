@@ -33,7 +33,11 @@ def verify(base_url):
                 assert result['workflowOutcome'] == 'FAILED' and result['httpStatus'] == 422
             else:
                 assert tuple(result[k] for k in ('directlyMatched', 'evidenceExplained', 'unresolvedCount')) == expected
-                assert result['workflowOutcome'] == ('CLEAN' if not expected[2] else 'INVESTIGATION_REQUIRED')
+                # The local harness has no real agent. It must fail closed at
+                # that node, never claim a successful AI investigation.
+                assert result['workflowOutcome'] == ('CLEAN' if not expected[2] else 'INVESTIGATION_REVIEW_REQUIRED')
+                if expected[2]:
+                    assert result['investigationStatus'] == 'AGENT_FAILED'
                 root = '/api/demo/runs/' + result['demoRunId']
                 case['counts'] = expected
                 case['runId'] = result['demoRunId']

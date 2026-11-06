@@ -11,9 +11,9 @@ export const flow = JSON.parse(fs.readFileSync(artifact, 'utf8'));
 const expression = (code, vars) => vm.runInNewContext(code, { $vars: vars }, { timeout: 1000 });
 const dynamic = (x, vars) => typeof x === 'string' && x.startsWith('=js:') ? expression(x.slice(4), vars) : x;
 
-export async function runLocal({ transferId, corporateActionPdf = null, responses, localTransport = false, baseUrl, fault, errorEnvelope = 'output' }) {
+export async function runLocal({ transferId, enableIXP = false, corporateActionPdf = null, responses, localTransport = false, baseUrl, fault, agentTestDouble, errorEnvelope = 'output' }) {
   const vars = Object.fromEntries(flow.variables.globals.map(v => [v.id, v.defaultValue]));
-  vars.StartTransferInvestigation = { output: { transferId, corporateActionPdf } };
+  vars.StartTransferInvestigation = { output: { transferId, enableIXP, corporateActionPdf } };
   const calls = [], trace = [];
   let id = 'StartTransferInvestigation';
   for (let budget = 0; budget < 100; budget++) {
@@ -62,6 +62,10 @@ export async function runLocal({ transferId, corporateActionPdf = null, response
           }
         }
         vars[id] = { output: response }; port = 'default';
+      } else if (node.type === 'uipath.agent.autonomous') {
+        // Explicit unit-test injection only; never synthesize an agent answer.
+        if (!agentTestDouble || fault?.nodeId === id) throw new Error('AGENT_TEST_DOUBLE_UNAVAILABLE');
+        vars[id] = { output: agentTestDouble }; port = 'success';
       } else throw new Error('Unsupported graph node ' + node.type);
     } catch (e) {
       // Explicit test doubles for both managed-HTTP error envelope versions.

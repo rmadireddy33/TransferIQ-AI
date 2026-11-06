@@ -24,6 +24,8 @@ def evidence(tmp_path_factory):
         reference = client.get(f'/api/demo/runs/{run}/corporate-actions?limit=100&offset=0')
         assert reference.status_code == 200
         normalized = run_graph('TRF-1002', responses, localTransport=True)['result']
+        # This isolated Step 7 validator test starts from the reconciliation outcome.
+        normalized['workflowOutcome'] = 'INVESTIGATION_REQUIRED'
         # The expected scalar projection is a unit fixture only. The in-Flow
         # provider's actual nested result must be inspected before adapter signoff.
         extracted = dict(securityId='SEC-103', securityName='Fictional Scenario Security SEC-103',
@@ -117,14 +119,14 @@ def test_independent_reference_must_agree(evidence, change):
 
 def test_missing_file_and_setup_stop_are_explicit(evidence):
     responses, _ = evidence
-    missing = run_graph('TRF-1002', responses, localTransport=True)
+    missing = run_graph('TRF-1002', responses, localTransport=True, enableIXP=True)
     assert missing['result']['evidenceOutcome'] == 'EVIDENCE_UNAVAILABLE'
     assert 'CorporateActionExtractor' not in missing['trace']
     # This checks the configuration failure route; it DOES NOT call IXP.
-    supplied = run_graph('TRF-1002', responses, localTransport=True, corporateActionPdf={'ID': 'TEST_FILE'})
+    supplied = run_graph('TRF-1002', responses, localTransport=True, enableIXP=True, corporateActionPdf={'ID': 'TEST_FILE'})
     assert supplied['trace'][-1] == 'ExtractionFailed'
     assert supplied['result']['extractionResult']['extractionStatus'] == 'EXTRACTION_FAILED'
-    assert supplied['result']['workflowOutcome'] == 'INVESTIGATION_REQUIRED'
+    assert supplied['result']['workflowOutcome'] == 'INVESTIGATION_REVIEW_REQUIRED'
 
 
 def test_confidence_is_not_validation(evidence):

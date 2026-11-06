@@ -7,11 +7,12 @@ from sqlalchemy import func, select
 from backend.api import routes, reconciliation, documents
 from backend.api.dependencies import Pagination, fail
 from backend.models.entities import Transfer, AuditEvent, Security, PositionSnapshot, ReceivingTransferStagingPosition
-from backend.models.reconciliation import CorporateAction
+from backend.models.reconciliation import CorporateAction, SecurityIdentifierMapping, CostBasisRecord
 from backend.models.documents import TransferDocument
-from backend.schemas.contracts import Contract, TransferResponse, Page, PositionResponse, StagingPage
+from backend.schemas.contracts import Contract, TransferResponse, Page, PositionResponse, StagingPage, SecurityResponse
 from backend.schemas.documents import DocumentResponse
-from backend.schemas.reconciliation import ReconciliationResponse, ExceptionPage, CorporateActionResponse
+from backend.schemas.reconciliation import ReconciliationResponse, ExceptionPage, CorporateActionResponse, IdentifierMappingResponse
+from decimal import Decimal
 from backend.services.document_storage import read_document
 
 router = APIRouter(prefix='/api/demo/runs', tags=['Live synthetic demo execution'])
@@ -59,6 +60,27 @@ class DemoCorporateActions(Page[DemoCorporateAction]):
     run_id: str
     fictional_demo: Literal[True] = True
     reference_source: Literal['SEEDED_REFERENCE_DATABASE'] = 'SEEDED_REFERENCE_DATABASE'
+
+
+class DemoCostBasis(Contract):
+    cost_basis_id: str
+    transfer_id: str
+    security_id: str
+    quantity: Decimal | None
+    acquisition_date: date | None
+    cost_basis_amount: Decimal | None
+    status: str
+    evidence_reference: str | None
+
+
+class InvestigationReferences(Contract):
+    contract_version: Literal['1.0'] = '1.0'
+    run_id: str
+    transfer_id: str
+    fictional_demo: Literal[True] = True
+    securities: list[SecurityResponse]
+    identifier_mappings: list[IdentifierMappingResponse]
+    cost_basis: list[DemoCostBasis]
 
 
 def manager(request: Request):
@@ -172,6 +194,29 @@ def pdf(documentId: str, ctx: Context):
         'Content-Disposition': 'attachment; filename="fictional-demo.pdf"',
         'X-Checksum-SHA256': document.checksum_sha256, 'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store'})
+
+
+@router.get('/{runId}/investigation-references', response_model=InvestigationReferences)
+def investigation_references(ctx: Context):
+    """Bounded, read-only evidence from the selected synthetic run only."""
+    row, _, session = ctx
+    transfer = session.get(Transfer, row['transfer_id'])
+    ids = select(PositionSnapshot.security_id).where(
+        PositionSnapshot.account_id == transfer.source_account_id).union(
+        select(ReceivingTransferStagingPosition.security_id).where(
+            ReceivingTransferStagingPosition.transfer_id == transfer.transfer_id))
+    securities = session.scalars(select(Security).where(Security.security_id.in_(ids))
+        .order_by(Security.security_id).limit(101)).all()
+    mappings = session.scalars(select(SecurityIdentifierMapping).where(
+        SecurityIdentifierMapping.canonical_security_id.in_(ids))
+        .order_by(SecurityIdentifierMapping.mapping_id).limit(101)).all()
+    basis = session.scalars(select(CostBasisRecord).where(
+        CostBasisRecord.transfer_id == transfer.transfer_id)
+        .order_by(CostBasisRecord.cost_basis_id).limit(101)).all()
+    if any(len(records) > 100 for records in (securities, mappings, basis)):
+        fail(422, 'reference_limit_exceeded', 'Synthetic reference context exceeds the bounded contract')
+    return InvestigationReferences(run_id=row['run_id'], transfer_id=transfer.transfer_id,
+        securities=securities, identifier_mappings=mappings, cost_basis=basis)
 
 
 @router.get('/{runId}/audit', response_model=DemoAudit)

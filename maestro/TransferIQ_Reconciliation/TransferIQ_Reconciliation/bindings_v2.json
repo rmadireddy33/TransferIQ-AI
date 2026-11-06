@@ -1,24 +1,4 @@
 {
   "version": "2.0",
-  "resources": [
-    {
-      "resource": "connection",
-      "key": "",
-      "id": "connection",
-      "value": {
-        "ConnectionId": {
-          "defaultValue": "ImplicitConnection",
-          "isExpression": false,
-          "displayName": "uipath-uipath-http connection"
-        }
-      },
-      "metadata": {
-        "ActivityName": "CreateDemoRun",
-        "BindingsVersion": "2.2",
-        "DisplayLabel": "uipath-uipath-http connection",
-        "UseConnectionService": "true",
-        "Connector": "uipath-uipath-http"
-      }
-    }
-  ]
+  "resources": []
 }
