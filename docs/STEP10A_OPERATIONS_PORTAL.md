@@ -94,6 +94,8 @@ After the user deploys the reviewed revision, verify `/health`, `/api/demo/trans
 | Local same-origin HTTP integration | `/portal`, deep-link fallback, compiled asset, `/api/demo/transfers`, `/health`, and `/docs` returned 200; POST `/portal` returned 405 |
 | Browser rendering | Headless installed Chrome rendered the dashboard and TRF-1002 reconciliation at 1440×1000; 390×844 mobile body width equaled viewport width (no page overflow) |
 
+### Pre-deployment production baseline
+
 Bounded production reads against `https://transferiq-api.onrender.com` returned:
 
 - `/health`: **200**, `status=ok`, `database=ok`, `fictionalDemo=true`;
@@ -101,6 +103,23 @@ Bounded production reads against `https://transferiq-api.onrender.com` returned:
 - `/openapi.json`: **200**, 21 `/api/demo/*` paths;
 - `/portal`: **404**.
 
-The production catalog did **not** yet include `clientName`, proving that this Step 10A revision is not deployed. No Render deployment or production portal success is claimed. Deployment and post-deployment `/portal` verification remain the next actions.
+Those results were the pre-deployment baseline. The user subsequently completed the Render deployment with the combined frontend/backend build command.
+
+### Post-deployment production verification
+
+Bounded GET requests with no automatic retries returned:
+
+- `/health`: **200**, `status=ok`, `database=ok`, `fictionalDemo=true`;
+- `/api/demo/transfers`: **200**, five items, including the new fictional client and firm display metadata;
+- `/openapi.json`: **200**;
+- `/portal`: **200**, `text/html; charset=utf-8`;
+- `/portal/transfers/TRF-1002/reconciliation`: **200**, the same SPA shell as `/portal`;
+- compiled JavaScript `/portal/assets/index-DdQEh8_o.js`: **200**.
+
+Production TRF-1002 data reports SEC-103 as `EXPLAINED` with expected and receiving quantity `80`; the rendered page shows corporate action `CA-2026-081`. SEC-104 remains `UNRESOLVED`, expected `120`, receiving `100`, difference `-20`, and the rendered page labels the unresolved 20-share shortage.
+
+Installed Chrome rendered the deployed reconciliation page at 1440×1000 and the dashboard at 390×844. The mobile document width equaled the viewport width (`390`), and no application/API request failed. The only console warning was a cosmetic **404 for `/favicon.ico`**; no portal data or functionality depends on it.
+
+This verifies the user-operated Render deployment. It does not claim a new Maestro execution, agent run, human review, or financial state change.
 
 Files added or materially changed for Step 10A: `frontend/`, `backend/main.py`, `backend/schemas/judging.py`, `backend/resources/judging_samples.json`, `scripts/build_judging_samples.py`, `tests/test_judging.py`, `tests/test_step10_portal.py`, and the status/deployment documentation. No Maestro, agent, IXP, migration, financial rule, resolution write API, or custody model file was changed.

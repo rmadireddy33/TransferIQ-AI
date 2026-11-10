@@ -2,6 +2,7 @@
 from typing import Annotated, Literal
 from datetime import date, datetime
 from fastapi import APIRouter, Depends, Header, Request, Response
+from pydantic import Field
 from sqlalchemy import func, select
 
 from backend.api import routes, reconciliation, documents
@@ -20,6 +21,7 @@ router = APIRouter(prefix='/api/demo/runs', tags=['Live synthetic demo execution
 
 class CreateDemoRun(Contract):
     transfer_id: Literal['TRF-1001', 'TRF-1002', 'TRF-1003', 'TRF-1004', 'TRF-1005']
+    execution_request_id: str | None = Field(default=None, pattern=r'^PEX-[0-9a-f]{32}$')
 
 
 class DemoRunResponse(Contract):
@@ -135,9 +137,20 @@ def target(accountId: str, ctx: Context, bounds: Pagination):
 
 
 @router.post('/{runId}/reconcile', response_model=ReconciliationResponse)
-def reconcile(ctx: Context, response: Response, data: EmptyRequest):
+def reconcile(ctx: Context, response: Response, data: EmptyRequest, request: Request):
     row, _, session = ctx
     result = reconciliation.run_reconciliation(row['transfer_id'], session, response, None)
+    portal = getattr(request.app.state, 'portal_investigations', None)
+    if portal is not None:
+        summary = result['summary']
+        clean = summary['unresolved'] == 0 and summary['cost_basis_issues'] == 0
+        portal.update_by_run(row['run_id'],
+            investigation_status='COMPLETED' if clean else 'INVESTIGATING',
+            review_status='NOT_REQUIRED' if clean else 'NOT_STARTED',
+            workflow_outcome='CLEAN' if clean else None,
+            audit_reference=row['run_id'] if clean else None,
+            positions_unchanged='true' if clean else None,
+            transfer_completed='false' if clean else None)
     response.headers['Location'] = f"/api/demo/runs/{row['run_id']}/reconciliation"
     return result
 

@@ -47,6 +47,18 @@ const verificationSchema = z.object({
   reviewedDispositions: z.array(z.record(z.string(), z.unknown())), positionsUnchanged: z.boolean(), transferCompleted: z.boolean(),
 }).passthrough()
 const auditSchema = z.object({ planId: z.string(), items: z.array(z.record(z.string(), z.unknown())) }).passthrough()
+const portalSessionSchema = z.object({
+  enabled: z.boolean(), authorized: z.boolean(), operatorId: z.string().nullable(), csrfToken: z.string().optional(),
+})
+const investigationSchema = z.object({
+  executionRequestId: z.string(), transferId: z.string(), triggerStatus: z.string(), investigationStatus: z.enum([
+    'PENDING', 'TRIGGERED', 'INVESTIGATING', 'AWAITING_HUMAN_REVIEW', 'COMPLETED', 'FAILED', 'TIMED_OUT',
+  ]), reviewStatus: z.string(), workflowOutcome: z.string().nullable(), lastUpdated: z.string(),
+  errorSummary: z.string().nullable(), auditReference: z.string().nullable(), runId: z.string().nullable(),
+  planId: z.string().nullable(), investigationSummary: z.string().nullable(), evidenceReferences: z.array(z.string()),
+  proposedActions: z.array(z.record(z.string(), z.unknown())), unresolvedExceptions: z.array(z.record(z.string(), z.unknown())),
+  positionsUnchanged: z.boolean().nullable(), transferCompleted: z.boolean().nullable(),
+})
 
 export type Catalog = z.infer<typeof catalogSchema>
 export type DemoTransfer = z.infer<typeof transferSchema>
@@ -56,6 +68,8 @@ export type RunBundle = {
   documents: z.infer<typeof pageSchema> | null; references: z.infer<typeof referencesSchema> | null;
 }
 export type ReviewBundle = { plan: z.infer<typeof planSchema>; verification: z.infer<typeof verificationSchema>; audit: z.infer<typeof auditSchema> }
+export type PortalSession = z.infer<typeof portalSessionSchema>
+export type InvestigationStatus = z.infer<typeof investigationSchema>
 
 export class ApiError extends Error {
   constructor(public status: number | null, public code: string, message: string, public retryAfter?: string | null) { super(message) }
@@ -65,12 +79,16 @@ const configured = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.re
 export const apiBase = configured
 export const apiUrl = (path: string) => `${configured}${path}`
 
-async function request<T>(path: string, schema: z.ZodType<T>, signal?: AbortSignal): Promise<T> {
+async function request<T>(path: string, schema: z.ZodType<T>, signal?: AbortSignal,
+  init: RequestInit = {}): Promise<T> {
   const timeout = new AbortController()
   const timer = setTimeout(() => timeout.abort(), 10_000)
   const combined = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal
   try {
-    const response = await fetch(apiUrl(path), { method: 'GET', headers: { Accept: 'application/json' }, signal: combined })
+    const response = await fetch(apiUrl(path), {
+      method: 'GET', credentials: 'same-origin', ...init,
+      headers: { Accept: 'application/json', ...(init.headers ?? {}) }, signal: combined,
+    })
     if (!response.ok) {
       let detail: unknown
       try { detail = await response.json() } catch { detail = null }
@@ -114,6 +132,17 @@ export const api = {
     return { plan, verification, audit }
   },
   documentUrl: (runId: string, documentId: string) => apiUrl(`/api/demo/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(documentId)}/download`),
+  portalSession: (signal?: AbortSignal) => request('/api/portal/session', portalSessionSchema, signal),
+  login: (accessCode: string, signal?: AbortSignal) => request('/api/portal/session', portalSessionSchema, signal, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessCode }),
+  }),
+  startInvestigation: (transferId: string, csrfToken: string, idempotencyKey: string, signal?: AbortSignal) =>
+    request('/api/portal/investigations', investigationSchema, signal, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken,
+        'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ transferId }),
+    }),
+  investigation: (executionRequestId: string, signal?: AbortSignal) => request(
+    `/api/portal/investigations/${encodeURIComponent(executionRequestId)}`, investigationSchema, signal),
 }
 
 export function errorMessage(error: unknown) {

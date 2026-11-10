@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1",
+  "nodeType": "uipath.connector.event.uipath-http-webhook.http-webhook",
+  "version": "1.0.0",
+  "category": "trigger.211594",
+  "tags": [
+    "connector",
+    "trigger",
+    "Trigger.Integrated"
+  ],
+  "connector": {
+    "key": "uipath-http-webhook"
+  },
+  "operation": {
+    "name": "GENERIC",
+    "objectName": "HTTP_WEBHOOK",
+    "objectDisplayName": "",
+    "httpMethod": "",
+    "path": "",
+    "subType": "",
+    "supportsStreaming": false,
+    "activityType": "CuratedTrigger",
+    "eventOperation": "GENERIC",
+    "eventMode": "webhooks"
+  },
+  "display": {
+    "label": "HTTP Webhook",
+    "description": "(HTTP Webhook) Triggers instantly when an event has occured",
+    "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/1177fb24ca64146fbb9be417dffa2b01231e5947ab25a506cee199f7ca84dd97.svg",
+    "iconBackground": "",
+    "iconBackgroundDark": ""
+  },
+  "runtime": {
+    "bpmnType": "bpmn:StartEvent",
+    "serviceType": "Intsvc.EventTrigger",
+    "activityConfigurationVersion": "v1",
+    "requiresConnection": true,
+    "requiresFolderKey": true,
+    "requiresConnectionForSchema": false
+  },
+  "inputSchema": {
+    "fields": []
+  },
+  "outputSchema": {
+    "fields": [
+      {
+        "name": "request_body",
+        "displayName": "Body",
+        "description": "Request body of the event sent to webhook endpoint",
+        "type": "string",
+        "dataType": "string"
+      },
+      {
+        "name": "request_headers",
+        "displayName": "Headers",
+        "description": "Request headers of the event sent to webhook endpoint",
+        "type": "string",
+        "dataType": "string"
+      }
+    ]
+  }
+}

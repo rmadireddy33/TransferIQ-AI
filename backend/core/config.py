@@ -23,8 +23,22 @@ class Settings(BaseModel):
     demo_max_runs: int = Field(default=50, ge=1, le=500)
     demo_run_ttl_hours: int = Field(default=24, ge=1, le=168)
     demo_storage_limit_mb: int = Field(default=128, ge=10, le=1024)
+    portal_investigation_enabled: bool = False
+    portal_operator_id: str = Field(default="demo-operator", min_length=1, max_length=64)
+    portal_operator_access_key: SecretStr = SecretStr("")
+    session_secret: SecretStr = SecretStr("")
+    portal_session_ttl_minutes: int = Field(default=60, ge=5, le=480)
+    portal_user_max_active: int = Field(default=1, ge=1, le=10)
+    portal_global_max_active: int = Field(default=3, ge=1, le=25)
+    portal_starts_per_minute: int = Field(default=2, ge=1, le=20)
+    portal_workflow_timeout_minutes: int = Field(default=60, ge=5, le=240)
+    uipath_webhook_url: SecretStr = SecretStr("")
+    uipath_webhook_auth_header_name: str = ""
+    uipath_webhook_auth_header_value: SecretStr = SecretStr("")
+    uipath_webhook_timeout_seconds: int = Field(default=15, ge=3, le=30)
 
-    @field_validator('seed_demo_data', 'public_demo_enabled', 'demo_execution_enabled', mode='before')
+    @field_validator('seed_demo_data', 'public_demo_enabled', 'demo_execution_enabled',
+                     'portal_investigation_enabled', mode='before')
     @classmethod
     def seed_flag(cls, value):
         if isinstance(value, bool):
@@ -68,4 +82,17 @@ class Settings(BaseModel):
             demo_max_runs=values.get('DEMO_MAX_RUNS', 50),
             demo_run_ttl_hours=values.get('DEMO_RUN_TTL_HOURS', 24),
             demo_storage_limit_mb=values.get('DEMO_STORAGE_LIMIT_MB', 128),
+            portal_investigation_enabled=values.get('PORTAL_INVESTIGATION_ENABLED', '0'),
+            portal_operator_id=values.get('PORTAL_OPERATOR_ID', 'demo-operator'),
+            portal_operator_access_key=values.get('PORTAL_OPERATOR_ACCESS_KEY') or '',
+            session_secret=values.get('SESSION_SECRET') or '',
+            portal_session_ttl_minutes=values.get('PORTAL_SESSION_TTL_MINUTES', 60),
+            portal_user_max_active=values.get('PORTAL_USER_MAX_ACTIVE', 1),
+            portal_global_max_active=values.get('PORTAL_GLOBAL_MAX_ACTIVE', 3),
+            portal_starts_per_minute=values.get('PORTAL_STARTS_PER_MINUTE', 2),
+            portal_workflow_timeout_minutes=values.get('PORTAL_WORKFLOW_TIMEOUT_MINUTES', 60),
+            uipath_webhook_url=values.get('UIPATH_WEBHOOK_URL') or '',
+            uipath_webhook_auth_header_name=values.get('UIPATH_WEBHOOK_AUTH_HEADER_NAME') or '',
+            uipath_webhook_auth_header_value=values.get('UIPATH_WEBHOOK_AUTH_HEADER_VALUE') or '',
+            uipath_webhook_timeout_seconds=values.get('UIPATH_WEBHOOK_TIMEOUT_SECONDS', 15),
         )

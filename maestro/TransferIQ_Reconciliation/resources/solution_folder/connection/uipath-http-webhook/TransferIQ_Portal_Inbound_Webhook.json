@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransferIQ Portal Inbound Webhook",
+    "kind": "connection",
+    "type": "uipath-http-webhook",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "HTTP Webhook",
+      "name": "TransferIQ Portal Inbound Webhook",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.5.11",
+      "connectorKey": "uipath-http-webhook",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+    "files": []
+  }
+}

@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 const manualReview = JSON.parse(readFileSync(new URL('./manual-review-node.json', import.meta.url), 'utf8'));
 manualReview.inputs.schema.outcomes.find(o => o.name === 'Reject').action = 'Continue';
-import { flow, rawNode, hitl, http, inlineAgent, js, manual, out, script, types, type FlowVars } from "@uipath/maestro-builder-sdk";
+import { flow, rawNode, hitl, http, inlineAgent, js, manual, onEvent, out, script, types, type FlowVars } from "@uipath/maestro-builder-sdk";
+import { HttpWebhook } from "./connectors/uipath-http-webhook.ts";
 
 const v2V2_6Definition = {
   "nodeType": "core.action.http.v2",
@@ -1084,27 +1085,28 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   .triggerId("StartTransferInvestigation")
   .trigger(manual(), { version: "1.0", label: "StartTransferInvestigation" })
   .input({ transferId: { type: types.string, default: "TRF-1002" }, reviewerReference: { type: types.string, default: "ravindra.reddy33@gmail.com", description: "Defaults to the configured single-user Quick Form reviewer. Backend records an unverified demo reference." }, enableIXP: { type: types.boolean, default: false, description: "Enable configured IXP evidence path; disabled by default." }, corporateActionPdf: { type: types.file, default: null, description: "Optional real corporate-action PDF. Missing evidence never clears an exception." } })
+  .entryPoint("PortalWebhook", onEvent(HttpWebhook, { connection: "portalHttpWebhook", folder: "shared" }), {})
   .output({ result: types.object })
   .var("backendBaseUrl", types.string, "https://transferiq-api.onrender.com")
   .var("reviewDecision", types.object)
-  .step("ValidateInput", script(script_ValidateInput, { returns: { transferId: "string", correlationId: "string" } }), { version: "1.1" })
+  .step("ValidateInput", script(script_ValidateInput, { returns: { transferId: "string", correlationId: "string", executionRequestId: "string", reviewerReference: "string", enableIXP: "boolean", corporateActionPdf: "object", entryMode: "string" } }), { version: "1.1" })
   .onError((h) => h
     .return({ result: js`({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "ValidateInput" },
+      correlation: { transferId: Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "ValidateInput" },
       error: { code: "INVALID_TRANSFER_INPUT", summary: "Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters)." }
     })` }, { name: "InvalidInput", version: "1.0" }))
-  .step("CreateDemoRun", http({ url: js`$vars.backendBaseUrl + "/api/demo/runs/review"`, method: "POST", headers: { Accept: "application/json", "Idempotency-Key": out("ValidateInput", "correlationId"), "Content-Type": "application/json" }, body: js`JSON.stringify({ transferId: $vars.ValidateInput.output.transferId })`, managed: true, timeout: "PT30S", retryCount: 1, returns: { runId: "string", transferId: "string", expiresAt: "number", fictionalDemo: "boolean", evidenceMode: "string", reviewCapability: "string" } }), { version: "2.6" })
+  .step("CreateDemoRun", http({ url: js`$vars.backendBaseUrl + "/api/demo/runs/review"`, method: "POST", headers: { Accept: "application/json", "Idempotency-Key": out("ValidateInput", "correlationId"), "Content-Type": "application/json" }, body: js`JSON.stringify({ transferId: $vars.ValidateInput.output.transferId, ...($vars.ValidateInput.output.executionRequestId ? { executionRequestId: $vars.ValidateInput.output.executionRequestId } : {}) })`, managed: true, timeout: "PT30S", retryCount: 1, returns: { runId: "string", transferId: "string", expiresAt: "number", fictionalDemo: "boolean", evidenceMode: "string", reviewCapability: "string" } }), { version: "2.6" })
   .onError((h) => h
     .return({ result: js`Object.assign(({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "CreateDemoRun" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "CreateDemoRun" },
       error: { code: "HTTP_REQUEST_FAILED", summary: "Backend request failed: check HTTP status, availability, authentication and timeout." }
     }), { httpStatus: (() => {
         const node = Reflect.get($vars, "CreateDemoRun");
@@ -1114,21 +1116,21 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   .step("ValidateDemoRun", script(script_ValidateDemoRun, { returns: "object" }), { version: "1.1" })
   .onError((h) => h
     .return({ result: js`({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "ValidateDemoRun" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "ValidateDemoRun" },
       error: { code: "INVALID_RESPONSE", summary: "Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer." }
     })` }, { name: "ValidateDemoRunFailed", version: "1.0" }))
   .step("GetTransferDetails", http({ url: js`$vars.backendBaseUrl + '/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/transfer'`, headers: { Accept: "application/json", "Idempotency-Key": out("ValidateInput", "correlationId") }, managed: true, timeout: "PT30S", retryCount: 1, returns: { transferId: "string", clientId: "string", deliveringFirmId: "string", receivingFirmId: "string", sourceAccountId: "string", destinationAccountId: "string", status: "string", transferType: "string" } }), { version: "2.6" })
   .onError((h) => h
     .return({ result: js`Object.assign(({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "GetTransferDetails" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "GetTransferDetails" },
       error: { code: "HTTP_REQUEST_FAILED", summary: "Backend request failed: check HTTP status, availability, authentication and timeout." }
     }), { httpStatus: (() => {
         const node = Reflect.get($vars, "GetTransferDetails");
@@ -1138,21 +1140,21 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   .step("ValidateTransfer", script(script_ValidateTransfer, { returns: "object" }), { version: "1.1" })
   .onError((h) => h
     .return({ result: js`({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "ValidateTransfer" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "ValidateTransfer" },
       error: { code: "INVALID_RESPONSE", summary: "Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer." }
     })` }, { name: "ValidateTransferFailed", version: "1.0" }))
   .step("GetDeliveringPositions", http({ url: js`$vars.backendBaseUrl + '/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/delivering/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.sourceAccountId) + '/positions'`, headers: { Accept: "application/json", "Idempotency-Key": out("ValidateInput", "correlationId") }, query: { limit: "100", offset: "0" }, managed: true, timeout: "PT30S", retryCount: 1, returns: { items: "array", total: "number", limit: "number", offset: "number" } }), { version: "2.6" })
   .onError((h) => h
     .return({ result: js`Object.assign(({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "GetDeliveringPositions" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "GetDeliveringPositions" },
       error: { code: "HTTP_REQUEST_FAILED", summary: "Backend request failed: check HTTP status, availability, authentication and timeout." }
     }), { httpStatus: (() => {
         const node = Reflect.get($vars, "GetDeliveringPositions");
@@ -1162,21 +1164,21 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   .step("ValidateDeliveringPositions", script(script_ValidateDeliveringPositions, { returns: "object" }), { version: "1.1" })
   .onError((h) => h
     .return({ result: js`({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "ValidateDeliveringPositions" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "ValidateDeliveringPositions" },
       error: { code: "INVALID_RESPONSE", summary: "Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer." }
     })` }, { name: "ValidateDeliveringPositionsFailed", version: "1.0" }))
   .step("GetReceivingPositions", http({ url: js`$vars.backendBaseUrl + '/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/receiving/accounts/' + encodeURIComponent($vars.ValidateTransfer.output.destinationAccountId) + '/positions'`, headers: { Accept: "application/json", "Idempotency-Key": out("ValidateInput", "correlationId") }, query: { limit: "100", offset: "0" }, managed: true, timeout: "PT30S", retryCount: 1, returns: { items: "array", total: "number", limit: "number", offset: "number", positionKind: "string", settledHoldings: "boolean" } }), { version: "2.6" })
   .onError((h) => h
     .return({ result: js`Object.assign(({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "GetReceivingPositions" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "GetReceivingPositions" },
       error: { code: "HTTP_REQUEST_FAILED", summary: "Backend request failed: check HTTP status, availability, authentication and timeout." }
     }), { httpStatus: (() => {
         const node = Reflect.get($vars, "GetReceivingPositions");
@@ -1186,21 +1188,21 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   .step("ValidateReceivingPositions", script(script_ValidateReceivingPositions, { returns: "object" }), { version: "1.1" })
   .onError((h) => h
     .return({ result: js`({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "ValidateReceivingPositions" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "ValidateReceivingPositions" },
       error: { code: "INVALID_RESPONSE", summary: "Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer." }
     })` }, { name: "ValidateReceivingPositionsFailed", version: "1.0" }))
   .step("RunReconciliation", http({ url: js`$vars.backendBaseUrl + '/api/demo/runs/' + encodeURIComponent($vars.ValidateDemoRun.output.runId) + '/reconcile'`, method: "POST", headers: { Accept: "application/json", "Idempotency-Key": out("ValidateInput", "correlationId"), "Content-Type": "application/json" }, body: "{}", managed: true, timeout: "PT30S", retryCount: 1, returns: { transferId: "string", reconciliationRunId: "string", status: "string", executionStatus: "string", summary: "object", positions: "array", exceptions: "array", sourceSnapshotVersion: "string", targetSnapshotVersion: "string", inputFingerprint: "string", ruleVersion: "string", sourceSnapshotDate: "string", targetSnapshotDates: "array" } }), { version: "2.6" })
   .onError((h) => h
     .return({ result: js`Object.assign(({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "RunReconciliation" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "RunReconciliation" },
       error: { code: "HTTP_REQUEST_FAILED", summary: "Backend request failed: check HTTP status, availability, authentication and timeout." }
     }), { httpStatus: (() => {
         const node = Reflect.get($vars, "RunReconciliation");
@@ -1210,11 +1212,11 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   .step("NormalizeReconciliation", script(script_NormalizeReconciliation, { returns: { transferId: "string", demoRunId: "string", reconciliationRunId: "string", workflowOutcome: "string", totalPositions: "number", directlyMatched: "number", evidenceExplained: "number", unresolvedCount: "number", costBasisIssues: "number", sourcePositions: "array", receivingStagingPositions: "array", costBasisExceptions: "array", exceptions: "array", evidenceReferences: "array" } }), { version: "1.1" })
   .onError((h) => h
     .return({ result: js`({
-      transferId: $vars.StartTransferInvestigation.output.transferId || null,
+      transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null,
       reconciliationRunId: null, totalPositions: null, directlyMatched: null,
       evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,
       exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',
-      correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: "NormalizeReconciliation" },
+      correlation: { transferId: Reflect.get($vars, "ValidateInput")?.output?.transferId || Reflect.get($vars, "StartTransferInvestigation")?.output?.transferId || null, failedStep: "NormalizeReconciliation" },
       error: { code: "INVALID_RESPONSE", summary: "Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer." }
     })` }, { name: "NormalizeReconciliationFailed", version: "1.0" }))
   .branch("NormalizationFailed", js`$vars.NormalizeReconciliation.output.workflowOutcome === 'FAILED'`,
@@ -1230,10 +1232,10 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
           .onError((h) => h
             .step("CorporateActionReferenceUnavailable", script(script_CorporateActionReferenceUnavailable, { returns: "object" }), { version: "1.1" })
             .stepToRef("IXPEnabled"))
-          .branch("IXPEnabled", js`$vars.StartTransferInvestigation.output.enableIXP === true`,
+          .branch("IXPEnabled", js`$vars.ValidateInput.output.enableIXP === true`,
             (t) => t
               .label("Optional IXP enabled")
-              .branch("HasCorporateActionPdf", js`$vars.StartTransferInvestigation.output.corporateActionPdf != null`,
+              .branch("HasCorporateActionPdf", js`$vars.ValidateInput.output.corporateActionPdf != null`,
                 (t) => t
                   .label("PDF supplied")
                   .step("CorporateActionExtractor", script(script_CorporateActionExtractor, { returns: "object" }), { version: "1.1", label: "IXP setup required - replace with Extract document" })
@@ -1263,11 +1265,11 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
                       .onError((h) => h
                         .step("InvestigationReferencesUnavailable", script(script_InvestigationReferencesUnavailable, { returns: "object" }), { version: "1.1" })
                         .stepToRef("PrepareInvestigationContext"))
-                      .step("PrepareInvestigationContext", script({ code: "// Evidence assembly only. No financial arithmetic, extraction or AI simulation.\nconst n = $vars.NormalizeReconciliation.output;\nconst r = $vars.RunReconciliation.output.body;\nconst object = x => x && typeof x === 'object' && !Array.isArray(x);\nconst text = x => typeof x === 'string' && x.length > 0;\nif (!['INVESTIGATION_REQUIRED', 'CLEAN'].includes(n.workflowOutcome) ||\n    r.status !== 'EXCEPTIONS_DETECTED' || !r.exceptions.length) throw new Error('INVALID_INVESTIGATION_CONTEXT');\nconst missingEvidence = [];\nconst response = name => Reflect.get($vars, name)?.output;\nconst ca = response('GetCorporateActionReference');\nconst refs = response('GetInvestigationReferences');\nconst scoped = x => object(x) && x.transferId === n.transferId && x.runId === n.demoRunId && x.fictionalDemo === true;\nconst ok = x => (x?.code ?? x?.statusCode) === 200;\nlet corporateActions = [], securities = [], identifierMappings = [], costBasis = [];\nconst securityIds = new Set(r.positions.map(p => p.securityId));\nif (ok(ca) && scoped(ca.body) && Array.isArray(ca.body.items) && ca.body.total === ca.body.items.length && ca.body.offset === 0 &&\n    ca.body.items.every(a => object(a) && securityIds.has(a.securityId) && text(a.corporateActionId) && typeof a.verified === 'boolean')) {\n  corporateActions = ca.body.items;\n} else missingEvidence.push({ source: 'corporate-actions', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: ca?.code ?? ca?.statusCode ?? null });\nif (ok(refs) && scoped(refs.body) && refs.body.contractVersion === '1.0' &&\n    Array.isArray(refs.body.securities) && Array.isArray(refs.body.identifierMappings) && Array.isArray(refs.body.costBasis) &&\n    refs.body.securities.every(s => object(s) && securityIds.has(s.securityId)) &&\n    refs.body.identifierMappings.every(m => object(m) && securityIds.has(m.canonicalSecurityId) && typeof m.verified === 'boolean') &&\n    refs.body.costBasis.every(b => object(b) && b.transferId === n.transferId && securityIds.has(b.securityId))) {\n  ({ securities, identifierMappings, costBasis } = refs.body);\n} else missingEvidence.push({ source: 'investigation-references', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: refs?.code ?? refs?.statusCode ?? null });\n// Index actual record IDs and actual evidence references, scoped by security.\nconst evidenceRecords = [];\nconst add = (id, securityId, kind, verified) => {\n  if (text(id)) evidenceRecords.push({ evidenceId: id, securityId, kind, verified });\n};\nfor (const p of n.sourcePositions) add(p.positionId, p.securityId, 'SOURCE_POSITION', true);\nfor (const p of n.receivingStagingPositions) add(p.stagingPositionId, p.securityId, 'RECEIVING_STAGING', true);\nfor (const e of r.exceptions) add(e.exceptionId, e.securityId, 'RECONCILIATION_EXCEPTION', true);\nfor (const a of corporateActions) {\n  add(a.corporateActionId, a.securityId, 'CORPORATE_ACTION', a.verified);\n  add(a.evidenceReference, a.securityId, 'CORPORATE_ACTION', a.verified);\n}\nfor (const m of identifierMappings) {\n  add(m.mappingId, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n  add(m.evidenceReference, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n}\nfor (const b of costBasis) {\n  add(b.costBasisId, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n  add(b.evidenceReference, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n}\nconst enabled = $vars.StartTransferInvestigation.output.enableIXP === true;\nconst verifiedDocument = enabled ? response('ValidateCorporateAction')?.extractionResult : null;\nif (enabled && verifiedDocument?.validationStatus !== 'VERIFIED') throw new Error('DOCUMENT_EVIDENCE_NOT_VERIFIED');\nreturn {\n  contractVersion: '1.0', transferId: n.transferId, reconciliationRunId: n.reconciliationRunId,\n  transfer: $vars.ValidateTransfer.output, deliveringPositions: n.sourcePositions,\n  receivingStagingPositions: n.receivingStagingPositions,\n  reconciliation: r, reconciliationSummary: r.summary, exceptions: r.exceptions,\n  securityIdentifiers: Array.from(securityIds).map(securityId => ({ securityId,\n    observedIdentifiers: Array.from(new Set([...n.sourcePositions, ...n.receivingStagingPositions]\n      .filter(p => p.securityId === securityId).map(p => p.observedIdentifier).filter(text))) })),\n  securities, corporateActions, identifierMappings, costBasis,\n  costBasisExceptions: n.costBasisExceptions, evidenceRecords, evidenceReferences: n.evidenceReferences,\n  missingEvidence, verifiedDocumentEvidence: verifiedDocument,\n  documentEvidenceStatus: enabled ? 'VERIFIED_IXP_EVIDENCE' : 'NOT_PROCESSED_IXP_DISABLED'\n};\n", returns: { contractVersion: "string", transferId: "string", reconciliationRunId: "string", transfer: "object", deliveringPositions: "array", receivingStagingPositions: "array", reconciliation: "object", reconciliationSummary: "object", exceptions: "array", securityIdentifiers: "array", securities: "array", corporateActions: "array", identifierMappings: "array", costBasis: "array", costBasisExceptions: "array", evidenceRecords: "array", evidenceReferences: "array", missingEvidence: "array", verifiedDocumentEvidence: "object", documentEvidenceStatus: "string" } }), { version: "1.1" })
+                      .step("PrepareInvestigationContext", script({ code: "// Evidence assembly only. No financial arithmetic, extraction or AI simulation.\nconst n = $vars.NormalizeReconciliation.output;\nconst r = $vars.RunReconciliation.output.body;\nconst object = x => x && typeof x === 'object' && !Array.isArray(x);\nconst text = x => typeof x === 'string' && x.length > 0;\nif (!['INVESTIGATION_REQUIRED', 'CLEAN'].includes(n.workflowOutcome) ||\n    r.status !== 'EXCEPTIONS_DETECTED' || !r.exceptions.length) throw new Error('INVALID_INVESTIGATION_CONTEXT');\nconst missingEvidence = [];\nconst response = name => Reflect.get($vars, name)?.output;\nconst ca = response('GetCorporateActionReference');\nconst refs = response('GetInvestigationReferences');\nconst scoped = x => object(x) && x.transferId === n.transferId && x.runId === n.demoRunId && x.fictionalDemo === true;\nconst ok = x => (x?.code ?? x?.statusCode) === 200;\nlet corporateActions = [], securities = [], identifierMappings = [], costBasis = [];\nconst securityIds = new Set(r.positions.map(p => p.securityId));\nif (ok(ca) && scoped(ca.body) && Array.isArray(ca.body.items) && ca.body.total === ca.body.items.length && ca.body.offset === 0 &&\n    ca.body.items.every(a => object(a) && securityIds.has(a.securityId) && text(a.corporateActionId) && typeof a.verified === 'boolean')) {\n  corporateActions = ca.body.items;\n} else missingEvidence.push({ source: 'corporate-actions', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: ca?.code ?? ca?.statusCode ?? null });\nif (ok(refs) && scoped(refs.body) && refs.body.contractVersion === '1.0' &&\n    Array.isArray(refs.body.securities) && Array.isArray(refs.body.identifierMappings) && Array.isArray(refs.body.costBasis) &&\n    refs.body.securities.every(s => object(s) && securityIds.has(s.securityId)) &&\n    refs.body.identifierMappings.every(m => object(m) && securityIds.has(m.canonicalSecurityId) && typeof m.verified === 'boolean') &&\n    refs.body.costBasis.every(b => object(b) && b.transferId === n.transferId && securityIds.has(b.securityId))) {\n  ({ securities, identifierMappings, costBasis } = refs.body);\n} else missingEvidence.push({ source: 'investigation-references', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: refs?.code ?? refs?.statusCode ?? null });\n// Index actual record IDs and actual evidence references, scoped by security.\nconst evidenceRecords = [];\nconst add = (id, securityId, kind, verified) => {\n  if (text(id)) evidenceRecords.push({ evidenceId: id, securityId, kind, verified });\n};\nfor (const p of n.sourcePositions) add(p.positionId, p.securityId, 'SOURCE_POSITION', true);\nfor (const p of n.receivingStagingPositions) add(p.stagingPositionId, p.securityId, 'RECEIVING_STAGING', true);\nfor (const e of r.exceptions) add(e.exceptionId, e.securityId, 'RECONCILIATION_EXCEPTION', true);\nfor (const a of corporateActions) {\n  add(a.corporateActionId, a.securityId, 'CORPORATE_ACTION', a.verified);\n  add(a.evidenceReference, a.securityId, 'CORPORATE_ACTION', a.verified);\n}\nfor (const m of identifierMappings) {\n  add(m.mappingId, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n  add(m.evidenceReference, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n}\nfor (const b of costBasis) {\n  add(b.costBasisId, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n  add(b.evidenceReference, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n}\nconst enabled = $vars.ValidateInput.output.enableIXP === true;\nconst verifiedDocument = enabled ? response('ValidateCorporateAction')?.extractionResult : null;\nif (enabled && verifiedDocument?.validationStatus !== 'VERIFIED') throw new Error('DOCUMENT_EVIDENCE_NOT_VERIFIED');\nreturn {\n  contractVersion: '1.0', transferId: n.transferId, reconciliationRunId: n.reconciliationRunId,\n  transfer: $vars.ValidateTransfer.output, deliveringPositions: n.sourcePositions,\n  receivingStagingPositions: n.receivingStagingPositions,\n  reconciliation: r, reconciliationSummary: r.summary, exceptions: r.exceptions,\n  securityIdentifiers: Array.from(securityIds).map(securityId => ({ securityId,\n    observedIdentifiers: Array.from(new Set([...n.sourcePositions, ...n.receivingStagingPositions]\n      .filter(p => p.securityId === securityId).map(p => p.observedIdentifier).filter(text))) })),\n  securities, corporateActions, identifierMappings, costBasis,\n  costBasisExceptions: n.costBasisExceptions, evidenceRecords, evidenceReferences: n.evidenceReferences,\n  missingEvidence, verifiedDocumentEvidence: verifiedDocument,\n  documentEvidenceStatus: enabled ? 'VERIFIED_IXP_EVIDENCE' : 'NOT_PROCESSED_IXP_DISABLED'\n};\n", returns: { contractVersion: "string", transferId: "string", reconciliationRunId: "string", transfer: "object", deliveringPositions: "array", receivingStagingPositions: "array", reconciliation: "object", reconciliationSummary: "object", exceptions: "array", securityIdentifiers: "array", securities: "array", corporateActions: "array", identifierMappings: "array", costBasis: "array", costBasisExceptions: "array", evidenceRecords: "array", evidenceReferences: "array", missingEvidence: "array", verifiedDocumentEvidence: "object", documentEvidenceStatus: "string" } }), { version: "1.1" })
                       .onError((h) => h
                         .return({ result: js`({
                           ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',
-                          documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
+                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
                           investigationStatus: "INVALID_INVESTIGATION_CONTEXT", investigationSummary: 'Investigation could not be validated; human review is required.',
                           findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,
                           unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),
@@ -1278,7 +1280,7 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
                       .onError((h) => h
                         .return({ result: js`({
                           ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',
-                          documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
+                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
                           investigationStatus: "INVALID_INVESTIGATION_CONTEXT", investigationSummary: 'Investigation could not be validated; human review is required.',
                           findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,
                           unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),
@@ -1289,7 +1291,7 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
                       .onError((h) => h
                         .return({ result: js`({
                           ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',
-                          documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
+                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
                           investigationStatus: "AGENT_FAILED", investigationSummary: 'Investigation could not be validated; human review is required.',
                           findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,
                           unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),
@@ -1300,7 +1302,7 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
                       .onError((h) => h
                         .return({ result: js`({
                           ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',
-                          documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
+                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',
                           investigationStatus: "INVALID_AGENT_OUTPUT", investigationSummary: 'Investigation could not be validated; human review is required.',
                           findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,
                           unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),
@@ -1433,10 +1435,11 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
               .stepToRef("GetInvestigationReferences"), { version: "1.4" }),
         (e) => e
           .label("Clean Reconciliation")
-          .return({ result: js`({ ...$vars.NormalizeReconciliation.output, documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'NOT_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED' })` }, { name: "CleanReconciliation", version: "1.0", label: "Clean Reconciliation" }), { version: "1.4" }), { version: "1.4" })
+          .return({ result: js`({ ...$vars.NormalizeReconciliation.output, documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'NOT_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED' })` }, { name: "CleanReconciliation", version: "1.0", label: "Clean Reconciliation" }), { version: "1.4" }), { version: "1.4" })
   .layout({
     nodes: {
       StartTransferInvestigation: { position: { x: 256, y: 144 }, size: { width: 96, height: 96 }, collapsed: false },
+      PortalWebhook: { position: { x: 256, y: -32 }, size: { width: 96, height: 96 }, collapsed: false },
       ValidateInput: { position: { x: 448, y: 144 }, size: { width: 96, height: 96 }, collapsed: false },
       InvalidInput: { position: { x: 640, y: 320 }, size: { width: 96, height: 96 }, collapsed: false },
       CreateDemoRun: { position: { x: 640, y: 128 }, size: { width: 96, height: 96 }, collapsed: false },
@@ -1516,9 +1519,27 @@ export default flow("fa7de741-ad8f-441f-8f3d-9bf96e5f3497")
   })
   .build();
 
-function script_ValidateInput($vars: FlowVars) {const transferId = $vars.StartTransferInvestigation.output.transferId;
+function script_ValidateInput($vars: FlowVars) {const portalOutput = $vars.PortalWebhook.output;
+const isPortal = portalOutput && typeof portalOutput.request_body === 'string';
+const manualOutput = $vars.StartTransferInvestigation.output;
+let input;
+if (isPortal) {
+  try { input = JSON.parse(portalOutput.request_body); } catch { throw new Error('INVALID_PORTAL_WEBHOOK_BODY'); }
+  const keys = input && typeof input === 'object' && !Array.isArray(input) ? Object.keys(input).sort() : [];
+  if (JSON.stringify(keys) !== JSON.stringify(['enableIXP','executionRequestId','transferId']) ||
+      !/^TRF-100[1-5]$/.test(input.transferId) || !/^PEX-[0-9a-f]{32}$/.test(input.executionRequestId) ||
+      input.enableIXP !== false) throw new Error('INVALID_PORTAL_WEBHOOK_BODY');
+} else input = manualOutput;
+const transferId = input?.transferId;
 if (typeof transferId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(transferId)) throw new Error('INVALID_TRANSFER_INPUT');
-return { transferId, correlationId: 'TIQ-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12) };
+const executionRequestId = isPortal ? input.executionRequestId : '';
+return { transferId, executionRequestId,
+  correlationId: executionRequestId || ('TIQ-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12)),
+  reviewerReference: isPortal ? 'PORTAL_AUTHORIZED_OPERATOR' : input.reviewerReference,
+  enableIXP: isPortal ? false : input.enableIXP === true,
+  corporateActionPdf: isPortal ? null : (input.corporateActionPdf ?? null),
+  entryMode: isPortal ? 'PORTAL_WEBHOOK' : 'MANUAL'
+};
 }
 
 function script_ValidateDemoRun($vars: FlowVars) {const response = $vars.CreateDemoRun.output;
@@ -1717,7 +1738,7 @@ return report(errors.length === 0);
 
 function script_BuildResolutionPlan($vars: FlowVars) {const report = $vars.ValidateInvestigation.output;
 const reconciliation = $vars.NormalizeReconciliation.output;
-const reviewer = $vars.StartTransferInvestigation.output.reviewerReference;
+const reviewer = $vars.ValidateInput.output.reviewerReference;
 if (report.workflowOutcome !== 'INVESTIGATION_COMPLETED' || report.investigationStatus !== 'COMPLETED' ||
     report.documentEvidenceStatus !== 'NOT_PROCESSED_IXP_DISABLED' ||
     typeof reviewer !== 'string' || !reviewer.trim() || reviewer.length > 256 ||

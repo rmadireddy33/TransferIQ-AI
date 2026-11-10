@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1",
+  "entries": [
+    {
+      "nodeType": "uipath.connector.event.uipath-http-webhook.http-webhook",
+      "version": "1.0.0",
+      "connectorKey": "uipath-http-webhook",
+      "label": "HTTP Webhook",
+      "activityType": "CuratedTrigger",
+      "objectName": "HTTP_WEBHOOK",
+      "operationName": "GENERIC",
+      "path": "descriptors/uipath-http-webhook/http-webhook@1.0.0.json"
+    }
+  ]
+}

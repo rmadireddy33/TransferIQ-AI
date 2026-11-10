@@ -145,7 +145,7 @@ Step 2 lifecycle: DRAFT -> SUBMITTED -> UNDER_REVIEW. UNDER_REVIEW permits EXCEP
 
 Design versioned JSON APIs under `/api/v1` with Pydantic validation and generated OpenAPI documentation suitable for Maestro HTTP calls. Concrete routes are deferred. Use explicit states, UTC timestamps, decimal strings, stable error codes, correlation IDs, and paginated collections. Long-running operations return an accepted operation identifier and expose persisted status; acceptance must not be reported as completed work.
 
-The backend initiates Maestro through a future verified adapter. Maestro calls authenticated backend APIs to retrieve scoped context, return IXP evidence and agent recommendations, and relay decisions. Exact UiPath endpoints, supported document transport, polling/callback mechanism, and Quick Form decision verification must be established against the actual tenant and official contracts before implementation. A missing integration produces a clear unavailable/configuration error, never fabricated success.
+Step 10B implements the bounded portal-to-Maestro adapter for synthetic scenarios. An authenticated portal operator creates a persisted execution request before the backend makes one non-retried, header-authenticated HTTP Webhook call. The webhook's acceptance event is recorded separately from workflow completion. The existing review-run, reconciliation, preview, decision and execute APIs advance the same record by `executionRequestId`; the portal reads only sanitized state. The adapter is disabled by default and cannot start until real tenant connection, URL and authentication values are configured. Private production transfer orchestration and trusted reviewer identity remain outside this synthetic adapter.
 
 Use separate backend service credentials and UiPath OAuth configuration. Persist operation intent before external dispatch (a SQLite outbox), store remote correlation once acknowledged, and reconcile ambiguous timeouts before resubmission. Do not hold database transactions open across network calls. Bounded retries, timeouts, durable attempt counts, and manual recovery handle failures. An in-process dispatcher can service the SQLite outbox without Redis or an additional hosted worker service.
 
@@ -165,6 +165,7 @@ DATA_DIR/
 |-- documents/              # Generated storage keys, never user paths
 |-- staging/                # Incomplete uploads awaiting finalization
 |-- tmp/                    # Multipart spool files
+|-- portal/                 # Isolated portal execution registry (SQLite), no webhook secrets
 |-- sample_exports/         # Optional explicit developer seed exports
 `-- verification/           # Optional developer checks and visual QA
 ```
@@ -179,7 +180,7 @@ Database transactions and filesystem writes are not atomic together. Stage and h
 
 ## Security, approvals, and audit
 
-Authenticate private business APIs and authorize access to each private transfer/document. The explicitly allowlisted synthetic run APIs above are anonymous and isolated; they never authorize access to private data. Future service credentials should map to bounded roles; browser bundles must never contain them or UiPath secrets. Operator/reviewer sessions remain planned, with secure HTTP-only cookies and CSRF protection for cookie-authenticated writes. Configure exact local origins if Vite runs separately; cloud should use same-origin hosting.
+Authenticate private business APIs and authorize access to each private transfer/document. The explicitly allowlisted synthetic run APIs above are anonymous and isolated; they never authorize access to private data. Browser bundles never contain backend or UiPath credentials. Step 10B's synthetic execution control uses a configured single demo-operator access code, a signed short-lived HttpOnly/SameSite cookie, and CSRF validation; public read-only judging remains anonymous. This is not private-client identity or trusted reviewer verification. Configure exact local origins if Vite runs separately; cloud uses same-origin hosting.
 
 Uploaded documents are private: validate file size/type, sanitize display filenames, generate storage keys, reject path traversal, and stream through authorization checks. Public run downloads serve only fixed synthetic PDFs from that run's selected transfer; they cannot retrieve private uploads. Future private UiPath document transport must use narrowly scoped authorized access with credential redaction. Treat uploaded text and agent output as untrusted data, including instructions embedded in statements.
 

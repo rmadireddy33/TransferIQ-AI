@@ -43,7 +43,7 @@ class PublicLimits:
             return await self.app(scope, receive, send)
         path = scope['path']
         public = path == '/api/demo' or path.startswith('/api/demo/') or path in (
-            '/docs', '/docs/oauth2-redirect', '/redoc', '/openapi.json')
+            '/docs', '/docs/oauth2-redirect', '/redoc', '/openapi.json') or path.startswith('/api/portal/')
         if public:
             settings = scope['app'].state.settings
             # Use ASGI peer identity; never parse caller-supplied forwarding headers.
@@ -57,8 +57,10 @@ class PublicLimits:
                 status, code = 414, 'request_too_long'
             headers = dict(scope.get('headers', []))
             is_demo_write = path.startswith('/api/demo/runs') and scope['method'] == 'POST'
+            is_portal_write = path.startswith('/api/portal/') and scope['method'] in ('POST', 'DELETE')
+            bounded_write = is_demo_write or is_portal_write
             body_limit = 32768 if path.endswith('/resolution-plans/preview') else (8192 if '/resolution-plans/' in path and path.endswith('/decision') else 4096)
-            if is_demo_write and (not headers.get(b'content-length', b'0').isdigit() or
+            if bounded_write and (not headers.get(b'content-length', b'0').isdigit() or
                                  int(headers.get(b'content-length', b'0')) > body_limit):
                 status, code = 413, 'body_too_large'
             if scope['method'] in ('GET', 'HEAD') and (
@@ -68,7 +70,7 @@ class PublicLimits:
                 response = JSONResponse({'detail': {'code': code, 'message': 'Public request limit exceeded'}},
                     status_code=status, headers={'Retry-After': str(retry), 'Cache-Control': 'no-store'})
                 return await response(scope, receive, send)
-            if is_demo_write:
+            if bounded_write:
                 original_receive = receive
                 received = 0
                 async def bounded_receive():

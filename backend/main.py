@@ -12,6 +12,7 @@ from backend.api.judging import router as judging_router, catalog
 from backend.api.public_limits import PublicLimits
 from backend.api.demo_execution import router as demo_execution_router
 from backend.services.demo_runs import DemoRuns
+from backend.services.portal_investigations import PortalInvestigations
 from backend.api.reconciliation import router as reconciliation_router
 from backend.api.documents import router as document_router
 from backend.api.upload_limit import UploadBodyLimit
@@ -29,6 +30,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         engine = None
         demo_runs = None
+        portal_investigations = None
         phase = 'configuration'
         app.state.ready = False
         try:
@@ -50,6 +52,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     phase = 'demo_registry'
                     demo_runs = DemoRuns(configuration)
                     app.state.demo_runs = demo_runs
+                if configuration.portal_investigation_enabled:
+                    phase = 'portal_investigation_registry'
+                    portal_investigations = PortalInvestigations(configuration)
+                    app.state.portal_investigations = portal_investigations
                 phase = 'document_recovery'
                 recover_pending_documents(app.state.session_factory, configuration)
                 if configuration.seed_demo_data:
@@ -74,12 +80,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 engine.dispose()
             if demo_runs is not None:
                 demo_runs.engine.dispose()
+            if portal_investigations is not None:
+                portal_investigations.engine.dispose()
             logger.info('application_stopped')
 
     application = FastAPI(title="TransferIQ AI", version="0.4.0", lifespan=lifespan,
         description="Fictional demonstration only. Receiving positions are staging records, not settled custody holdings.")
     application.state.ready = False
     from backend.api.resolution import router as review_router, private_router as private_review_router
+    from backend.api.portal import router as portal_router
     application.include_router(router)
     application.include_router(review_router)
     application.include_router(private_review_router)
@@ -88,6 +97,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(demo_execution_router)
     application.include_router(reconciliation_router)
     application.include_router(document_router)
+    application.include_router(portal_router)
     application.add_middleware(UploadBodyLimit)
     application.add_middleware(PublicLimits)
 

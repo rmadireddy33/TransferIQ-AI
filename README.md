@@ -1,6 +1,6 @@
 # TransferIQ AI
 
-Step 10A adds a production-ready, read-only Operations Portal at `/portal`. The React/TypeScript/Vite interface displays the five synthetic transfer scenarios, backend reconciliation evidence, optional existing run/plan verification, audit events, and fictional documents without exposing workflow triggers or financial mutations. FastAPI hosts the compiled SPA from the same origin; deployment requires the updated combined npm/Python build command. See [portal scope, contracts, verification, and deployment](docs/STEP10A_OPERATIONS_PORTAL.md). These local changes are not yet deployed to Render.
+Step 10A adds a production-ready, read-only Operations Portal at `/portal`. The React/TypeScript/Vite interface displays the five synthetic transfer scenarios, backend reconciliation evidence, optional existing run/plan verification, audit events, and fictional documents without exposing workflow triggers or financial mutations. FastAPI hosts the compiled SPA from the same origin. The user completed the combined npm/Python Render deployment, and production health, catalog, portal, deep-link, asset, desktop, and mobile checks passed. See [portal scope, contracts, verification, and deployment](docs/STEP10A_OPERATIONS_PORTAL.md).
 
 Current Step 9 status: the manually created Quick Form works. The repaired original Flow completed real TRF-1002 human approval and rejection, recorded and verified both backend decisions, and produced their audit reports. SEC-104 remains unresolved at -20 shares; positions are unchanged. TRF-1001 completed CLEAN. The full local suite passed 460 tests. See [current verification](docs/STEP9_MANUAL_FORM_VERIFICATION.md).
 
@@ -193,7 +193,7 @@ tests/
   test_database.py
 ```
 
-`maestro/` contains the SDK source, generated Flow, and UiPath solution scaffold. `frontend/` contains the Step 10A Operations Portal source and lockfile; `frontend/dist` is generated and ignored. Runtime `.venv/`, `.env`, SQLite data and local UiPath binding/configuration files are excluded by `.gitignore`. This workspace is not currently initialized as a Git repository; no commits were created.
+`maestro/` contains the SDK source, generated Flow, and UiPath solution scaffold. `frontend/` contains the Operations Portal source and lockfile; `frontend/dist` is generated and ignored. Step 10B adds an authenticated portal operator session, a controlled `Investigate with AI` action, persistent progress tracking, and an authored second HTTP Webhook entry point into the existing Flow. Live triggering remains disabled by default until a real UiPath connection is bound and deployed. See [Step 10B setup and evidence](docs/STEP10B_PORTAL_MAESTRO_INTEGRATION.md). Runtime `.venv/`, `.env`, SQLite data and local UiPath binding/configuration files are excluded by `.gitignore`. This workspace is not currently initialized as a Git repository; no commits were created.
 
 ## Troubleshooting
 

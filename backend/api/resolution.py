@@ -21,6 +21,11 @@ class ReviewRunResponse(DemoRunResponse):
 def create_review(data: CreateDemoRun, request: Request, response: Response,
                   idempotency_key: Annotated[str, Header(min_length=16,max_length=128,pattern=r'^[A-Za-z0-9._:-]+$')]):
     value, created = manager(request).create(data.transfer_id, idempotency_key, with_review=True)
+    if data.execution_request_id is not None:
+        portal = getattr(request.app.state, 'portal_investigations', None)
+        if portal is None:
+            fail(503, 'portal_investigation_disabled', 'Controlled portal investigation is not configured')
+        portal.bind_run(data.execution_request_id, data.transfer_id, value['runId'])
     response.status_code = 201 if created else 200
     response.headers['Cache-Control'] = 'no-store'
     return value
@@ -39,10 +44,22 @@ ReviewContext = Annotated[tuple, Depends(review_context)]
 
 @router.post('/{runId}/resolution-plans/preview')
 def preview(data: PlanPreview, ctx: ReviewContext,
+            request: Request,
             idempotency_key: Annotated[str, Header(min_length=16,max_length=128,pattern=r'^[A-Za-z0-9._:-]+$')]):
     row, _, session = ctx
     plan = service.preview(session, row['transfer_id'], data, idempotency_key, row['expires_at'])
-    return service.read_plan(session, plan)
+    result = service.read_plan(session, plan)
+    portal = getattr(request.app.state, 'portal_investigations', None)
+    if portal is not None:
+        verification = service.verify(session, plan)
+        portal.update_by_run(row['run_id'], investigation_status='AWAITING_HUMAN_REVIEW',
+            review_status='PENDING', plan_id=plan.plan_id, audit_reference=plan.plan_id,
+            investigation_summary=result['investigationSummary'],
+            evidence_references=result['evidenceReferences'], proposed_actions=result['proposedActions'],
+            unresolved_exceptions=verification['unresolvedExceptions'],
+            positions_unchanged='true' if verification['positionsUnchanged'] else 'false',
+            transfer_completed='true' if verification['transferCompleted'] else 'false')
+    return result
 
 
 @router.get('/{runId}/resolution-plans/{planId}')
@@ -52,15 +69,35 @@ def get(planId: str, ctx: Context):
 
 
 @router.post('/{runId}/resolution-plans/{planId}/decision')
-def decide(planId: str, data: DecisionRequest, ctx: ReviewContext):
+def decide(planId: str, data: DecisionRequest, ctx: ReviewContext, request: Request):
     row, _, session = ctx
-    return service.read_plan(session, service.record_decision(session, row['transfer_id'], planId, data))
+    result = service.read_plan(session, service.record_decision(session, row['transfer_id'], planId, data))
+    portal = getattr(request.app.state, 'portal_investigations', None)
+    if portal is not None:
+        review = {'APPROVE':'APPROVED','REJECT':'REJECTED','REQUEST_EVIDENCE':'EVIDENCE_REQUESTED',
+                  'ESCALATE':'ESCALATED'}[data.review_outcome]
+        portal.update_by_run(row['run_id'], investigation_status='INVESTIGATING', review_status=review,
+                             plan_id=planId, audit_reference=planId)
+    return result
 
 
 @router.post('/{runId}/resolution-plans/{planId}/execute')
-def execute(planId: str, data: PlanBinding, ctx: ReviewContext):
+def execute(planId: str, data: PlanBinding, ctx: ReviewContext, request: Request):
     row, _, session = ctx
-    return service.read_plan(session, service.execute(session, row['transfer_id'], planId, data))
+    plan = service.execute(session, row['transfer_id'], planId, data)
+    result = service.read_plan(session, plan)
+    portal = getattr(request.app.state, 'portal_investigations', None)
+    if portal is not None:
+        verification = service.verify(session, plan)
+        complete = verification['verificationStatus'] == 'VERIFIED_DEMO_STATE'
+        portal.update_by_run(row['run_id'], investigation_status='COMPLETED' if complete else 'FAILED',
+            workflow_outcome=verification['workflowOutcome'] if complete else 'REVIEW_FAILED',
+            error_summary=None if complete else 'Final review state or audit record could not be verified.',
+            audit_reference=verification['auditReference'],
+            unresolved_exceptions=verification['unresolvedExceptions'],
+            positions_unchanged='true' if verification['positionsUnchanged'] else 'false',
+            transfer_completed='true' if verification['transferCompleted'] else 'false')
+    return result
 
 
 @router.get('/{runId}/resolution-plans/{planId}/verify')

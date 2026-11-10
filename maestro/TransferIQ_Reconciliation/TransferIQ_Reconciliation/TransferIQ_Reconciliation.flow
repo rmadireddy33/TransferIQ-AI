@@ -13,7 +13,8 @@
         "icon": "play"
       },
       "inputs": {
-        "entryPointId": "971bd35f-0cbc-4589-9c56-f26b7f0353e0"
+        "entryPointId": "de969c74-0104-400d-8000-df92344f0104",
+        "isDefaultEntryPoint": true
       },
       "outputs": {
         "output": {
@@ -34,7 +35,7 @@
         "icon": "code"
       },
       "inputs": {
-        "script": "const transferId = $vars.StartTransferInvestigation.output.transferId;\nif (typeof transferId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(transferId)) throw new Error('INVALID_TRANSFER_INPUT');\nreturn { transferId, correlationId: 'TIQ-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12) };\n",
+        "script": "const portalOutput = $vars.PortalWebhook.output;\nconst isPortal = portalOutput && typeof portalOutput.request_body === 'string';\nconst manualOutput = $vars.StartTransferInvestigation.output;\nlet input;\nif (isPortal) {\n  try { input = JSON.parse(portalOutput.request_body); } catch { throw new Error('INVALID_PORTAL_WEBHOOK_BODY'); }\n  const keys = input && typeof input === 'object' && !Array.isArray(input) ? Object.keys(input).sort() : [];\n  if (JSON.stringify(keys) !== JSON.stringify(['enableIXP','executionRequestId','transferId']) ||\n      !/^TRF-100[1-5]$/.test(input.transferId) || !/^PEX-[0-9a-f]{32}$/.test(input.executionRequestId) ||\n      input.enableIXP !== false) throw new Error('INVALID_PORTAL_WEBHOOK_BODY');\n} else input = manualOutput;\nconst transferId = input?.transferId;\nif (typeof transferId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(transferId)) throw new Error('INVALID_TRANSFER_INPUT');\nconst executionRequestId = isPortal ? input.executionRequestId : '';\nreturn { transferId, executionRequestId,\n  correlationId: executionRequestId || ('TIQ-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12)),\n  reviewerReference: isPortal ? 'PORTAL_AUTHORIZED_OPERATOR' : input.reviewerReference,\n  enableIXP: isPortal ? false : input.enableIXP === true,\n  corporateActionPdf: isPortal ? null : (input.corporateActionPdf ?? null),\n  entryMode: isPortal ? 'PORTAL_WEBHOOK' : 'MANUAL'\n};\n",
         "errorHandlingEnabled": true
       },
       "outputs": {
@@ -48,6 +49,21 @@
               "type": "string"
             },
             "correlationId": {
+              "type": "string"
+            },
+            "executionRequestId": {
+              "type": "string"
+            },
+            "reviewerReference": {
+              "type": "string"
+            },
+            "enableIXP": {
+              "type": "boolean"
+            },
+            "corporateActionPdf": {
+              "type": "object"
+            },
+            "entryMode": {
               "type": "string"
             }
           }
@@ -110,7 +126,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateInput\" },\n  error: { code: \"INVALID_TRANSFER_INPUT\", summary: \"Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters).\" }\n})",
+            "expression": "({\n      transferId: Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"ValidateInput\" },\n      error: { code: \"INVALID_TRANSFER_INPUT\", summary: \"Provide a nonempty transferId using letters, digits, hyphens or underscores (maximum 64 characters).\" }\n    })",
             "fieldType": "object"
           },
           "var": "result"
@@ -166,7 +182,7 @@
               "Idempotency-Key": "=js:$vars.ValidateInput.output.correlationId",
               "Content-Type": "application/json"
             },
-            "body": "=js:JSON.stringify({ transferId: $vars.ValidateInput.output.transferId })"
+            "body": "=js:JSON.stringify({ transferId: $vars.ValidateInput.output.transferId, ...($vars.ValidateInput.output.executionRequestId ? { executionRequestId: $vars.ValidateInput.output.executionRequestId } : {}) })"
           },
           "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
           "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
@@ -299,7 +315,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"CreateDemoRun\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: (() => {\n    const node = Reflect.get($vars, \"CreateDemoRun\");\n    const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n    return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n  })() })",
+            "expression": "Object.assign(({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"CreateDemoRun\" },\n      error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n    }), { httpStatus: (() => {\n        const node = Reflect.get($vars, \"CreateDemoRun\");\n        const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n        return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n      })() })",
             "fieldType": "object"
           },
           "var": "result"
@@ -404,7 +420,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateDemoRun\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "expression": "({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"ValidateDemoRun\" },\n      error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n    })",
             "fieldType": "object"
           },
           "var": "result"
@@ -597,7 +613,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"GetTransferDetails\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: (() => {\n    const node = Reflect.get($vars, \"GetTransferDetails\");\n    const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n    return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n  })() })",
+            "expression": "Object.assign(({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"GetTransferDetails\" },\n      error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n    }), { httpStatus: (() => {\n        const node = Reflect.get($vars, \"GetTransferDetails\");\n        const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n        return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n      })() })",
             "fieldType": "object"
           },
           "var": "result"
@@ -702,7 +718,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateTransfer\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "expression": "({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"ValidateTransfer\" },\n      error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n    })",
             "fieldType": "object"
           },
           "var": "result"
@@ -887,7 +903,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"GetDeliveringPositions\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: (() => {\n    const node = Reflect.get($vars, \"GetDeliveringPositions\");\n    const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n    return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n  })() })",
+            "expression": "Object.assign(({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"GetDeliveringPositions\" },\n      error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n    }), { httpStatus: (() => {\n        const node = Reflect.get($vars, \"GetDeliveringPositions\");\n        const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n        return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n      })() })",
             "fieldType": "object"
           },
           "var": "result"
@@ -992,7 +1008,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateDeliveringPositions\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "expression": "({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"ValidateDeliveringPositions\" },\n      error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n    })",
             "fieldType": "object"
           },
           "var": "result"
@@ -1183,7 +1199,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"GetReceivingPositions\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: (() => {\n    const node = Reflect.get($vars, \"GetReceivingPositions\");\n    const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n    return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n  })() })",
+            "expression": "Object.assign(({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"GetReceivingPositions\" },\n      error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n    }), { httpStatus: (() => {\n        const node = Reflect.get($vars, \"GetReceivingPositions\");\n        const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n        return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n      })() })",
             "fieldType": "object"
           },
           "var": "result"
@@ -1288,7 +1304,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"ValidateReceivingPositions\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "expression": "({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"ValidateReceivingPositions\" },\n      error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n    })",
             "fieldType": "object"
           },
           "var": "result"
@@ -1498,7 +1514,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "Object.assign(({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"RunReconciliation\" },\n  error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n}), { httpStatus: (() => {\n    const node = Reflect.get($vars, \"RunReconciliation\");\n    const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n    return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n  })() })",
+            "expression": "Object.assign(({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"RunReconciliation\" },\n      error: { code: \"HTTP_REQUEST_FAILED\", summary: \"Backend request failed: check HTTP status, availability, authentication and timeout.\" }\n    }), { httpStatus: (() => {\n        const node = Reflect.get($vars, \"RunReconciliation\");\n        const status = node?.error?.status ?? (node && Reflect.get(node, 'output'))?.status;\n        return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;\n      })() })",
             "fieldType": "object"
           },
           "var": "result"
@@ -1647,7 +1663,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  transferId: $vars.StartTransferInvestigation.output.transferId || null,\n  reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n  evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n  exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n  correlation: { transferId: $vars.StartTransferInvestigation.output.transferId || null, failedStep: \"NormalizeReconciliation\" },\n  error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n})",
+            "expression": "({\n      transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null,\n      reconciliationRunId: null, totalPositions: null, directlyMatched: null,\n      evidenceExplained: null, unresolvedCount: null, costBasisIssues: null,\n      exceptions: [], evidenceReferences: [], workflowOutcome: 'FAILED',\n      correlation: { transferId: Reflect.get($vars, \"ValidateInput\")?.output?.transferId || Reflect.get($vars, \"StartTransferInvestigation\")?.output?.transferId || null, failedStep: \"NormalizeReconciliation\" },\n      error: { code: \"INVALID_RESPONSE\", summary: \"Response is missing, malformed, empty where required, truncated, or inconsistent with the requested transfer.\" }\n    })",
             "fieldType": "object"
           },
           "var": "result"
@@ -1974,7 +1990,7 @@
       "inputs": {
         "trueLabel": "Optional IXP enabled",
         "falseLabel": "IXP disabled - use brokerage APIs",
-        "expression": "$vars.StartTransferInvestigation.output.enableIXP === true"
+        "expression": "$vars.ValidateInput.output.enableIXP === true"
       },
       "uniqueId": "cda9108d-f714-4fbf-bd48-a4b7742bef7b"
     },
@@ -1989,7 +2005,7 @@
       "inputs": {
         "trueLabel": "PDF supplied",
         "falseLabel": "No PDF supplied",
-        "expression": "$vars.StartTransferInvestigation.output.corporateActionPdf != null"
+        "expression": "$vars.ValidateInput.output.corporateActionPdf != null"
       },
       "uniqueId": "b64d86aa-8be1-4472-a575-1d3dd36f2815"
     },
@@ -2435,7 +2451,7 @@
         "icon": "code"
       },
       "inputs": {
-        "script": "// Evidence assembly only. No financial arithmetic, extraction or AI simulation.\nconst n = $vars.NormalizeReconciliation.output;\nconst r = $vars.RunReconciliation.output.body;\nconst object = x => x && typeof x === 'object' && !Array.isArray(x);\nconst text = x => typeof x === 'string' && x.length > 0;\nif (!['INVESTIGATION_REQUIRED', 'CLEAN'].includes(n.workflowOutcome) ||\n    r.status !== 'EXCEPTIONS_DETECTED' || !r.exceptions.length) throw new Error('INVALID_INVESTIGATION_CONTEXT');\nconst missingEvidence = [];\nconst response = name => Reflect.get($vars, name)?.output;\nconst ca = response('GetCorporateActionReference');\nconst refs = response('GetInvestigationReferences');\nconst scoped = x => object(x) && x.transferId === n.transferId && x.runId === n.demoRunId && x.fictionalDemo === true;\nconst ok = x => (x?.code ?? x?.statusCode) === 200;\nlet corporateActions = [], securities = [], identifierMappings = [], costBasis = [];\nconst securityIds = new Set(r.positions.map(p => p.securityId));\nif (ok(ca) && scoped(ca.body) && Array.isArray(ca.body.items) && ca.body.total === ca.body.items.length && ca.body.offset === 0 &&\n    ca.body.items.every(a => object(a) && securityIds.has(a.securityId) && text(a.corporateActionId) && typeof a.verified === 'boolean')) {\n  corporateActions = ca.body.items;\n} else missingEvidence.push({ source: 'corporate-actions', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: ca?.code ?? ca?.statusCode ?? null });\nif (ok(refs) && scoped(refs.body) && refs.body.contractVersion === '1.0' &&\n    Array.isArray(refs.body.securities) && Array.isArray(refs.body.identifierMappings) && Array.isArray(refs.body.costBasis) &&\n    refs.body.securities.every(s => object(s) && securityIds.has(s.securityId)) &&\n    refs.body.identifierMappings.every(m => object(m) && securityIds.has(m.canonicalSecurityId) && typeof m.verified === 'boolean') &&\n    refs.body.costBasis.every(b => object(b) && b.transferId === n.transferId && securityIds.has(b.securityId))) {\n  ({ securities, identifierMappings, costBasis } = refs.body);\n} else missingEvidence.push({ source: 'investigation-references', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: refs?.code ?? refs?.statusCode ?? null });\n// Index actual record IDs and actual evidence references, scoped by security.\nconst evidenceRecords = [];\nconst add = (id, securityId, kind, verified) => {\n  if (text(id)) evidenceRecords.push({ evidenceId: id, securityId, kind, verified });\n};\nfor (const p of n.sourcePositions) add(p.positionId, p.securityId, 'SOURCE_POSITION', true);\nfor (const p of n.receivingStagingPositions) add(p.stagingPositionId, p.securityId, 'RECEIVING_STAGING', true);\nfor (const e of r.exceptions) add(e.exceptionId, e.securityId, 'RECONCILIATION_EXCEPTION', true);\nfor (const a of corporateActions) {\n  add(a.corporateActionId, a.securityId, 'CORPORATE_ACTION', a.verified);\n  add(a.evidenceReference, a.securityId, 'CORPORATE_ACTION', a.verified);\n}\nfor (const m of identifierMappings) {\n  add(m.mappingId, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n  add(m.evidenceReference, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n}\nfor (const b of costBasis) {\n  add(b.costBasisId, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n  add(b.evidenceReference, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n}\nconst enabled = $vars.StartTransferInvestigation.output.enableIXP === true;\nconst verifiedDocument = enabled ? response('ValidateCorporateAction')?.extractionResult : null;\nif (enabled && verifiedDocument?.validationStatus !== 'VERIFIED') throw new Error('DOCUMENT_EVIDENCE_NOT_VERIFIED');\nreturn {\n  contractVersion: '1.0', transferId: n.transferId, reconciliationRunId: n.reconciliationRunId,\n  transfer: $vars.ValidateTransfer.output, deliveringPositions: n.sourcePositions,\n  receivingStagingPositions: n.receivingStagingPositions,\n  reconciliation: r, reconciliationSummary: r.summary, exceptions: r.exceptions,\n  securityIdentifiers: Array.from(securityIds).map(securityId => ({ securityId,\n    observedIdentifiers: Array.from(new Set([...n.sourcePositions, ...n.receivingStagingPositions]\n      .filter(p => p.securityId === securityId).map(p => p.observedIdentifier).filter(text))) })),\n  securities, corporateActions, identifierMappings, costBasis,\n  costBasisExceptions: n.costBasisExceptions, evidenceRecords, evidenceReferences: n.evidenceReferences,\n  missingEvidence, verifiedDocumentEvidence: verifiedDocument,\n  documentEvidenceStatus: enabled ? 'VERIFIED_IXP_EVIDENCE' : 'NOT_PROCESSED_IXP_DISABLED'\n};\n",
+        "script": "// Evidence assembly only. No financial arithmetic, extraction or AI simulation.\nconst n = $vars.NormalizeReconciliation.output;\nconst r = $vars.RunReconciliation.output.body;\nconst object = x => x && typeof x === 'object' && !Array.isArray(x);\nconst text = x => typeof x === 'string' && x.length > 0;\nif (!['INVESTIGATION_REQUIRED', 'CLEAN'].includes(n.workflowOutcome) ||\n    r.status !== 'EXCEPTIONS_DETECTED' || !r.exceptions.length) throw new Error('INVALID_INVESTIGATION_CONTEXT');\nconst missingEvidence = [];\nconst response = name => Reflect.get($vars, name)?.output;\nconst ca = response('GetCorporateActionReference');\nconst refs = response('GetInvestigationReferences');\nconst scoped = x => object(x) && x.transferId === n.transferId && x.runId === n.demoRunId && x.fictionalDemo === true;\nconst ok = x => (x?.code ?? x?.statusCode) === 200;\nlet corporateActions = [], securities = [], identifierMappings = [], costBasis = [];\nconst securityIds = new Set(r.positions.map(p => p.securityId));\nif (ok(ca) && scoped(ca.body) && Array.isArray(ca.body.items) && ca.body.total === ca.body.items.length && ca.body.offset === 0 &&\n    ca.body.items.every(a => object(a) && securityIds.has(a.securityId) && text(a.corporateActionId) && typeof a.verified === 'boolean')) {\n  corporateActions = ca.body.items;\n} else missingEvidence.push({ source: 'corporate-actions', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: ca?.code ?? ca?.statusCode ?? null });\nif (ok(refs) && scoped(refs.body) && refs.body.contractVersion === '1.0' &&\n    Array.isArray(refs.body.securities) && Array.isArray(refs.body.identifierMappings) && Array.isArray(refs.body.costBasis) &&\n    refs.body.securities.every(s => object(s) && securityIds.has(s.securityId)) &&\n    refs.body.identifierMappings.every(m => object(m) && securityIds.has(m.canonicalSecurityId) && typeof m.verified === 'boolean') &&\n    refs.body.costBasis.every(b => object(b) && b.transferId === n.transferId && securityIds.has(b.securityId))) {\n  ({ securities, identifierMappings, costBasis } = refs.body);\n} else missingEvidence.push({ source: 'investigation-references', code: 'REFERENCE_UNAVAILABLE_OR_INVALID', httpStatus: refs?.code ?? refs?.statusCode ?? null });\n// Index actual record IDs and actual evidence references, scoped by security.\nconst evidenceRecords = [];\nconst add = (id, securityId, kind, verified) => {\n  if (text(id)) evidenceRecords.push({ evidenceId: id, securityId, kind, verified });\n};\nfor (const p of n.sourcePositions) add(p.positionId, p.securityId, 'SOURCE_POSITION', true);\nfor (const p of n.receivingStagingPositions) add(p.stagingPositionId, p.securityId, 'RECEIVING_STAGING', true);\nfor (const e of r.exceptions) add(e.exceptionId, e.securityId, 'RECONCILIATION_EXCEPTION', true);\nfor (const a of corporateActions) {\n  add(a.corporateActionId, a.securityId, 'CORPORATE_ACTION', a.verified);\n  add(a.evidenceReference, a.securityId, 'CORPORATE_ACTION', a.verified);\n}\nfor (const m of identifierMappings) {\n  add(m.mappingId, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n  add(m.evidenceReference, m.canonicalSecurityId, 'IDENTIFIER_MAPPING', m.verified);\n}\nfor (const b of costBasis) {\n  add(b.costBasisId, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n  add(b.evidenceReference, b.securityId, 'COST_BASIS', b.status === 'COMPLETE');\n}\nconst enabled = $vars.ValidateInput.output.enableIXP === true;\nconst verifiedDocument = enabled ? response('ValidateCorporateAction')?.extractionResult : null;\nif (enabled && verifiedDocument?.validationStatus !== 'VERIFIED') throw new Error('DOCUMENT_EVIDENCE_NOT_VERIFIED');\nreturn {\n  contractVersion: '1.0', transferId: n.transferId, reconciliationRunId: n.reconciliationRunId,\n  transfer: $vars.ValidateTransfer.output, deliveringPositions: n.sourcePositions,\n  receivingStagingPositions: n.receivingStagingPositions,\n  reconciliation: r, reconciliationSummary: r.summary, exceptions: r.exceptions,\n  securityIdentifiers: Array.from(securityIds).map(securityId => ({ securityId,\n    observedIdentifiers: Array.from(new Set([...n.sourcePositions, ...n.receivingStagingPositions]\n      .filter(p => p.securityId === securityId).map(p => p.observedIdentifier).filter(text))) })),\n  securities, corporateActions, identifierMappings, costBasis,\n  costBasisExceptions: n.costBasisExceptions, evidenceRecords, evidenceReferences: n.evidenceReferences,\n  missingEvidence, verifiedDocumentEvidence: verifiedDocument,\n  documentEvidenceStatus: enabled ? 'VERIFIED_IXP_EVIDENCE' : 'NOT_PROCESSED_IXP_DISABLED'\n};\n",
         "errorHandlingEnabled": true
       },
       "outputs": {
@@ -2565,7 +2581,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n  documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n  investigationStatus: \"INVALID_INVESTIGATION_CONTEXT\", investigationSummary: 'Investigation could not be validated; human review is required.',\n  findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n  unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n  unresolvedQuestions: [],\n  correctionsApplied: 0, transferCompleted: false, error: { code: \"INVALID_INVESTIGATION_CONTEXT\", failedStep: \"PrepareInvestigationContext\" }\n})",
+            "expression": "({\n                          ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n                          investigationStatus: \"INVALID_INVESTIGATION_CONTEXT\", investigationSummary: 'Investigation could not be validated; human review is required.',\n                          findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n                          unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n                          unresolvedQuestions: [],\n                          correctionsApplied: 0, transferCompleted: false, error: { code: \"INVALID_INVESTIGATION_CONTEXT\", failedStep: \"PrepareInvestigationContext\" }\n                        })",
             "fieldType": "object"
           },
           "var": "result"
@@ -2670,7 +2686,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n  documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n  investigationStatus: \"INVALID_INVESTIGATION_CONTEXT\", investigationSummary: 'Investigation could not be validated; human review is required.',\n  findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n  unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n  unresolvedQuestions: [],\n  correctionsApplied: 0, transferCompleted: false, error: { code: \"INVALID_INVESTIGATION_CONTEXT\", failedStep: \"SerializeInvestigationContext\" }\n})",
+            "expression": "({\n                          ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n                          investigationStatus: \"INVALID_INVESTIGATION_CONTEXT\", investigationSummary: 'Investigation could not be validated; human review is required.',\n                          findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n                          unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n                          unresolvedQuestions: [],\n                          correctionsApplied: 0, transferCompleted: false, error: { code: \"INVALID_INVESTIGATION_CONTEXT\", failedStep: \"SerializeInvestigationContext\" }\n                        })",
             "fieldType": "object"
           },
           "var": "result"
@@ -2816,7 +2832,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n  documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n  investigationStatus: \"AGENT_FAILED\", investigationSummary: 'Investigation could not be validated; human review is required.',\n  findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n  unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n  unresolvedQuestions: [],\n  correctionsApplied: 0, transferCompleted: false, error: { code: \"AGENT_FAILED\", failedStep: \"TransferInvestigationAgent\" }\n})",
+            "expression": "({\n                          ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n                          investigationStatus: \"AGENT_FAILED\", investigationSummary: 'Investigation could not be validated; human review is required.',\n                          findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n                          unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n                          unresolvedQuestions: [],\n                          correctionsApplied: 0, transferCompleted: false, error: { code: \"AGENT_FAILED\", failedStep: \"TransferInvestigationAgent\" }\n                        })",
             "fieldType": "object"
           },
           "var": "result"
@@ -2921,7 +2937,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({\n  ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n  documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n  investigationStatus: \"INVALID_AGENT_OUTPUT\", investigationSummary: 'Investigation could not be validated; human review is required.',\n  findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n  unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n  unresolvedQuestions: [],\n  correctionsApplied: 0, transferCompleted: false, error: { code: \"INVALID_AGENT_OUTPUT\", failedStep: \"ValidateInvestigation\" }\n})",
+            "expression": "({\n                          ...$vars.NormalizeReconciliation.output, workflowOutcome: 'INVESTIGATION_REVIEW_REQUIRED',\n                          documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'IXP_SETUP_OR_EVIDENCE_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED',\n                          investigationStatus: \"INVALID_AGENT_OUTPUT\", investigationSummary: 'Investigation could not be validated; human review is required.',\n                          findings: [], recommendedNextActions: ['REQUEST_ADDITIONAL_EVIDENCE'], humanReviewRequired: true,\n                          unresolvedExceptions: $vars.NormalizeReconciliation.output.exceptions.filter(e => e.resolutionStatus !== 'EXPLAINED'),\n                          unresolvedQuestions: [],\n                          correctionsApplied: 0, transferCompleted: false, error: { code: \"INVALID_AGENT_OUTPUT\", failedStep: \"ValidateInvestigation\" }\n                        })",
             "fieldType": "object"
           },
           "var": "result"
@@ -2973,7 +2989,7 @@
         "icon": "code"
       },
       "inputs": {
-        "script": "const report = $vars.ValidateInvestigation.output;\nconst reconciliation = $vars.NormalizeReconciliation.output;\nconst reviewer = $vars.StartTransferInvestigation.output.reviewerReference;\nif (report.workflowOutcome !== 'INVESTIGATION_COMPLETED' || report.investigationStatus !== 'COMPLETED' ||\n    report.documentEvidenceStatus !== 'NOT_PROCESSED_IXP_DISABLED' ||\n    typeof reviewer !== 'string' || !reviewer.trim() || reviewer.length > 256 ||\n    !/^[A-Za-z0-9_-]{43}$/.test($vars.CreateDemoRun.output.body.reviewCapability)) {\n  throw new Error('REVIEW_CONFIGURATION_OR_VALIDATION_REQUIRED');\n}\n// Agent prose cannot choose an authorized action. Use immutable backend exceptions.\nreturn {\n  transferId:reconciliation.transferId, reconciliationRunId:reconciliation.reconciliationRunId,\n  agentInvestigationId:$vars.ValidateInput.output.correlationId + ':TransferInvestigationAgent',\n  investigationSummary:report.investigationSummary, overallRiskLevel:report.overallRiskLevel,\n  documentEvidenceStatus:report.documentEvidenceStatus,\n  proposedActions:reconciliation.exceptions.map(e => ({exceptionId:e.exceptionId, securityId:e.securityId,\n    evidenceReferences:e.evidenceReferences,\n    disposition:e.resolutionStatus === 'EXPLAINED' ? 'ACCEPT_VERIFIED_EXPLANATION' :\n      (e.exceptionType.startsWith('COST_BASIS_') ? 'OPEN_COST_BASIS_CASE' : 'ESCALATE_TO_TRANSFER_OPERATIONS')})),\n};\n",
+        "script": "const report = $vars.ValidateInvestigation.output;\nconst reconciliation = $vars.NormalizeReconciliation.output;\nconst reviewer = $vars.ValidateInput.output.reviewerReference;\nif (report.workflowOutcome !== 'INVESTIGATION_COMPLETED' || report.investigationStatus !== 'COMPLETED' ||\n    report.documentEvidenceStatus !== 'NOT_PROCESSED_IXP_DISABLED' ||\n    typeof reviewer !== 'string' || !reviewer.trim() || reviewer.length > 256 ||\n    !/^[A-Za-z0-9_-]{43}$/.test($vars.CreateDemoRun.output.body.reviewCapability)) {\n  throw new Error('REVIEW_CONFIGURATION_OR_VALIDATION_REQUIRED');\n}\n// Agent prose cannot choose an authorized action. Use immutable backend exceptions.\nreturn {\n  transferId:reconciliation.transferId, reconciliationRunId:reconciliation.reconciliationRunId,\n  agentInvestigationId:$vars.ValidateInput.output.correlationId + ':TransferInvestigationAgent',\n  investigationSummary:report.investigationSummary, overallRiskLevel:report.overallRiskLevel,\n  documentEvidenceStatus:report.documentEvidenceStatus,\n  proposedActions:reconciliation.exceptions.map(e => ({exceptionId:e.exceptionId, securityId:e.securityId,\n    evidenceReferences:e.evidenceReferences,\n    disposition:e.resolutionStatus === 'EXPLAINED' ? 'ACCEPT_VERIFIED_EXPLANATION' :\n      (e.exceptionType.startsWith('COST_BASIS_') ? 'OPEN_COST_BASIS_CASE' : 'ESCALATE_TO_TRANSFER_OPERATIONS')})),\n};\n",
         "errorHandlingEnabled": true
       },
       "outputs": {
@@ -5329,7 +5345,7 @@
           "description": "",
           "source": {
             "type": "jsExpression",
-            "expression": "({ ...$vars.NormalizeReconciliation.output, documentEvidenceStatus: $vars.StartTransferInvestigation.output.enableIXP === true ? 'NOT_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED' })",
+            "expression": "({ ...$vars.NormalizeReconciliation.output, documentEvidenceStatus: $vars.ValidateInput.output.enableIXP === true ? 'NOT_REQUIRED' : 'NOT_PROCESSED_IXP_DISABLED' })",
             "fieldType": "object"
           },
           "var": "result"
@@ -5356,6 +5372,132 @@
         }
       },
       "uniqueId": "728d1ebc-1cae-4f82-8947-c7c65bee3c14"
+    },
+    {
+      "id": "PortalWebhook",
+      "type": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "HTTP Webhook",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/1177fb24ca64146fbb9be417dffa2b01231e5947ab25a506cee199f7ca84dd97.svg"
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-http-webhook connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-http-webhook"
+          },
+          {
+            "name": "operation",
+            "value": "GENERIC",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "HTTP_WEBHOOK",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-http-webhook connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-http-webhook",
+                "connectorName": "HTTP Webhook"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output"
+        }
+      },
+      "inputs": {
+        "entryPointId": "f03ff64a-0103-400f-8000-f13ce0120103",
+        "detail": {
+          "connector": "uipath-http-webhook",
+          "connectionId": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+          "connectionResourceId": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+          "connectionFolderKey": "33177cc5-ad70-4e48-bc87-238e431b4048",
+          "eventParameters": {},
+          "objectName": "HTTP_WEBHOOK",
+          "eventType": "GENERIC",
+          "eventMode": "webhooks",
+          "filterExpression": "",
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-http-webhook\",\"objectName\":\"HTTP_WEBHOOK\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"GENERIC\",\"eventMode\":\"webhooks\",\"supportsStreaming\":false},\"objectName\":\"HTTP_WEBHOOK\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"httpMethod\":null,\"path\":null,\"filter\":null}}",
+          "uiPathActivityTypeId": "773cab30-51dc-3eb4-b19d-720dfa151cc9",
+          "bindings": [
+            {
+              "resource": "Property",
+              "key": "GENERIC",
+              "value": {},
+              "activityDisplayName": "connector-activity",
+              "metadata": {
+                "ActivityName": "connector-activity",
+                "BindingsVersion": "2.2",
+                "ObjectName": "HTTP_WEBHOOK",
+                "ParentResourceKey": "EventTrigger.f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+                "TriggerCreateParameters": "",
+                "DebugQueryParameters": ""
+              }
+            }
+          ],
+          "errorState": {
+            "issues": []
+          }
+        }
+      }
     }
   ],
   "edges": [
@@ -5886,27 +6028,34 @@
     },
     {
       "id": "edge_75",
+      "sourceNodeId": "PortalWebhook",
+      "sourcePort": "output",
+      "targetNodeId": "ValidateInput",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_76",
       "sourceNodeId": "CorporateActionReferenceUnavailable",
       "sourcePort": "success",
       "targetNodeId": "IXPEnabled",
       "targetPort": "input"
     },
     {
-      "id": "edge_76",
+      "id": "edge_77",
       "sourceNodeId": "InvestigationReferencesUnavailable",
       "sourcePort": "success",
       "targetNodeId": "PrepareInvestigationContext",
       "targetPort": "input"
     },
     {
-      "id": "edge_77",
+      "id": "edge_78",
       "sourceNodeId": "RejectDisposition",
       "sourcePort": "success",
       "targetNodeId": "RecordReviewDecision",
       "targetPort": "input"
     },
     {
-      "id": "edge_78",
+      "id": "edge_79",
       "sourceNodeId": "IXPEnabled",
       "sourcePort": "false",
       "targetNodeId": "GetInvestigationReferences",
@@ -7674,6 +7823,219 @@
           "api-function"
         ]
       }
+    },
+    {
+      "nodeType": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "version": "1.0.0",
+      "category": "trigger.211594",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 540,
+      "description": "(HTTP Webhook) Triggers instantly when an event has occured",
+      "display": {
+        "label": "HTTP Webhook",
+        "description": "(HTTP Webhook) Triggers instantly when an event has occured",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/1177fb24ca64146fbb9be417dffa2b01231e5947ab25a506cee199f7ca84dd97.svg",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-http-webhook connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-http-webhook"
+          },
+          {
+            "name": "operation",
+            "value": "GENERIC",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "HTTP_WEBHOOK",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-http-webhook connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-http-webhook",
+                "connectorName": "HTTP Webhook"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "211594",
+                    "svgIconUrl": "icons/1177fb24ca64146fbb9be417dffa2b01231e5947ab25a506cee199f7ca84dd97.svg",
+                    "displayName": "HTTP Webhook",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers instantly when an event has occured",
+                    "category": "HTTP Webhook.Triggers",
+                    "activityColor": "#000000",
+                    "configuration": "{\"connectorKey\":\"uipath-http-webhook\",\"objectName\":\"HTTP_WEBHOOK\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"GENERIC\",\"eventMode\":\"webhooks\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "773cab30-51dc-3eb4-b19d-720dfa151cc9",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-http-webhook-HTTP-Webhook",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      },
+      "eventMode": "webhooks",
+      "eventParameters": {
+        "fields": [],
+        "note": "EMPTY, and that is a declaration rather than a gap: this operation takes no event parameters. `uip is triggers describe uipath-http-webhook GENERIC HTTP_WEBHOOK --connection-id <id>` reports `EventParameters: []` and `registry get uipath.connector.trigger.uipath-http-webhook.http-webhook --connection-id <id>` reports `eventParameters: {\"fields\": []}` (both 2026-07-30). The subscription is scoped by the CONNECTION — each HTTP Webhook connection owns one webhook URL and every request to it is an event for that connection — so an empty `detail.eventParameters` is CORRECT here, as 20 of 20 deployed `WebhookSelfTest` artifacts have it. Copied onto the `.event.` form from the `.trigger.` form because IS enriches per node type while the fact is per OPERATION."
+      },
+      "filterFields": {
+        "fields": [
+          {
+            "name": "request_body",
+            "displayName": "Body",
+            "type": "string",
+            "dataType": "string",
+            "required": false,
+            "description": "Request body of the event sent to webhook endpoint"
+          },
+          {
+            "name": "request_headers",
+            "displayName": "Headers",
+            "type": "string",
+            "dataType": "string",
+            "required": false,
+            "description": "Request headers of the event sent to webhook endpoint"
+          }
+        ]
+      },
+      "outputResponseDefinition": {
+        "fields": [
+          {
+            "name": "request_body",
+            "type": "string",
+            "displayName": "Body",
+            "description": "Request body of the event sent to webhook endpoint"
+          },
+          {
+            "name": "request_headers",
+            "type": "string",
+            "displayName": "Headers",
+            "description": "Request headers of the event sent to webhook endpoint"
+          }
+        ],
+        "note": "The COMPLETE payload, not a subset — and that is the difference from the Outlook pair. `uip is triggers describe uipath-http-webhook GENERIC HTTP_WEBHOOK --connection-id <id>` (run 2026-07-30) reports exactly TWO output fields and the same two as filter fields; there is no longer list to resolve at author time. Evidenced twice, because the registry enriches this operation's two node types differently: `registry get uipath.connector.trigger.uipath-http-webhook.http-webhook --connection-id <id>` returns these two fields, while the same call for the `.event.` sibling returns `outputResponseDefinition: {\"fields\": []}` even WITH the connection — IS enrichment is per-node-type, so the wait form is the unenriched one and its schema is copied from the trigger form's. Both fields are strings: `request_body` and `request_headers` arrive as the raw request text, so parse them (`JSON.parse`) rather than reading sub-fields off them."
+      }
     }
   ],
   "variables": {
@@ -8631,6 +8993,15 @@
         "binding": {
           "nodeId": "CleanReconciliation",
           "outputId": "reviewDecision"
+        }
+      },
+      {
+        "id": "PortalWebhook.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "PortalWebhook",
+          "outputId": "output"
         }
       },
       {
@@ -10440,6 +10811,24 @@
       "resource": "connection",
       "resourceKey": "",
       "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "bUipathhttpwebhookConnection",
+      "name": "uipath-http-webhook connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+      "default": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bUipathhttpwebhookFolderKey",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+      "default": "33177cc5-ad70-4e48-bc87-238e431b4048",
+      "propertyAttribute": "FolderKey"
     }
   ],
   "layout": {
@@ -11279,7 +11668,19 @@
           "height": 96
         },
         "collapsed": false
+      },
+      "PortalWebhook": {
+        "position": {
+          "x": 256,
+          "y": -32
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
       }
     }
-  }
+  },
+  "subflows": {}
 }
