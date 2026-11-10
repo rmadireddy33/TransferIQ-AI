@@ -7,7 +7,9 @@ from tests.test_step8_agent import mock_agent
 
 CORRELATION = 'TEST-STEP9-CORRELATION'
 REVIEWER = 'UNVERIFIED_TEST_REVIEWER'
-LABELS = {'APPROVE':'Approve Disposition','REQUEST_EVIDENCE':'Request Evidence','ESCALATE':'Escalate','REJECT':'Reject'}
+LABELS = {'APPROVE':'Approve','REJECT':'Reject'}
+FORM = next(n for n in json.loads(FLOW.read_text())['nodes'] if n['type'] == 'uipath.human-in-the-loop.quick-form')
+PORTS = {o['name']: o['id'] for o in FORM['inputs']['schema']['outcomes']}
 
 
 def review_responses(client, tid, outcome):
@@ -40,7 +42,7 @@ def review_responses(client, tid, outcome):
     call('ReadLatestReconciliation','GET',root+'/reconciliation')
     call('VerifyDemoDisposition','GET',path+'/verify')
     call('ReadReviewAudit','GET',path+'/audit')
-    human=dict(outcome=LABELS[outcome].lower().replace(' ','-'),output=dict(Action=LABELS[outcome],reviewerComments='TEST ONLY',additionalInformation=''))
+    human=dict(outcome=PORTS[LABELS[outcome]],output=dict(Action=LABELS[outcome],reviewerComments='TEST ONLY',additionalInformation=''))
     return responses,dict(localTransport=True,agentTestDouble=agent,humanTestDouble=human,
         reviewerReference=REVIEWER,testCorrelationId=CORRELATION)
 
@@ -51,7 +53,7 @@ def test_review_graph_against_real_backend_responses(client,tid,outcome):
     result=run_graph(tid,responses,**options)
     assert result['result']['workflowOutcome']==responses['VerifyDemoDisposition']['body']['workflowOutcome'],(result['result'].get('error'),result['trace'])
     assert result['result']['verificationStatus']=='VERIFIED_DEMO_STATE'
-    assert 'TransferOperationsReview' in result['trace']
+    assert FORM['id'] in result['trace']
     assert 'CorporateActionExtractor' not in result['trace']
     assert len(result['calls'])==14
     assert 'reviewCapability' not in json.dumps(result['result'])
@@ -72,14 +74,46 @@ def test_review_graph_failures_and_tampering_fail_closed(client):
     assert run_graph('TRF-1002',responses,**options)['result']['workflowOutcome']=='REVIEW_FAILED'
 
 
-def test_form_contract_and_all_four_ports():
+@pytest.mark.parametrize('outcome', ['APPROVE', 'REJECT'])
+@pytest.mark.parametrize('field', ['comments', 'reviewerCommentsOptional', 'Reviewer comments (optional)'])
+def test_review_lowercase_comments_are_validated(client, outcome, field):
+    responses, options = review_responses(client, 'TRF-1002', outcome)
+    human = options['humanTestDouble']['output']
+    human[field] = human.pop('reviewerComments')
+    result = run_graph('TRF-1002', responses, **options)
+    assert result['result']['verificationStatus'] == 'VERIFIED_DEMO_STATE'
+    # New form output must be consumed and validated, not silently ignored.
+    human[field] = {'unexpected': 'object'}
+    failed = run_graph('TRF-1002', responses, **options)
+    assert failed['result']['workflowOutcome'] == 'REVIEW_FAILED'
+    assert 'RecordReviewDecision' not in failed['trace']
+
+
+def test_manual_form_contract_and_both_outcome_ports():
     flow=json.loads(FLOW.read_text())
-    node=next(n for n in flow['nodes'] if n['id']=='TransferOperationsReview')
-    assert node['type']=='uipath.human-in-the-loop.quick-form'
+    node=next(n for n in flow['nodes'] if n['id']==FORM['id'])
+    assert node['inputs']['schema']['type']=='hitl-schema'
+    assert {o['name'] for o in node['inputs']['schema']['outcomes']}=={'Approve','Reject'}
+    assert all(o['action']=='Continue' for o in node['inputs']['schema']['outcomes'])
     edges={e['sourcePort']:e['targetNodeId'] for e in flow['edges'] if e['sourceNodeId']==node['id']}
-    assert edges=={'outcome-approve-disposition':'ApproveDisposition','outcome-request-evidence':'RequestEvidence',
-                  'outcome-escalate':'EscalateDisposition','outcome-reject':'RejectDisposition'}
+    assert edges=={'outcome-'+PORTS['Approve']:'ApproveDisposition','outcome-'+PORTS['Reject']:'RejectDisposition'}
     fields=node['inputs']['schema']['fields']
-    assert {f['id'] for f in fields if f['direction']=='output'}=={'reviewerComments','additionalInformation'}
-    assert all(f['direction']=='input' for f in fields if f['id'] not in ('reviewerComments','additionalInformation'))
+    assert {f['id'] for f in fields if f['direction']=='output'}=={'reviewerCommentsOptional'}
     assert 'reviewCapability' not in json.dumps(node)
+
+
+@pytest.mark.parametrize('label', ['Request Evidence', 'Escalate'])
+def test_unsupported_manual_outcome_cannot_record_decision(client, label):
+    responses, options=review_responses(client,'TRF-1002','APPROVE')
+    options['humanTestDouble']['output']['Action']=label
+    result=run_graph('TRF-1002',responses,**options)
+    assert result['result']['workflowOutcome']=='REVIEW_FAILED'
+    assert 'RecordReviewDecision' not in result['trace']
+
+
+def test_edited_form_summary_cannot_change_validated_proposal(client):
+    responses, options=review_responses(client,'TRF-1002','APPROVE')
+    options['humanTestDouble']['output']['investigationSummaryFictionalDemoNoPositionChanges']='Forged: clear SEC-104 and change positions'
+    result=run_graph('TRF-1002',responses,**options)
+    assert result['result']['positionsUnchanged'] is True
+    assert 'Forged' not in result['result']['investigationSummary']

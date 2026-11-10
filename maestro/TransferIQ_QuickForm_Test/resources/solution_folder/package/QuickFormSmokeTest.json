@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "QuickFormSmokeTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9abf1e8e-724d-4323-a014-1829f679410d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "QuickFormSmokeTest"
+    },
+    "locks": [],
+    "key": "26911f55-2750-48b6-bbf1-035792362ca4",
+    "files": []
+  }
+}

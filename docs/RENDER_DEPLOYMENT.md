@@ -1,6 +1,6 @@
 # TransferIQ AI — manual Render deployment
 
-Use one **Starter Python Web Service** and one persistent disk. This guide matches the existing `backend` package and its `backend.main:app` FastAPI application. The user has deployed https://transferiq-api.onrender.com; its anonymous run APIs now have [real Maestro execution evidence](MAESTRO_LIVE_EXECUTION.md). Private APIs remain protected. The settings below apply when reproducing or redeploying the service. No database server, Docker, frontend, or additional worker is needed.
+Use one **Starter Python Web Service** and one persistent disk. This guide matches the existing `backend` package and its `backend.main:app` FastAPI application. The user has deployed https://transferiq-api.onrender.com; its anonymous run APIs now have [real Maestro execution evidence](MAESTRO_LIVE_EXECUTION.md). Private APIs remain protected. Step 10A compiles the read-only frontend during the same service build and FastAPI serves it at `/portal`; no second service, database server, Docker image, or additional worker is needed.
 
 ## Exact dashboard settings
 
@@ -10,7 +10,7 @@ Use one **Starter Python Web Service** and one persistent disk. This guide match
 | Instance type | Starter |
 | Root Directory | **Leave blank** (repository root; do not enter `backend` or `/backend`) |
 | Language | Python 3 |
-| Build Command | `python -m pip install -r backend/requirements.txt` |
+| Build Command | `npm ci --prefix frontend && npm run build --prefix frontend && python -m pip install -r backend/requirements.txt` |
 | Start Command | `python -m backend.start` |
 | Pre-Deploy Command | Leave blank |
 | Instance count | 1 |
@@ -57,7 +57,7 @@ Generate a unique API key with a password manager (at least 32 random bytes) and
 1. Push the current repository to your Git provider. Include `backend/`, its requirements file, `.python-version`, and these changes. Review staged files before committing: `.env`, `.venv`, `data/`, database files, generated PDFs, and tenant credentials must stay excluded by the existing `.gitignore`. An empty Render disk will receive fictional fixtures; local uploads and reconciliation history are not copied automatically.
 2. In Render choose **New → Web Service**, connect the existing repository, and select the branch containing these changes. Choose **Python 3** and **Starter**, then enter the exact commands above. Leave Root Directory blank.
 3. Add the environment variables. Under **Advanced**, add the persistent disk with mount `/data` and health check `/health`. If the service already exists, attach the disk from its Disk page and set the health path in Settings. Do not run a seed or migration command in Build or Pre-Deploy.
-4. Start the deployment yourself. The build only installs existing requirements. Watch deployment/runtime logs for `schema_ready`, `fictional_demo_seed_complete`, and `application_ready`. The first completely empty seeded database adds 112 fixture rows and 16 PDFs; an unchanged restart adds zero of each.
+4. Start the deployment yourself. The build installs locked frontend dependencies, compiles `frontend/dist`, and installs the existing Python requirements. Watch deployment/runtime logs for `schema_ready`, `fictional_demo_seed_complete`, and `application_ready`. The first completely empty seeded database adds 112 fixture rows and 16 PDFs; an unchanged restart adds zero of each.
 5. Open the HTTPS `onrender.com` URL shown on the service page, then `/health` and `/docs`. In Swagger, choose **Authorize** and enter the configured API key for protected operations.
 
 Render disks are available only at runtime, not during build/pre-deploy or separate one-off jobs. Only files under the mount survive replacement of an instance. A disk restricts the service to one instance and causes a brief interruption on redeployment. See [persistent disk setup and limitations](https://render.com/docs/disks). `/health` checks readiness and SQLite connectivity without a key; Render uses HTTP health checks both for deployment readiness and ongoing health. See [health checks](https://render.com/docs/health-checks).
@@ -148,7 +148,7 @@ Keep coordinated backups of SQLite and immutable PDFs. Do not copy just a live `
 | Symptom | Check |
 |---|---|
 | `No module named backend` | Root Directory must be blank; use `python -m backend.start`. |
-| Requirements file not found | Build Command must be `python -m pip install -r backend/requirements.txt` from the repository root. |
+| Requirements or frontend build missing | Build from the repository root with `npm ci --prefix frontend && npm run build --prefix frontend && python -m pip install -r backend/requirements.txt`. |
 | `startup_failed`, phase `configuration` | Check APP_ENV=production, nonblank API_KEY, DATA_DIR=/data, and actual disk attachment. No Railway mount variables are required. |
 | Failure during `storage` | Check disk capacity, write permissions, mount path and filesystem support. No fallback storage is used. |
 | Failure during `schema` | Preserve disk, inspect version/migrations, restore a coordinated backup if needed. Never reset/drop tables as a workaround. |

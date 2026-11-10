@@ -35,6 +35,12 @@ def test_public_catalog_is_precomputed_not_live(client, app, auth, transfer_payl
     for sample in before['items']:
         assert sample['liveExecution'] is False and sample['reconciliationRunId'] is None
         assert sample['quantityReconciliationOnly'] is True
+        assert sample['clientName'] in {'Avery DemoVale', 'Morgan DemoReed'}
+        assert sample['deliveringFirmName'] == 'Summit Wealth'
+        assert sample['receivingFirmName'] == 'Northstar Securities'
+        assert sample['sourceAccountReference'].startswith('FICTIONAL-SRC-')
+        assert sample['destinationAccountReference'].startswith('FICTIONAL-DST-')
+        assert sample['transferType'] == 'FULL' and sample['transferStatus'] == 'DRAFT'
         assert client.get('/api/demo/transfers/' + sample['transferId']).json() == sample
     basis = client.get('/api/demo/transfers/TRF-1004').json()
     assert basis['expectedWorkflowOutcome'] == 'CLEAN'

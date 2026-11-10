@@ -1,12 +1,20 @@
 # TransferIQ AI
 
+Step 10A adds a production-ready, read-only Operations Portal at `/portal`. The React/TypeScript/Vite interface displays the five synthetic transfer scenarios, backend reconciliation evidence, optional existing run/plan verification, audit events, and fictional documents without exposing workflow triggers or financial mutations. FastAPI hosts the compiled SPA from the same origin; deployment requires the updated combined npm/Python build command. See [portal scope, contracts, verification, and deployment](docs/STEP10A_OPERATIONS_PORTAL.md). These local changes are not yet deployed to Render.
+
+Current Step 9 status: the manually created Quick Form works. The repaired original Flow completed real TRF-1002 human approval and rejection, recorded and verified both backend decisions, and produced their audit reports. SEC-104 remains unresolved at -20 shares; positions are unchanged. TRF-1001 completed CLEAN. The full local suite passed 460 tests. See [current verification](docs/STEP9_MANUAL_FORM_VERIFICATION.md).
+
+Earlier milestone notes below are historical; the linked verification supersedes their Quick Form blocker status.
+
 **Intelligent Brokerage Account Transfer Exception Resolution**
+
+Latest correction: the November 9 null agent-output flag is fixed and verified in a real TRF-1002 run; investigation and plan preview now pass again. Quick Form still fails with HTTP 400 / 170000. See [current diagnosis and verification](docs/STEP9_NOV9_DATA_DIAGNOSIS.md). Human-task creation/completion remains unverified; the diagnostic form is temporarily limited to Approve/Reject. The installed candidate passed product validation and 50 focused tests.
 
 A hackathon demonstration using fictional clients, firms, securities, accounts, and financial information. No real ACATS connection, securities transfer, trading, or settlement is implemented.
 
 ## Current status
 
-Step 9 is implemented locally: a real `TransferOperationsReview` Quick Form, isolated demo resolution plans/decisions/dispositions, additive SQLite migrations and independent verification/audit. The Flow validates without warnings. **Render still returns 404 for the new review-run route; real Step 9 task generation and human completion are pending deployment.** Financial reconciliation rules and custody/staging quantities are unchanged; IXP remains disabled by default. See [human review and deployment](docs/STEP9_HUMAN_APPROVAL.md), [API contracts](docs/STEP9_API_CONTRACTS.md) and [actual test results](docs/STEP9_TEST_RESULTS.md).
+Step 9 is implemented locally: a real `TransferOperationsReview` Quick Form, isolated demo resolution plans/decisions/dispositions, additive SQLite migrations and independent verification/audit. The Flow validates without warnings. **Backend redeployment is verified (review creation 201, preview 200), and real TRF-1001 is CLEAN. TRF-1002 reaches Quick Form creation but UiPath returns HTTP 400 / incident 170000; no human task or completion is yet verified.** Financial reconciliation rules and custody/staging quantities are unchanged; IXP remains disabled by default. See [human review and deployment](docs/STEP9_HUMAN_APPROVAL.md), [API contracts](docs/STEP9_API_CONTRACTS.md) and [actual test results](docs/STEP9_TEST_RESULTS.md).
 
 Step 8 adds the real `TransferInvestigationAgent` Autonomous Agent, independently validated recommendations, and `enableIXP=false` by default. The supplemental-reference GET is now deployed on Render and returns 200. A new real Maestro TRF-1002 run returned INVESTIGATION_COMPLETED: SEC-103's split explained, SEC-104's shortage retained, IXP explicitly skipped, missingEvidence empty, and agent input matched the fetched reference data. TRF-1001 also returned CLEAN; both runs retained unchanged positions and zero corrections. See [post-deployment verification](docs/STEP8_DEPLOYED_VERIFICATION.md). Cost-basis-only exceptions now enter investigation. See [Step 8 integration](docs/STEP8_AGENT_INTEGRATION.md) and [actual tests and limitations](docs/STEP8_AGENT_TEST_CASES.md). No financial corrections or approvals were added.
 
@@ -16,7 +24,7 @@ Judges can execute real synthetic reconciliation through the live anonymous `/ap
 
 The user deployed the backend at https://transferiq-api.onrender.com; earlier live checks confirmed health and sample API responses. Render uses the same backend launcher and one persistent disk at `/data`. Subsequent local changes are not automatically deployed. Follow [the Render settings and manual deployment guide](docs/RENDER_DEPLOYMENT.md).
 
-Railway backend deployment preparation is complete: Railpack configuration, one-worker startup, `/data` volume enforcement, runtime migrations, opt-in missing-only demo seeding, readiness, and structured logs. **No Railway deployment has occurred.** The current backend suite passes 243 tests, including real HTTP startup/restart and uploaded-PDF persistence. See [exact Railway setup, environment variables, verification and troubleshooting](docs/RAILWAY_DEPLOYMENT.md).
+Railway backend deployment preparation is complete: Railpack configuration, one-worker startup, `/data` volume enforcement, runtime migrations, opt-in missing-only demo seeding, readiness, and structured logs. **No Railway deployment has occurred.** At that preparation milestone, the backend suite passed 243 tests, including real HTTP startup/restart and uploaded-PDF persistence. See [exact Railway setup, environment variables, verification and troubleshooting](docs/RAILWAY_DEPLOYMENT.md).
 
 Step 5 provides the existing **Maestro Automate Flow** under `maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/`. Its five Manual HTTP calls create an isolated run, fetch transfer/source/staging context and reconcile using actual previous-node outputs. Python retains all financial calculations. Product validation and real cloud debug executions are now verified; the debug CLI uploaded the existing solution to Studio Web. No permanent Orchestrator publication or new Render deployment was performed in this execution task. See [designer setup](docs/MAESTRO_STEP5_SETUP.md).
 
@@ -30,7 +38,7 @@ code --reuse-window .\maestro\TransferIQ_Reconciliation\TransferIQ_Reconciliatio
 
 Step 2 implements the FastAPI backend, SQLAlchemy 2.x/Pydantic v2 models and contracts, persistent SQLite, core read APIs, API-key-protected transfer creation, deterministic sample seeding, and isolated Pytest tests. Receiving records are transfer staging positions, not settled custody holdings.
 
-Step 3 adds deterministic reconciliation, verified synthetic reference evidence, cost-basis checks, and persisted exception history. Step 4 adds authenticated PDF upload/metadata/download APIs, persistent document storage, and 16 reproducible fictional PDFs. Approval workflows, frontend, IXP extraction, and Railway deployment remain unimplemented. See [Document API and commands](docs/DOCUMENT_API.md), [IXP handoff plan](docs/IXP_INTEGRATION_PLAN.md), and [Step 4 verification and generated paths](docs/STEP4_VERIFICATION.md). See [Reconciliation rules, endpoints, scenarios, and Swagger instructions](docs/RECONCILIATION.md) and [Step 3 verification](docs/STEP3_VERIFICATION.md). See [ARCHITECTURE.md](ARCHITECTURE.md), [PROJECT_PLAN.md](PROJECT_PLAN.md), [AGENTS.md](AGENTS.md), and [executed verification](docs/STEP2_VERIFICATION.md).
+Step 3 adds deterministic reconciliation, verified synthetic reference evidence, cost-basis checks, and persisted exception history. Step 4 adds authenticated PDF upload/metadata/download APIs, persistent document storage, and 16 reproducible fictional PDFs. The current read-only frontend is described above; private operator authentication, live IXP extraction, financial correction, and Railway deployment remain unimplemented. See [Document API and commands](docs/DOCUMENT_API.md), [IXP handoff plan](docs/IXP_INTEGRATION_PLAN.md), and [Step 4 verification and generated paths](docs/STEP4_VERIFICATION.md). See [Reconciliation rules, endpoints, scenarios, and Swagger instructions](docs/RECONCILIATION.md) and [Step 3 verification](docs/STEP3_VERIFICATION.md). See [ARCHITECTURE.md](ARCHITECTURE.md), [PROJECT_PLAN.md](PROJECT_PLAN.md), [AGENTS.md](AGENTS.md), and [executed verification](docs/STEP2_VERIFICATION.md).
 
 ## Windows setup
 
@@ -110,7 +118,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/demo/transfers/TRF-1001
 
 ## Render startup
 
-Use a **Starter Web Service**, **Python 3**, and leave **Root Directory blank**. Build with `python -m pip install -r backend/requirements.txt` and start with `python -m backend.start`. Attach one persistent disk at `/data`; set `APP_ENV=production`, `DATA_DIR=/data`, a strong `API_KEY`, and `SEED_DEMO_DATA=1`. The existing launcher reads Render's `PORT` and uses one worker. Health Check Path is `/health`; leave Pre-Deploy Command blank. See [all environment variables, disk setup, smoke tests and persistence checks](docs/RENDER_DEPLOYMENT.md).
+Use a **Starter Web Service**, **Python 3**, and leave **Root Directory blank**. Build with `npm ci --prefix frontend && npm run build --prefix frontend && python -m pip install -r backend/requirements.txt` and start with `python -m backend.start`. Attach one persistent disk at `/data`; set `APP_ENV=production`, `DATA_DIR=/data`, a strong `API_KEY`, and `SEED_DEMO_DATA=1`. The existing launcher reads Render's `PORT` and uses one worker. Health Check Path is `/health`; leave Pre-Deploy Command blank. See [all environment variables, disk setup, smoke tests and persistence checks](docs/RENDER_DEPLOYMENT.md).
 
 ## Railway startup
 
@@ -185,7 +193,7 @@ tests/
   test_database.py
 ```
 
-`maestro/` now contains the Step 5 SDK source, generated Flow, and UiPath solution scaffold. `frontend/` remains a placeholder. Runtime `.venv/`, `.env`, SQLite data and local UiPath binding/configuration files are excluded by `.gitignore`. This workspace is not currently initialized as a Git repository; no commits were created.
+`maestro/` contains the SDK source, generated Flow, and UiPath solution scaffold. `frontend/` contains the Step 10A Operations Portal source and lockfile; `frontend/dist` is generated and ignored. Runtime `.venv/`, `.env`, SQLite data and local UiPath binding/configuration files are excluded by `.gitignore`. This workspace is not currently initialized as a Git repository; no commits were created.
 
 ## Troubleshooting
 
@@ -203,3 +211,7 @@ tests/
 Next verification: capture the unknown-ID 422 response in Maestro without public rate-limit interference. Valid scenarios already have actual instance/trace evidence. No TransferIQ connection binding is needed. UiPath tenant access, IXP, agents, approvals and financial corrections are not eliminated by anonymous backend access.
 
 
+
+A separate API-free Quick Form smoke test created real task 100292180 successfully; manual completion is pending. See [isolated test results](docs/STEP9_QUICK_FORM_SMOKE_TEST.md).
+
+Follow-up: the standalone Quick Form completed, but porting its structure into the original Flow has not fixed AppTasks170000. The real summary also succeeds in the isolated Flow. See [controlled comparison results](docs/STEP9_WORKING_FORM_PORT.md).

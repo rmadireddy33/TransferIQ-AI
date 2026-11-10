@@ -1,6 +1,6 @@
 # Step 9 API contracts
 
-Base URL: `https://transferiq-api.onrender.com`. These routes are implemented locally; deployment was not present in the observed production check. All writes below are **isolated fictional demo dispositions**, not financial corrections. Existing private and Step 5 contracts remain unchanged.
+Base URL: `https://transferiq-api.onrender.com`. Deployment is now verified: actual Maestro review-run creation returned 201 and plan preview returned 200. Live human completion remains blocked at UiPath Quick Form creation; see [execution evidence](STEP9_TEST_RESULTS.md). All writes below are **isolated fictional demo dispositions**, not financial corrections. Existing private and Step 5 contracts remain unchanged.
 
 ## Routes
 

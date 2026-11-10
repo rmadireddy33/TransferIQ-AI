@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "transferId": { "type": "string" },
+    "investigationSummary": { "type": "string" },
+    "overallRiskLevel": { "type": "string" },
+    "findings": { "type": "array", "items": {} },
+    "unresolvedQuestions": { "type": "array", "items": {} },
+    "documentEvidenceStatus": { "type": "string" },
+    "requiresHumanReview": {
+      "type": "boolean",
+      "enum": [true],
+      "description": "Required top-level report flag. Return the boolean true explicitly, including when each finding already has requiresHumanReview=true. Never omit, return null, or use a string. This advisory investigation cannot authorize financial changes."
+    }
+  },
+  "required": [
+    "transferId", "investigationSummary", "overallRiskLevel", "findings",
+    "unresolvedQuestions", "documentEvidenceStatus", "requiresHumanReview"
+  ]
+}

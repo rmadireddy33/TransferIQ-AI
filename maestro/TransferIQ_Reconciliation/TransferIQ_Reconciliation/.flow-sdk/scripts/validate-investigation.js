@@ -26,7 +26,13 @@ if (!keys(a, ['transferId','investigationSummary','overallRiskLevel','findings',
     a.documentEvidenceStatus !== c.documentEvidenceStatus || a.requiresHumanReview !== true ||
     !list(a.unresolvedQuestions) || !a.unresolvedQuestions.every(text) || !list(a.findings) ||
     a.findings.length !== c.exceptions.length || !a.findings.length) {
-  errors.push('INVALID_REPORT_CONTRACT'); return report(false);
+  errors.push('INVALID_REPORT_CONTRACT');
+  if (object(a)) {
+    if (!Object.prototype.hasOwnProperty.call(a, 'requiresHumanReview')) errors.push('MISSING_REPORT_REQUIRES_HUMAN_REVIEW');
+    else if (a.requiresHumanReview === null) errors.push('NULL_REPORT_REQUIRES_HUMAN_REVIEW');
+    else if (a.requiresHumanReview !== true) errors.push('REPORT_REQUIRES_HUMAN_REVIEW_MUST_BE_TRUE');
+  }
+  return report(false);
 }
 const seen = new Set();
 for (const f of a.findings) {

@@ -12,6 +12,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Flow source check failed' }
     & uip maestro flow compile .flow-sdk/TransferIQ_Reconciliation.flow.ts -o TransferIQ_Reconciliation.flow
     if ($LASTEXITCODE -ne 0) { throw 'Flow compilation failed' }
+    & node .flow-sdk/finalize-agent-contract.mjs TransferIQ_Reconciliation.flow
+    if ($LASTEXITCODE -ne 0) { throw 'Required agent output contract could not be applied' }
     & uip maestro flow format TransferIQ_Reconciliation.flow --output json
     if ($LASTEXITCODE -ne 0) { throw 'Flow formatting failed' }
     & uip maestro flow validate TransferIQ_Reconciliation.flow --output json

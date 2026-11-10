@@ -17,6 +17,16 @@ from backend.schemas.judging import DemoCatalog, DemoTransfer, DemoPosition, Dem
 TITLES = ['Matching positions', 'Split timing and unexplained quantity mismatch',
           'Verified identifier change', 'Missing cost-basis evidence', 'Unsupported quantity correction']
 
+# Display-only synthetic metadata. These values deliberately do not come from
+# the private database and contain no live account, client, or firm identifiers.
+PORTAL_METADATA = {
+    'TRF-1001': ('Avery DemoVale', 'FICTIONAL-SRC-001', 'FICTIONAL-DST-001', '2026-01-15T12:00:00Z'),
+    'TRF-1002': ('Morgan DemoReed', 'FICTIONAL-SRC-1002', 'FICTIONAL-DST-1002', '2026-08-15T12:00:00Z'),
+    'TRF-1003': ('Morgan DemoReed', 'FICTIONAL-SRC-1003', 'FICTIONAL-DST-1003', '2026-08-15T12:00:00Z'),
+    'TRF-1004': ('Morgan DemoReed', 'FICTIONAL-SRC-1004', 'FICTIONAL-DST-1004', '2026-08-15T12:00:00Z'),
+    'TRF-1005': ('Morgan DemoReed', 'FICTIONAL-SRC-1005', 'FICTIONAL-DST-1005', '2026-08-15T12:00:00Z'),
+}
+
 
 def build_catalog(directory):
     engine = create_database_engine(Settings(data_dir=directory))
@@ -34,7 +44,13 @@ def build_catalog(directory):
                     for k in DemoPosition.model_fields}) for p in result['position_results']]
                 exceptions = [DemoException(**{k: e.get(k) for k in DemoException.model_fields})
                               for e in result['exceptions']]
-                items.append(DemoTransfer(transfer_id=tid, title=title, rule_version=inputs['rule_version'],
+                client_name, source_reference, destination_reference, last_updated = PORTAL_METADATA[tid]
+                items.append(DemoTransfer(transfer_id=tid, title=title,
+                    client_name=client_name, delivering_firm_name='Summit Wealth',
+                    receiving_firm_name='Northstar Securities',
+                    source_account_reference=source_reference,
+                    destination_account_reference=destination_reference,
+                    last_updated=last_updated, rule_version=inputs['rule_version'],
                     total_positions=result['total_positions'], directly_matched=result['directly_matched'],
                     evidence_explained=result['evidence_explained'], unresolved_count=result['unresolved_count'],
                     cost_basis_issues=result['cost_basis_issues'],

@@ -1,0 +1,229 @@
+{
+  "nodeType": "uipath.human-in-the-loop.quick-form",
+  "version": "1.9",
+  "category": "human-task",
+  "description": "Fast inline approvals with inline debug",
+  "tags": [
+    "human-task",
+    "hitl",
+    "human-in-the-loop",
+    "quick-form",
+    "approval"
+  ],
+  "sortOrder": 50,
+  "supportsErrorHandling": true,
+  "display": {
+    "label": "Quick Form",
+    "icon": "users",
+    "shape": "square"
+  },
+  "handleConfiguration": [
+    {
+      "position": "left",
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "handleType": "input"
+        }
+      ],
+      "visible": true
+    },
+    {
+      "position": "right",
+      "handles": [
+        {
+          "id": "completed",
+          "type": "source",
+          "handleType": "output",
+          "showButton": true,
+          "constraints": {
+            "forbiddenTargetCategories": [
+              "trigger"
+            ]
+          }
+        },
+        {
+          "id": "error",
+          "label": "Error",
+          "type": "source",
+          "handleType": "output",
+          "visible": "{inputs.errorHandlingEnabled}",
+          "constraints": {
+            "maxConnections": 1
+          }
+        }
+      ],
+      "visible": true
+    },
+    {
+      "position": "top",
+      "customPositionAndOffsets": {
+        "right": 36,
+        "width": 22
+      },
+      "handles": [
+        {
+          "id": "timeout",
+          "label": "Timeout",
+          "type": "source",
+          "handleType": "output",
+          "visible": "{inputs.timeLimitEnabled}",
+          "labelVisibility": "hover"
+        }
+      ],
+      "visible": true
+    }
+  ],
+  "model": {
+    "type": "bpmn:UserTask",
+    "serviceType": "Actions.HITL"
+  },
+  "inputDefaults": {
+    "schema": {
+      "fields": [
+        {
+          "id": "comments",
+          "type": "string",
+          "label": "Comments",
+          "direction": "output"
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "submit",
+          "name": "Submit",
+          "type": "string",
+          "isPrimary": true,
+          "action": "Continue"
+        }
+      ]
+    },
+    "enableDecisionSchema": false,
+    "recipient": {
+      "channels": [
+        "Email",
+        "ActionCenter"
+      ],
+      "connections": {},
+      "assignee": {
+        "type": "user"
+      }
+    }
+  },
+  "outputDefinition": {
+    "output": {
+      "type": "object",
+      "description": "Task result data",
+      "source": "=result",
+      "var": "output"
+    },
+    "status": {
+      "type": "string",
+      "description": "Task completion status (completed, cancelled, timeout)",
+      "source": "=result.Action",
+      "var": "status"
+    }
+  },
+  "form": {
+    "id": "hitl-quick-form-properties",
+    "title": "Quick Form Task Configuration",
+    "sections": [
+      {
+        "id": "assignment",
+        "title": "Assignment criteria",
+        "collapsible": false,
+        "defaultExpanded": true,
+        "fields": [
+          {
+            "name": "inputs.recipient",
+            "type": "custom",
+            "component": "hitl-assignee-selector",
+            "label": "",
+            "description": ""
+          }
+        ]
+      },
+      {
+        "id": "schema",
+        "title": "Schema",
+        "collapsible": true,
+        "defaultExpanded": true,
+        "fields": [
+          {
+            "name": "inputs.schema",
+            "type": "custom",
+            "component": "hitl-schema-editor",
+            "label": "Task Schema",
+            "description": "Define the input and output parameters for this task"
+          }
+        ]
+      },
+      {
+        "id": "delivery",
+        "title": "Delivery channels",
+        "collapsible": false,
+        "defaultExpanded": true,
+        "fields": [
+          {
+            "name": "inputs.recipient",
+            "type": "custom",
+            "component": "hitl-channel-selector",
+            "label": "Delivery Channels",
+            "description": "Select where the task should be sent"
+          }
+        ]
+      },
+      {
+        "id": "additional-properties",
+        "title": "Additional properties",
+        "collapsible": true,
+        "defaultExpanded": true,
+        "fields": [
+          {
+            "name": "inputs.title",
+            "type": "text",
+            "label": "Task title"
+          },
+          {
+            "name": "inputs.priority",
+            "type": "select",
+            "label": "Priority",
+            "options": [
+              {
+                "label": "Low",
+                "value": "Low"
+              },
+              {
+                "label": "Medium",
+                "value": "Medium"
+              },
+              {
+                "label": "High",
+                "value": "High"
+              }
+            ]
+          },
+          {
+            "name": "inputs.labels",
+            "type": "text",
+            "label": "Labels",
+            "placeholder": "Comma-separated (e.g. finance,approval)"
+          },
+          {
+            "name": "inputs.memorySpace",
+            "type": "custom",
+            "component": "hitl-memory-space-picker",
+            "label": "Memory space",
+            "description": "Attach a memory space so this task's inputs and outputs are written to it"
+          }
+        ]
+      }
+    ]
+  },
+  "runtimeConstraints": {
+    "exclude": [
+      "api-function"
+    ]
+  }
+}

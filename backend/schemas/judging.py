@@ -23,6 +23,14 @@ class DemoException(Contract):
 class DemoTransfer(Contract):
     transfer_id: Literal['TRF-1001', 'TRF-1002', 'TRF-1003', 'TRF-1004', 'TRF-1005']
     title: str
+    client_name: str
+    delivering_firm_name: str
+    receiving_firm_name: str
+    source_account_reference: str
+    destination_account_reference: str
+    transfer_type: Literal['FULL'] = 'FULL'
+    transfer_status: Literal['DRAFT'] = 'DRAFT'
+    last_updated: str
     evidence_mode: Literal['PRECOMPUTED_SYNTHETIC_SAMPLE'] = 'PRECOMPUTED_SYNTHETIC_SAMPLE'
     live_execution: Literal[False] = False
     reconciliation_run_id: None = None

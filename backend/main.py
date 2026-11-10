@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from backend.api.routes import router, health_router
@@ -113,6 +115,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         logger.error('request_failed', extra={'error_type': type(exc).__name__})
         return JSONResponse(status_code=500, content={'detail': {
             'code': 'internal_error', 'message': 'Request could not be completed'}})
+
+    # The portal is an optional build artifact. API-only development and tests keep
+    # working when it is absent, while production can host the compiled SPA from
+    # the same origin without widening CORS or exposing DATA_DIR.
+    portal_directory = Path(__file__).resolve().parents[1] / 'frontend' / 'dist'
+    portal_index = portal_directory / 'index.html'
+    portal_assets = portal_directory / 'assets'
+    if portal_index.is_file():
+        if portal_assets.is_dir():
+            application.mount(
+                '/portal/assets',
+                StaticFiles(directory=portal_assets),
+                name='operations-portal-assets',
+            )
+
+        @application.get('/portal', include_in_schema=False)
+        async def operations_portal_root():
+            return FileResponse(
+                portal_index,
+                headers={'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff'},
+            )
+
+        @application.get('/portal/{portal_path:path}', include_in_schema=False)
+        async def operations_portal_fallback(portal_path: str):
+            return FileResponse(
+                portal_index,
+                headers={'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff'},
+            )
 
     return application
 

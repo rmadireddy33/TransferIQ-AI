@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "QuickFormSmokeTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9abf1e8e-724d-4323-a014-1829f679410d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "QuickFormSmokeTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "runtimeProfile": "Standard",
+      "type": "Flow",
+      "name": "QuickFormSmokeTest",
+      "package": {
+        "key": "26911f55-2750-48b6-bbf1-035792362ca4"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5d160ead-fa10-4f44-870f-44de17469362",
+    "files": []
+  }
+}

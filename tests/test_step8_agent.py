@@ -140,6 +140,53 @@ def test_real_node_and_no_mutation_tools():
     assert not any(e['sourceNodeId'] == agent['id'] and e['sourcePort'] == 'tools' for e in f['edges'])
 
 
+@pytest.mark.parametrize('flag,diagnostic', [
+    ('missing', 'MISSING_REPORT_REQUIRES_HUMAN_REVIEW'),
+    (None, 'NULL_REPORT_REQUIRES_HUMAN_REVIEW'),
+    (False, 'REPORT_REQUIRES_HUMAN_REVIEW_MUST_BE_TRUE'),
+    ('true', 'REPORT_REQUIRES_HUMAN_REVIEW_MUST_BE_TRUE'),
+])
+def test_report_review_flag_is_required_without_runtime_repair(cases, flag, diagnostic):
+    responses = cases['TRF-1002']
+    agent = mock_agent(responses)
+    if flag == 'missing':
+        del agent['requiresHumanReview']
+    else:
+        agent['requiresHumanReview'] = flag
+    assert all(f['requiresHumanReview'] is True for f in agent['findings'])
+    run = run_graph('TRF-1002', responses, localTransport=True, agentTestDouble=agent)
+    result = run['result']
+    assert result['workflowOutcome'] == 'INVESTIGATION_REVIEW_REQUIRED'
+    assert result['investigationStatus'] == 'INVALID_AGENT_OUTPUT'
+    assert diagnostic in result['validationErrors']
+    assert result['correctionsApplied'] == 0 and result['transferCompleted'] is False
+    assert result['unresolvedExceptions'][0]['securityId'] == 'SEC-104'
+    assert result['unresolvedExceptions'][0]['difference'] == '-20'
+    assert result['sourcePositions'] == responses['GetDeliveringPositions']['body']['items']
+    assert result['receivingStagingPositions'] == responses['GetReceivingPositions']['body']['items']
+    assert 'quickForm1' not in run['trace']
+
+
+def test_actual_agent_schema_requires_explicit_report_review():
+    flow = json.loads(FLOW.read_text())
+    node = next(n for n in flow['nodes'] if n['id'] == 'TransferInvestigationAgent')
+    source = node.get('inputs', {}).get('source') or node.get('source') or node['model']['source']
+    agent = json.loads((FLOW.parent / source / 'agent.json').read_text())
+    schema = agent['outputSchema']
+    assert set(schema['required']) == set(schema['properties'])
+    flag = schema['properties']['requiresHumanReview']
+    assert flag['type'] == 'boolean' and flag['enum'] == [True]
+    assert 'default' not in flag
+
+
+def test_manual_reviewer_default_and_user_assignment_are_preserved():
+    flow = json.loads(FLOW.read_text())
+    reviewer = next(v for v in flow['variables']['globals'] if v['id'] == 'reviewerReference')
+    form = next(n for n in flow['nodes'] if n['type'] == 'uipath.human-in-the-loop.quick-form')
+    assert form['inputs']['recipient']['assignee']['type'] == 'user'
+    assert reviewer['defaultValue']
+
+
 def test_agent_failure_keeps_separate_cost_basis_unresolved(cases):
     run = run_graph('TRF-1004', cases['TRF-1004'], localTransport=True)
     assert run['result']['workflowOutcome'] == 'INVESTIGATION_REVIEW_REQUIRED'

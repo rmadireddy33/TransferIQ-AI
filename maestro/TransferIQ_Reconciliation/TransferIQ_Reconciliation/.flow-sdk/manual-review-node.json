@@ -1,0 +1,91 @@
+{
+  "inputs": {
+    "schema": {
+      "type": "hitl-schema",
+      "title": "Transfer Operations Review",
+      "fields": [
+        {
+          "id": "investigationSummaryFictionalDemoNoPositionChanges",
+          "type": "string",
+          "label": "Investigation summary (fictional demo; no position changes)",
+          "direction": "inOut",
+          "variable": "vars.investigationSummaryFictionalDemoNoPositionChanges",
+          "binding": "$vars.ValidateResolutionPlan.output.investigationSummary"
+        },
+        {
+          "id": "reviewerCommentsOptional",
+          "type": "string",
+          "label": "Reviewer comments (optional)",
+          "direction": "output"
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "submit",
+          "name": "Approve",
+          "type": "string",
+          "action": "Continue",
+          "isPrimary": true
+        },
+        {
+          "id": "outcome-1794281395070",
+          "name": "Reject",
+          "type": "string",
+          "action": "End",
+          "isPrimary": false
+        }
+      ],
+      "schemaId": "cd4c3441-286c-4e58-90a2-c21beffaf6dc"
+    },
+    "enableDecisionSchema": false,
+    "recipient": {
+      "channels": [
+        "Email",
+        "ActionCenter"
+      ],
+      "connections": {},
+      "assignee": {
+        "type": "user"
+      }
+    }
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "Task result data",
+      "descriptionKey": "hitlOutputBuilder_taskResultData_description",
+      "source": "=result",
+      "var": "output",
+      "properties": {
+        "investigationSummaryFictionalDemoNoPositionChanges": {
+          "type": "string",
+          "title": "Investigation summary (fictional demo; no position changes)"
+        },
+        "Reviewer comments (optional)": {
+          "type": "string",
+          "fieldId": "reviewerCommentsOptional"
+        },
+        "Action": {
+          "type": "string",
+          "enum": [
+            "Approve",
+            "Reject"
+          ],
+          "default": "Approve"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Task completion status",
+      "descriptionKey": "hitlOutputBuilder_taskCompletionStatus_description",
+      "source": "=result.Action",
+      "var": "status",
+      "enum": [
+        "Approve",
+        "Reject"
+      ],
+      "default": "Approve"
+    }
+  }
+}
