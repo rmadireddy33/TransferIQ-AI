@@ -54,6 +54,7 @@ def preview(data: PlanPreview, ctx: ReviewContext,
         verification = service.verify(session, plan)
         portal.update_by_run(row['run_id'], investigation_status='AWAITING_HUMAN_REVIEW',
             review_status='PENDING', plan_id=plan.plan_id, audit_reference=plan.plan_id,
+            verification_status=verification['verificationStatus'],
             investigation_summary=result['investigationSummary'],
             evidence_references=result['evidenceReferences'], proposed_actions=result['proposedActions'],
             unresolved_exceptions=verification['unresolvedExceptions'],
@@ -92,6 +93,7 @@ def execute(planId: str, data: PlanBinding, ctx: ReviewContext, request: Request
         complete = verification['verificationStatus'] == 'VERIFIED_DEMO_STATE'
         portal.update_by_run(row['run_id'], investigation_status='COMPLETED' if complete else 'FAILED',
             workflow_outcome=verification['workflowOutcome'] if complete else 'REVIEW_FAILED',
+            verification_status=verification['verificationStatus'],
             error_summary=None if complete else 'Final review state or audit record could not be verified.',
             audit_reference=verification['auditReference'],
             unresolved_exceptions=verification['unresolvedExceptions'],

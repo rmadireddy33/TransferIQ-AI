@@ -1,0 +1,134 @@
+# Step 10C — Persisted portal workflow status
+
+Status: **implemented and locally verified; not yet deployed or live-verified as Step 10C**.
+
+This increment improves how the existing portal reports the already deployed Maestro workflow. It does not change the HTTP Webhook request, the Flow artifact, Manual Trigger, Autonomous Agent, Quick Form, IXP configuration, reconciliation rules, or financial state.
+
+## Root cause
+
+The backend already had the correct terminal boundary: webhook HTTP 200 stored `TRIGGERED`, plan preview stored `AWAITING_HUMAN_REVIEW`, and only the Step 9 execute path called independent `verify()` and checked the audit ledger before storing `COMPLETED`.
+
+The missing completion indication was a projection and presentation problem:
+
+- the authorized tracking response omitted its persisted start timestamp and independent verification status;
+- the audit reference was displayed as plain text instead of a usable read-only link;
+- the React page used one generic status panel for every lifecycle state;
+- its 60-request/five-second polling window stopped silently after about five minutes;
+- a transient API error replaced the whole persisted view and offered no status-specific recovery.
+
+## Backend status contract
+
+`GET /api/portal/investigations/{executionRequestId}` remains cookie-authorized and reads the isolated SQLite portal registry. Its existing lifecycle values remain:
+
+`PENDING`, `TRIGGERED`, `INVESTIGATING`, `AWAITING_HUMAN_REVIEW`, `COMPLETED`, `FAILED`, and `TIMED_OUT`.
+
+The response now also includes:
+
+- `startedAt`, `lastUpdated`, and `deadlineAt` from persisted UTC timestamps;
+- `verificationStatus`, written from the existing Step 9 verification result;
+- `auditUrl`, derived only when a correlated run, plan, and audit reference exist.
+
+Portal registry schema v2 adds only nullable `verification_status`. Startup migrates schema v1 with `ALTER TABLE`, preserves every PEX row, and rejects unsupported schemas instead of resetting them.
+
+Completion semantics are unchanged and explicit:
+
+- webhook acceptance is `TRIGGERED`, never completion;
+- plan preview is `AWAITING_HUMAN_REVIEW` and normally `NOT_VERIFIED`;
+- approval and rejection become `COMPLETED` only after the persisted plan, final decision, independent verification, and required audit events agree;
+- `REVIEWED_WITH_OPEN_EXCEPTIONS` means the workflow completed, not that the brokerage transfer completed;
+- `REVIEW_REJECTED` is presented as rejection, not generic success;
+- the clean path is `CLEAN / NOT_REQUIRED` and has no fabricated plan audit URL;
+- only the persisted server deadline can mark `TIMED_OUT`. A browser that stops polling cannot do so.
+
+## Portal experience
+
+The investigation URL remains `/portal/investigations/PEX-...`. Reloading it performs an authorized read of the same persisted record and never starts another webhook execution.
+
+The view now shows:
+
+- transfer and execution request IDs;
+- current workflow stage and status;
+- started and last-updated timestamps;
+- human-review status, final workflow outcome, and verification status;
+- positions-unchanged and brokerage-transfer-completed results;
+- a five-stage timeline without an invented percentage;
+- final investigation summary, evidence references, and unresolved exceptions;
+- sanitized failures and timeout information;
+- `View Audit Report` and `View Transfer Details` actions when applicable.
+
+Active records poll at five-second intervals for at most 60 requests. Terminal records stop immediately. When the active window is exhausted, the UI states that only client polling paused and offers `Refresh status`; that action starts a new bounded read window. API unavailability retains the last successful persisted view when one exists and also offers an explicit refresh.
+
+No approval control exists in the portal. Reviewer action remains in UiPath Action Center.
+
+## Files changed
+
+- `backend/services/portal_investigations.py` — data-preserving registry v2 migration and richer sanitized projection.
+- `backend/api/resolution.py` — copies the existing independent verification result into the portal projection at preview/final execution.
+- `frontend/src/api.ts` — validates the expanded authorized tracking response.
+- `frontend/src/App.tsx` — terminal-aware progress view, timeline, bounded-polling pause, refresh, and final navigation.
+- `frontend/src/index.css` — responsive timeline and result-state presentation.
+- `tests/test_step10b_portal.py` and `frontend/src/App.test.tsx` — persistence, lifecycle, audit, reload, failure, timeout, and polling regression coverage.
+
+## Verification
+
+The focused backend suite uses a webhook test double and explicit agent/human test values; it is not a UiPath execution:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_step10b_portal.py -q --tb=short
+```
+
+Observed: **9 passed**, one existing Starlette/httpx deprecation warning.
+
+Frontend unit suite:
+
+```powershell
+Set-Location frontend
+npm test -- --run
+```
+
+Observed: **17 passed in 2 files**. Coverage includes approved-with-open-exceptions, rejection, clean completion, awaiting review, direct URL reload, agent-failure display, server timeout, API unavailable/retry, the 60-request polling bound, audit and transfer links, and no duplicate start from refresh.
+
+Frontend production build:
+
+```powershell
+Set-Location frontend
+npm run build
+```
+
+Observed: **successful** (`tsc -b` and Vite production build).
+
+Broader relevant backend regression:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_step9_flow.py tests/test_resolution.py tests/test_migrations.py tests/test_step10b_portal.py -q --tb=short
+```
+
+Observed: **50 passed**, one existing Starlette/httpx deprecation warning.
+
+Complete backend regression:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q --tb=short
+```
+
+Observed: **470 passed**, one existing Starlette/httpx deprecation warning, **157.44 seconds**. No real Maestro run was launched for this UI increment.
+
+## Render deployment and live acceptance
+
+Deploy the changed backend and rebuilt frontend through the existing Render-connected source. No new environment variable is required. Keep the existing persistent disk mounted at `/data`; startup migrates `/data/portal/transferiq.db` from registry v1 to v2 without resetting rows. Keep `PORTAL_INVESTIGATION_ENABLED` and the existing webhook settings exactly as currently configured.
+
+After deployment, use bounded reads before any new workflow:
+
+1. verify `/health` returns 200 and `/portal` serves the new compiled asset;
+2. authenticate and revisit the existing completed PEX URL to confirm the result survives deployment/reload;
+3. verify its audit link returns the existing audit ledger;
+4. only if another business-path check is required, launch one new portal run—do not repeatedly execute Maestro to test display-only behavior.
+
+The prior UiPath solution 1.0.1 TRF-1002 approval remains valid Step 10B evidence. It is not relabelled as live verification of the undeployed Step 10C UI. Separate post-1.0.1 portal rejection and clean live runs remain unexecuted.
+
+Bounded public production reads on 2026-11-11 returned:
+
+- `GET /health`: **HTTP 200**, `status=ok`, `database=ok`, `fictionalDemo=true`;
+- `GET /portal`: **HTTP 200**, `Content-Type: text/html; charset=utf-8`.
+
+The deployed JavaScript asset was `assets/index-Dsz6S-rm.js`; the local Step 10C build produced `assets/index-MWERZDmQ.js`. This confirms production is healthy but the new portal build is not yet deployed. No authenticated PEX read and no new real Maestro execution were performed during Step 10C implementation.

@@ -14,6 +14,7 @@ const dynamic = (x, vars) => typeof x === 'string' && x.startsWith('=js:') ? exp
 export async function runLocal({ transferId, enableIXP = false, corporateActionPdf = null, reviewerReference = '', responses, localTransport = false, baseUrl, fault, agentTestDouble, humanTestDouble, testCorrelationId, stopAfterInvestigation = false, errorEnvelope = 'output' }) {
   const vars = Object.fromEntries(flow.variables.globals.map(v => [v.id, v.defaultValue]));
   vars.StartTransferInvestigation = { output: { transferId, enableIXP, corporateActionPdf, reviewerReference } };
+  vars.PortalWebhook = { output: null };
   const calls = [], trace = [];
   let id = 'StartTransferInvestigation';
   for (let budget = 0; budget < 100; budget++) {

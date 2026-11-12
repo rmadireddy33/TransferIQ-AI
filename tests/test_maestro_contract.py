@@ -181,7 +181,7 @@ def test_emitted_graph_integrity():
     flow = json.loads(FLOW.read_text())
     nodes = {n['id']: n for n in flow['nodes']}
     assert len(nodes) == len(flow['nodes'])
-    reached = {'StartTransferInvestigation'}
+    reached = {'StartTransferInvestigation', 'PortalWebhook'}
     for _ in nodes:
         reached.update(e['targetNodeId'] for e in flow['edges'] if e['sourceNodeId'] in reached)
     assert reached == set(nodes)

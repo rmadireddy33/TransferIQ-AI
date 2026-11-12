@@ -54,8 +54,9 @@ const investigationSchema = z.object({
   executionRequestId: z.string(), transferId: z.string(), triggerStatus: z.string(), investigationStatus: z.enum([
     'PENDING', 'TRIGGERED', 'INVESTIGATING', 'AWAITING_HUMAN_REVIEW', 'COMPLETED', 'FAILED', 'TIMED_OUT',
   ]), reviewStatus: z.string(), workflowOutcome: z.string().nullable(), lastUpdated: z.string(),
+  startedAt: z.string(), deadlineAt: z.string(), verificationStatus: z.string().nullable(),
   errorSummary: z.string().nullable(), auditReference: z.string().nullable(), runId: z.string().nullable(),
-  planId: z.string().nullable(), investigationSummary: z.string().nullable(), evidenceReferences: z.array(z.string()),
+  planId: z.string().nullable(), auditUrl: z.string().nullable(), investigationSummary: z.string().nullable(), evidenceReferences: z.array(z.string()),
   proposedActions: z.array(z.record(z.string(), z.unknown())), unresolvedExceptions: z.array(z.record(z.string(), z.unknown())),
   positionsUnchanged: z.boolean().nullable(), transferCompleted: z.boolean().nullable(),
 })

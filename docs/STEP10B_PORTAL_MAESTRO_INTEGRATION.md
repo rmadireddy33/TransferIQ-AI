@@ -1,6 +1,6 @@
 # Step 10B — Portal-triggered Maestro investigation
 
-Status: **implemented, bound to a live HTTP Webhook connection, and deployed/activated in UiPath; Render configuration and the first portal-started live run remain pending**.
+Status: **implemented, Render-enabled, upgraded/activated in UiPath as solution version 1.0.1, and live-verified end to end for the TRF-1002 approval path**.
 
 The existing Manual Trigger, Autonomous Agent, Transfer Operations Quick Form, review APIs, and deterministic financial rules are unchanged. The authored Flow source adds `PortalWebhook` as a second entry point into the same first `ValidateInput` step. It does not copy the investigation or reconciliation graph.
 
@@ -142,7 +142,18 @@ Automatic polling is bounded to 60 attempts at five-second intervals. Reloading 
 - Solution package `TransferIQ-AI` version `1.0.0`: pack and publish **Success**.
 - Deployment `TransferIQ-AI 1.0.0`: **DeploymentSucceeded / SuccessfulActivate** in `DemoFolder/TransferIQ-AI` (pipeline deployment `5e3290db-1428-4c04-6644-08df3e764b94`).
 - Deployed Flow inventory contains `TransferIQ_Reconciliation` version `1.0.0`; UiPath reports that a webhook URL was issued. The URL and authentication value are intentionally not recorded in this document.
-- Actual HTTP Webhook call: **not executed**.
-- Actual portal-started Maestro run or Quick Form: **not executed**.
+- Actual HTTP Webhook call: **accepted** for `PEX-cb6e1e00b411434cb17fe215fe3416f5`; deployed Flow instance `af9a9692-eda5-448b-8f83-df138c1c2d71` started from the Integration Service trigger.
+- Actual portal-started agent and Quick Form: agent job **Successful**; task `100293230` created and completed with **Approve**.
+- Post-form result: **not accepted end to end**. `RecordReviewDecision` returned HTTP **422** because the portal path submitted a null `reviewerReference`; the plan remains `PREVIEWED`, no disposition/final audit was recorded, and the Flow returned its controlled `REVIEW_FAILED` result.
+- Confirmed fix: `record-review-input.js` now reads the normalized `ValidateInput.output.reviewerReference`, which is populated for both manual and portal entry paths. The strict brownfield merge retained **77 nodes / 80 edges** and product validation returned **Valid**.
+- Focused post-fix tests: **7 passed**. Broader Step 9, Step 10B, and Maestro regression: **125 passed**, with one existing Starlette/httpx deprecation warning. The first broader attempt exposed a stale local harness assumption about the inactive second trigger; after representing that inactive trigger as null, the same suite passed. The failed attempt is not counted as success.
+- Solution package `TransferIQ-AI` version `1.0.1`: pack and publish **Success / Ready**. In-place upgrade returned **DeploymentSucceeded / SuccessfulActivate** (pipeline deployment `a4c6e2fd-dd5e-453b-6155-08df3e7657e0`).
+- Post-upgrade inventory: deployment package/current version **1.0.1 / Active**; deployed `TransferIQ_Reconciliation` process version **1.0.1 / latest**. The existing `TransferIQ Portal Inbound Webhook` connection remains **Enabled** in `DemoFolder`.
+- Bounded post-upgrade production reads: `/health` **200** (`status=ok`, `database=ok`), `/api/portal/session` **200** (`enabled=true`, unauthenticated as expected), and `/portal` **200** (`text/html`).
+- Post-fix portal request `PEX-58273e141cb749f9b2e48c8fe25cdfe1` started deployed Flow instance `b13a983c-6f8f-4c14-8fcd-f2fc6de862f3` on package **1.0.1**. The normalized input retained the same PEX correlation, `enableIXP=false`, and reviewer reference `PORTAL_AUTHORIZED_OPERATOR`.
+- Real agent output completed with no missing evidence. SEC-103 was explained by verified corporate action `CA-2026-081`; SEC-104 remained unresolved at expected `120` versus staged `100`, difference `-20`. Plan `PLAN-39d2d317-090d-4b68-a8e8-ac8dd78a510d` previewed both permitted dispositions.
+- Quick Form task `100306557` was created and manually completed with **Approve** and comment `Approved portal 1.0.1 test`. The same Flow instance completed with no incidents.
+- Production plan GET returned **HTTP 200**, `status=EXECUTED`, decision `APPROVE`, and the corrected nonnull reviewer reference. Production audit GET returned **HTTP 200** with three events: `PLAN_PREVIEWED`, `DEMO_REVIEW_RECORDED`, and `DEMO_DISPOSITION_EXECUTED`.
+- Final Flow verification returned `REVIEWED_WITH_OPEN_EXCEPTIONS`, `VERIFIED_DEMO_STATE`, `positionsUnchanged=true`, `transferCompleted=false`, `correctionsApplied=0`; SEC-104 remained `UNRESOLVED / -20`, while SEC-103 was acknowledged from verified evidence.
 
-The connection/binding/deployment blocker is resolved. Remaining work is to copy the issued webhook URL and the same header value used by the connection into Render, keep the feature disabled until those values are saved, redeploy Render, enable the feature, and execute one bounded TRF-1002 portal test. Step 9's already verified Quick Form approval/rejection evidence is not relabelled as a Step 10B webhook test.
+The connection, binding, deployment, null-reviewer defect, and post-fix TRF-1002 approval acceptance are resolved in the deployed 1.0.1 artifact. A separate portal rejection run and a post-1.0.1 portal CLEAN control were not executed in this acceptance run; existing Step 9 approval/rejection and prior CLEAN evidence are not relabelled as those Step 10B checks.

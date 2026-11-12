@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { api } from './api'
+import { api, type InvestigationStatus } from './api'
 import { catalog, transfer } from './test/fixtures'
 
 vi.mock('./api', async importOriginal => {
@@ -19,6 +19,14 @@ vi.mock('./api', async importOriginal => {
 })
 
 const mockedApi = vi.mocked(api)
+const tracked = (overrides: Partial<InvestigationStatus> = {}): InvestigationStatus => ({
+  executionRequestId:'PEX-0123456789abcdef0123456789abcdef', transferId:'TRF-1002', triggerStatus:'ACCEPTED',
+  investigationStatus:'TRIGGERED', reviewStatus:'NOT_STARTED', workflowOutcome:null,
+  startedAt:'2026-11-10T00:00:00Z', lastUpdated:'2026-11-10T00:01:00Z', deadlineAt:'2026-11-10T01:00:00Z',
+  verificationStatus:null, errorSummary:null, auditReference:null, auditUrl:null, runId:null, planId:null,
+  investigationSummary:null, evidenceReferences:[], proposedActions:[], unresolvedExceptions:[],
+  positionsUnchanged:null, transferCompleted:null, ...overrides,
+})
 
 describe('Operations portal', () => {
   beforeEach(() => {
@@ -62,13 +70,7 @@ describe('Operations portal', () => {
 
   it('lets an authorized operator start one tracked investigation without approval controls', async () => {
     const user = userEvent.setup()
-    const investigation = {
-      executionRequestId:'PEX-0123456789abcdef0123456789abcdef',transferId:'TRF-1002',triggerStatus:'ACCEPTED',
-      investigationStatus:'TRIGGERED' as const,reviewStatus:'NOT_STARTED',workflowOutcome:null,
-      lastUpdated:'2026-11-10T00:00:00Z',errorSummary:null,auditReference:null,runId:null,planId:null,
-      investigationSummary:null,evidenceReferences:[],proposedActions:[],unresolvedExceptions:[],
-      positionsUnchanged:null,transferCompleted:null,
-    }
+    const investigation = tracked()
     sessionStorage.setItem('transferiq.csrf','test-csrf')
     mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:true,operatorId:'demo-operator'})
     mockedApi.startInvestigation.mockResolvedValueOnce(investigation)
@@ -86,5 +88,79 @@ describe('Operations portal', () => {
     render(<MemoryRouter><App /></MemoryRouter>)
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
     expect(screen.getByText('An unexpected error occurred.')).toBeInTheDocument()
+  })
+
+  it('shows an approved verified workflow separately from the unresolved transfer', async () => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({
+      investigationStatus:'COMPLETED', reviewStatus:'APPROVED', workflowOutcome:'REVIEWED_WITH_OPEN_EXCEPTIONS',
+      verificationStatus:'VERIFIED_DEMO_STATE', runId:'DEMO-run', planId:'PLAN-plan', auditReference:'PLAN-plan',
+      auditUrl:'/api/demo/runs/DEMO-run/resolution-plans/PLAN-plan/audit',
+      investigationSummary:'Verified corporate action; shortage remains open.', positionsUnchanged:true,
+      transferCompleted:false, unresolvedExceptions:[{securityId:'SEC-104',difference:'-20',resolutionStatus:'UNRESOLVED'}],
+    }))
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Workflow completed successfully. The brokerage transfer remains unresolved.')).toBeInTheDocument()
+    expect(screen.getByText('VERIFIED_DEMO_STATE')).toBeInTheDocument()
+    expect(screen.getByText('-20 · UNRESOLVED')).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'View Audit Report'})).toHaveAttribute('href','/api/demo/runs/DEMO-run/resolution-plans/PLAN-plan/audit')
+    expect(screen.getByRole('link',{name:'View Transfer Details'})).toHaveAttribute('href','/transfers/TRF-1002/investigation?runId=DEMO-run&planId=PLAN-plan')
+    expect(mockedApi.investigation).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['REVIEW_REJECTED','REJECTED','Review rejected','The human reviewer rejected the plan. No disposition was applied.'],
+    ['CLEAN','NOT_REQUIRED','Workflow completed','The persisted workflow result and audit state are available.'],
+  ])('renders terminal outcome %s after a direct URL reload', async (outcome,review,stage,message) => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({
+      transferId:outcome==='CLEAN'?'TRF-1001':'TRF-1002', investigationStatus:'COMPLETED',
+      reviewStatus:review, workflowOutcome:outcome, positionsUnchanged:true, transferCompleted:false,
+    }))
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText(stage)).toBeInTheDocument()
+    expect(screen.getByText(message)).toBeInTheDocument()
+    expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
+  })
+
+  it('shows the human-review wait state without portal decision controls', async () => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({
+      investigationStatus:'AWAITING_HUMAN_REVIEW', reviewStatus:'PENDING', planId:'PLAN-pending',
+      investigationSummary:'Plan preview is ready.',
+    }))
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Awaiting human approval')).toBeInTheDocument()
+    expect(screen.getByText(/Complete the real Quick Form/)).toBeInTheDocument()
+    expect(screen.queryByRole('button',{name:/approve|reject/i})).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['FAILED','Agent execution failed.','Workflow failed'],
+    ['TIMED_OUT','Workflow did not reach its configured deadline.','Workflow timed out'],
+  ] as const)('renders %s with the sanitized error', async (status,error,stage) => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({investigationStatus:status,errorSummary:error}))
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText(stage)).toBeInTheDocument()
+    expect(screen.getAllByText(error).length).toBeGreaterThan(0)
+  })
+
+  it('stops a bounded active polling window and offers an explicit refresh', async () => {
+    vi.useFakeTimers()
+    mockedApi.investigation.mockResolvedValue(tracked({investigationStatus:'AWAITING_HUMAN_REVIEW',reviewStatus:'PENDING'}))
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    await act(async()=>{await Promise.resolve()})
+    await act(async()=>{await vi.advanceTimersByTimeAsync(59*5000)})
+    expect(screen.getByText(/Automatic polling has paused after its bounded five-minute window/)).toBeInTheDocument()
+    expect(screen.getByRole('button',{name:'Refresh status'})).toBeInTheDocument()
+    expect(mockedApi.investigation).toHaveBeenCalledTimes(60)
+    vi.useRealTimers()
+  })
+
+  it('shows API unavailability and can retry the same persisted tracking URL', async () => {
+    mockedApi.investigation.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(tracked())
+    const user=userEvent.setup()
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Status unavailable')).toBeInTheDocument()
+    await user.click(screen.getByRole('button',{name:'Refresh status'}))
+    expect(await screen.findByText('Maestro accepted the request')).toBeInTheDocument()
+    expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
   })
 })

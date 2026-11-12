@@ -33,6 +33,7 @@ investigations = Table(
     Column("investigation_status", String(32), nullable=False, index=True),
     Column("review_status", String(32), nullable=False),
     Column("workflow_outcome", String(64), nullable=True),
+    Column("verification_status", String(64), nullable=True),
     Column("error_summary", String(512), nullable=True),
     Column("audit_reference", String(64), nullable=True),
     Column("run_id", String(64), nullable=True, unique=True),
@@ -74,8 +75,17 @@ class PortalInvestigations:
             tables = set(inspect(connection).get_table_names())
             if version == 0 and not tables:
                 metadata.create_all(connection)
-                connection.exec_driver_sql("PRAGMA user_version=1")
-            elif version != 1 or tables != {"portal_investigations"}:
+                connection.exec_driver_sql("PRAGMA user_version=2")
+            elif version == 1 and tables == {"portal_investigations"}:
+                # Step 10C adds only a nullable projection field. Preserve every
+                # existing tracking row while upgrading the isolated registry.
+                columns = {item["name"] for item in inspect(connection).get_columns("portal_investigations")}
+                if "verification_status" not in columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE portal_investigations ADD COLUMN verification_status VARCHAR(64)"
+                    )
+                connection.exec_driver_sql("PRAGMA user_version=2")
+            elif version != 2 or tables != {"portal_investigations"}:
                 raise RuntimeError("Unsupported portal investigation registry schema; no reset performed")
 
     @contextmanager
@@ -131,6 +141,7 @@ class PortalInvestigations:
                 "investigation_status": "PENDING",
                 "review_status": "NOT_STARTED",
                 "workflow_outcome": None,
+                "verification_status": None,
                 "error_summary": None,
                 "audit_reference": None,
                 "run_id": None,
@@ -200,11 +211,18 @@ class PortalInvestigations:
             "investigationStatus": row["investigation_status"],
             "reviewStatus": row["review_status"],
             "workflowOutcome": row["workflow_outcome"],
+            "verificationStatus": row["verification_status"],
+            "startedAt": _iso(row["created_at"]),
             "lastUpdated": _iso(row["updated_at"]),
+            "deadlineAt": _iso(row["deadline_at"]),
             "errorSummary": row["error_summary"],
             "auditReference": row["audit_reference"],
             "runId": row["run_id"],
             "planId": row["plan_id"],
+            "auditUrl": (
+                f"/api/demo/runs/{row['run_id']}/resolution-plans/{row['plan_id']}/audit"
+                if row["run_id"] and row["plan_id"] and row["audit_reference"] else None
+            ),
             "investigationSummary": row["investigation_summary"],
             "evidenceReferences": row["evidence_references"] or [],
             "proposedActions": row["proposed_actions"] or [],

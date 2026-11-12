@@ -1,5 +1,6 @@
 """Step 10B portal tests use a webhook test double, never a UiPath claim."""
 import secrets
+import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,6 +10,7 @@ from fastapi.testclient import TestClient
 from backend.api import portal as portal_api
 from backend.core.config import Settings
 from backend.main import create_app
+from backend.services.portal_investigations import PortalInvestigations
 
 FLOW_SOURCE = Path(__file__).parents[1] / "maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/.flow-sdk/TransferIQ_Reconciliation.flow.ts"
 
@@ -56,6 +58,9 @@ def test_flow_source_preserves_manual_root_and_adds_strict_webhook_contract():
     assert "!/^PEX-[0-9a-f]{32}$/.test(input.executionRequestId)" in source
     assert "input.enableIXP !== false" in source
     assert "executionRequestId: $vars.ValidateInput.output.executionRequestId" in source
+    review_script = (FLOW_SOURCE.parent / "scripts/record-review-input.js").read_text(encoding="utf-8")
+    assert "reviewerReference:$vars.ValidateInput.output.reviewerReference" in review_script
+    assert "reviewerReference:$vars.StartTransferInvestigation.output.reviewerReference" not in review_script
 
 
 def test_authorized_start_is_persisted_idempotent_and_secret_free(tmp_path, monkeypatch):
@@ -76,6 +81,8 @@ def test_authorized_start_is_persisted_idempotent_and_secret_free(tmp_path, monk
         body = first.json()
         assert body["triggerStatus"] == "ACCEPTED"
         assert body["investigationStatus"] == "TRIGGERED"
+        assert body["startedAt"] <= body["lastUpdated"] < body["deadlineAt"]
+        assert body["verificationStatus"] is None and body["auditUrl"] is None
         assert body["executionRequestId"].startswith("PEX-")
         assert calls[0][1] == {"transferId": "TRF-1002",
                                "executionRequestId": body["executionRequestId"], "enableIXP": False}
@@ -156,6 +163,7 @@ def test_portal_correlation_reaches_real_isolated_backend_and_final_audit(
         pending = client.get("/api/portal/investigations/" + execution_id).json()
         assert pending["investigationStatus"] == "AWAITING_HUMAN_REVIEW"
         assert pending["reviewStatus"] == "PENDING"
+        assert pending["verificationStatus"] == "NOT_VERIFIED"
         assert "SEC-104" in {x["securityId"] for x in pending["unresolvedExceptions"]}
         path = root + "/resolution-plans/" + plan["planId"]
         binding = {"planVersion": plan["planVersion"], "planHash": plan["planHash"]}
@@ -172,3 +180,69 @@ def test_portal_correlation_reaches_real_isolated_backend_and_final_audit(
         shortage = next(x for x in final["unresolvedExceptions"] if x["securityId"] == "SEC-104")
         assert shortage["difference"] == "-20"
         assert final["auditReference"] == plan["planId"]
+        assert final["verificationStatus"] == "VERIFIED_DEMO_STATE"
+        assert final["auditUrl"] == path + "/audit"
+        audit = client.get(final["auditUrl"])
+        assert audit.status_code == 200
+        assert {item["eventType"] for item in audit.json()["items"]} == {
+            "PLAN_PREVIEWED", "DEMO_REVIEW_RECORDED",
+            "DEMO_DISPOSITION_EXECUTED" if outcome == "APPROVE" else "DEMO_DISPOSITION_REJECTED",
+        }
+
+
+def test_clean_portal_run_completes_without_human_review_or_plan_audit(tmp_path, monkeypatch):
+    settings = configured_settings(tmp_path)
+    monkeypatch.setattr(portal_api, "send_webhook", lambda _s, _p: (True, "event-clean", None))
+    with TestClient(create_app(settings)) as client:
+        csrf = login(client)
+        started = start(client, csrf, transfer_id="TRF-1001").json()
+        created = client.post("/api/demo/runs/review", json={
+            "transferId": "TRF-1001", "executionRequestId": started["executionRequestId"],
+        }, headers={"Idempotency-Key": started["executionRequestId"]})
+        assert created.status_code == 201
+        run = created.json()
+        reconciled = client.post(f"/api/demo/runs/{run['runId']}/reconcile", json={})
+        assert reconciled.status_code == 201
+        final = client.get("/api/portal/investigations/" + started["executionRequestId"]).json()
+        assert final["investigationStatus"] == "COMPLETED"
+        assert final["reviewStatus"] == "NOT_REQUIRED"
+        assert final["workflowOutcome"] == "CLEAN"
+        assert final["planId"] is None and final["auditUrl"] is None
+        assert final["positionsUnchanged"] is True and final["transferCompleted"] is False
+
+
+def test_server_deadline_not_browser_polling_marks_workflow_timed_out(tmp_path, monkeypatch):
+    settings = configured_settings(tmp_path)
+    monkeypatch.setattr(portal_api, "send_webhook", lambda _s, _p: (True, "event-timeout", None))
+    with TestClient(create_app(settings)) as client:
+        csrf = login(client)
+        started = start(client, csrf).json()
+        registry = client.app.state.portal_investigations
+        with registry.engine.begin() as connection:
+            connection.exec_driver_sql(
+                "UPDATE portal_investigations SET deadline_at = 0 WHERE execution_request_id = ?",
+                (started["executionRequestId"],),
+            )
+        final = client.get("/api/portal/investigations/" + started["executionRequestId"]).json()
+        assert final["investigationStatus"] == "TIMED_OUT"
+        assert final["reviewStatus"] == "TIMED_OUT"
+        assert "configured deadline" in final["errorSummary"]
+
+
+def test_registry_v1_upgrade_preserves_existing_tracking_row(tmp_path):
+    settings = configured_settings(tmp_path)
+    settings.data_dir.mkdir(parents=True)
+    registry = PortalInvestigations(settings)
+    row, created = registry.create("demo-operator", "TRF-1002", "migration-test-key")
+    assert created is True
+    registry.engine.dispose()
+    database = settings.data_dir / "portal" / "transferiq.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute("ALTER TABLE portal_investigations DROP COLUMN verification_status")
+        connection.execute("PRAGMA user_version=1")
+    upgraded = PortalInvestigations(settings)
+    persisted = upgraded.read(row["execution_request_id"], "demo-operator")
+    assert persisted["executionRequestId"] == row["execution_request_id"]
+    assert persisted["verificationStatus"] is None
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2

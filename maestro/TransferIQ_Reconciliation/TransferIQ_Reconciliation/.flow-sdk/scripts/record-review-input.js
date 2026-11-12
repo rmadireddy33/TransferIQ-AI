@@ -11,7 +11,7 @@ const value = key => {
 };
 const plan = $vars.ValidateResolutionPlan.output;
 return {planVersion:plan.planVersion,planHash:plan.planHash,reviewOutcome:outcome,
-  reviewerReference:$vars.StartTransferInvestigation.output.reviewerReference,
+  reviewerReference:$vars.ValidateInput.output.reviewerReference,
   reviewerComments:value('reviewerComments'),additionalInformation:value('additionalInformation'),
   // Correlation reference, NOT a claimed verified Action Center task ID.
   reviewEventReference:$vars.ValidateInput.output.correlationId + ':TransferOperationsReview'};
