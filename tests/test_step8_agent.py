@@ -19,7 +19,7 @@ def cases(tmp_path_factory):
         return {f'TRF-{n}': collect(client, f'TRF-{n}') for n in (1001, 1002, 1004, 1005)}
 
 
-def mock_agent(responses):
+def mock_agent(responses, analyze_file=False):
     """Deterministic fixture, intentionally never shipped to UiPath."""
     r = responses['RunReconciliation']['body']
     findings = []
@@ -32,9 +32,22 @@ def mock_agent(responses):
             confidence='MEDIUM', evidenceStatus='VERIFIED' if explained else 'INCOMPLETE',
             recommendedAction='NORMALIZE_COMPARISON' if explained else ('OPEN_COST_BASIS_CASE' if basis else 'INVESTIGATE_POSITION_SHORTAGE'),
             requiresHumanReview=True))
-    return dict(transferId=r['transferId'], investigationSummary='TEST DOUBLE: IXP document extraction was skipped.',
+    if analyze_file:
+        ca = responses['GetCorporateActionReference']['body']['items'][0]
+        document_evidence = dict(documentId='DOC-TEST-DOUBLE', documentType='CORPORATE_ACTION_NOTICE',
+            extractedFields=dict(securityId=ca['securityId'], actionType='STOCK_SPLIT',
+                splitNumerator=ca['numerator'], splitDenominator=ca['denominator'],
+                effectiveDate=ca['effectiveDate'], noticeDate='2026-08-15', evidenceReference=ca['evidenceReference']),
+            sourceEvidenceReference=ca['evidenceReference'], extractionMethod='AGENT_ANALYZE_FILES',
+            validationStatus='PENDING_INDEPENDENT_VALIDATION', discrepancies=[], missingFields=[])
+        route = 'AGENT_ANALYZE_FILES'
+    else:
+        document_evidence = dict(documentId=None, documentType=None, extractedFields={}, sourceEvidenceReference=None,
+            extractionMethod='API_ONLY', validationStatus='NOT_PROCESSED', discrepancies=[], missingFields=['document file'])
+        route = 'API_ONLY'
+    return dict(transferId=r['transferId'], investigationSummary='TEST DOUBLE: document evidence route is explicit.',
         overallRiskLevel='MEDIUM', findings=findings, unresolvedQuestions=[],
-        documentEvidenceStatus='NOT_PROCESSED_IXP_DISABLED', requiresHumanReview=True)
+        documentEvidenceStatus=route, documentEvidence=document_evidence, requiresHumanReview=True)
 
 
 @pytest.mark.parametrize('tid', ['TRF-1002', 'TRF-1004', 'TRF-1005'])
@@ -64,10 +77,12 @@ def test_clean_skips_agent_and_optional_file(cases):
     assert 'CorporateActionExtractor' not in run['trace']
 
 
-def test_supplied_file_cannot_enable_ixp(cases):
+def test_supplied_file_routes_to_analyze_files_without_enabling_ixp(cases):
     run = run_graph('TRF-1002', cases['TRF-1002'], localTransport=True,
-        corporateActionPdf={'ID': 'EXPLICIT_TEST_FILE'}, agentTestDouble=mock_agent(cases['TRF-1002']))
-    assert run['result']['documentEvidenceStatus'] == 'NOT_PROCESSED_IXP_DISABLED'
+        corporateActionPdf={'ID': 'EXPLICIT_TEST_FILE'}, agentTestDouble=mock_agent(cases['TRF-1002'], analyze_file=True))
+    assert run['result']['documentEvidenceStatus'] == 'AGENT_ANALYZE_FILES'
+    assert run['result']['documentEvidence']['extractionMethod'] == 'AGENT_ANALYZE_FILES'
+    assert run['result']['documentEvidence']['validationStatus'] == 'VERIFIED'
     assert 'CorporateActionExtractor' not in run['trace']
     assert run['result']['workflowOutcome'] == 'INVESTIGATION_COMPLETED'
 
@@ -137,7 +152,9 @@ def test_real_node_and_no_mutation_tools():
     f = json.loads(FLOW.read_text())
     agent = next(n for n in f['nodes'] if n['id'] == 'TransferInvestigationAgent')
     assert agent['type'] == 'uipath.agent.autonomous'
-    assert not any(e['sourceNodeId'] == agent['id'] and e['sourcePort'] == 'tools' for e in f['edges'])
+    tools = [n for n in f['nodes'] if n['type'].startswith('uipath.agent.resource.tool.')]
+    assert [n['type'] for n in tools] == ['uipath.agent.resource.tool.builtin.analyzefiles']
+    assert any(e['sourceNodeId'] == agent['id'] and e['targetNodeId'] == tools[0]['id'] for e in f['edges'])
 
 
 @pytest.mark.parametrize('flag,diagnostic', [

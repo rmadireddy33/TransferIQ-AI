@@ -103,7 +103,7 @@ describe('Operations portal', () => {
     expect(screen.getByText('VERIFIED_DEMO_STATE')).toBeInTheDocument()
     expect(screen.getByText('-20 · UNRESOLVED')).toBeInTheDocument()
     expect(screen.getByRole('link',{name:'View Audit Report'})).toHaveAttribute('href','/api/demo/runs/DEMO-run/resolution-plans/PLAN-plan/audit')
-    expect(screen.getByRole('link',{name:'View Transfer Details'})).toHaveAttribute('href','/transfers/TRF-1002/investigation?runId=DEMO-run&planId=PLAN-plan')
+    expect(screen.getByRole('link',{name:'View Transfer Details'})).toHaveAttribute('href','/transfers/TRF-1002/investigation?executionRequestId=PEX-0123456789abcdef0123456789abcdef&runId=DEMO-run&planId=PLAN-plan')
     expect(mockedApi.investigation).toHaveBeenCalledTimes(1)
   })
 
@@ -130,6 +130,12 @@ describe('Operations portal', () => {
     expect(await screen.findByText('Awaiting human approval')).toBeInTheDocument()
     expect(screen.getByText(/Complete the real Quick Form/)).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:/approve|reject/i})).not.toBeInTheDocument()
+  })
+
+  it('keeps the PEX correlation visible after returning to the transfer', async () => {
+    render(<MemoryRouter initialEntries={['/transfers/TRF-1002/investigation?executionRequestId=PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Maestro execution available')).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'View Maestro progress'})).toHaveAttribute('href','/investigations/PEX-0123456789abcdef0123456789abcdef')
   })
 
   it.each([

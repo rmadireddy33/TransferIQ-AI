@@ -2,7 +2,7 @@ const report = $vars.ValidateInvestigation.output;
 const reconciliation = $vars.NormalizeReconciliation.output;
 const reviewer = $vars.StartTransferInvestigation.output.reviewerReference;
 if (report.workflowOutcome !== 'INVESTIGATION_COMPLETED' || report.investigationStatus !== 'COMPLETED' ||
-    report.documentEvidenceStatus !== 'NOT_PROCESSED_IXP_DISABLED' ||
+    !['NOT_PROCESSED_IXP_DISABLED','API_ONLY','AGENT_ANALYZE_FILES'].includes(report.documentEvidenceStatus) ||
     typeof reviewer !== 'string' || !reviewer.trim() || reviewer.length > 256 ||
     !/^[A-Za-z0-9_-]{43}$/.test($vars.CreateDemoRun.output.body.reviewCapability)) {
   throw new Error('REVIEW_CONFIGURATION_OR_VALIDATION_REQUIRED');

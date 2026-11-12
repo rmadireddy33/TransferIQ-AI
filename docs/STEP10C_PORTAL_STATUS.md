@@ -1,6 +1,6 @@
 # Step 10C — Persisted portal workflow status
 
-Status: **implemented and locally verified; not yet deployed or live-verified as Step 10C**.
+Status: **implemented, locally verified, deployed to Render, and publicly verified; authenticated PEX lifecycle acceptance remains to be captured**.
 
 This increment improves how the existing portal reports the already deployed Maestro workflow. It does not change the HTTP Webhook request, the Flow artifact, Manual Trigger, Autonomous Agent, Quick Form, IXP configuration, reconciliation rules, or financial state.
 
@@ -115,20 +115,23 @@ Observed: **470 passed**, one existing Starlette/httpx deprecation warning, **15
 
 ## Render deployment and live acceptance
 
-Deploy the changed backend and rebuilt frontend through the existing Render-connected source. No new environment variable is required. Keep the existing persistent disk mounted at `/data`; startup migrates `/data/portal/transferiq.db` from registry v1 to v2 without resetting rows. Keep `PORTAL_INVESTIGATION_ENABLED` and the existing webhook settings exactly as currently configured.
+The changed backend and rebuilt frontend were deployed through the existing Render-connected source. No new environment variable was required. The existing persistent disk remains mounted at `/data`; startup migrates `/data/portal/transferiq.db` from registry v1 to v2 without resetting rows. `PORTAL_INVESTIGATION_ENABLED` and the existing webhook settings remain unchanged.
 
-After deployment, use bounded reads before any new workflow:
+For authenticated lifecycle acceptance, use bounded reads before any new workflow:
 
 1. verify `/health` returns 200 and `/portal` serves the new compiled asset;
 2. authenticate and revisit the existing completed PEX URL to confirm the result survives deployment/reload;
 3. verify its audit link returns the existing audit ledger;
 4. only if another business-path check is required, launch one new portal run—do not repeatedly execute Maestro to test display-only behavior.
 
-The prior UiPath solution 1.0.1 TRF-1002 approval remains valid Step 10B evidence. It is not relabelled as live verification of the undeployed Step 10C UI. Separate post-1.0.1 portal rejection and clean live runs remain unexecuted.
+The prior UiPath solution 1.0.1 TRF-1002 approval remains valid Step 10B evidence. It is not relabelled as authenticated live verification of the new Step 10C status view. Separate post-1.0.1 portal rejection and clean live runs remain unexecuted.
 
-Bounded public production reads on 2026-11-11 returned:
+After the user completed deployment, bounded verification on 2026-11-11 returned:
 
 - `GET /health`: **HTTP 200**, `status=ok`, `database=ok`, `fictionalDemo=true`;
-- `GET /portal`: **HTTP 200**, `Content-Type: text/html; charset=utf-8`.
+- `GET /portal`: **HTTP 200**;
+- `GET /portal/transfers/TRF-1002`: **HTTP 200**;
+- `GET /api/portal/session`: **HTTP 200**, `enabled=true`, unauthenticated as expected;
+- deployed asset `assets/index-MWERZDmQ.js`: **HTTP 200**, matching the local Step 10C production build.
 
-The deployed JavaScript asset was `assets/index-Dsz6S-rm.js`; the local Step 10C build produced `assets/index-MWERZDmQ.js`. This confirms production is healthy but the new portal build is not yet deployed. No authenticated PEX read and no new real Maestro execution were performed during Step 10C implementation.
+The deployed asset contains the Step 10C completion distinction, bounded-polling refresh message, and `View Audit Report` action. The user also supplied a screenshot of the deployed TRF-1002 portal page. This verifies deployment and public rendering. No authenticated PEX tracking response, completed Step 10C progress page, or new real Maestro execution ID was supplied, so end-to-end Step 10C lifecycle acceptance is not claimed.

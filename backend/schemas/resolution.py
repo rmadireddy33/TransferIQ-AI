@@ -19,7 +19,7 @@ class PlanPreview(Contract):
     agent_investigation_id: str = Field(min_length=1, max_length=128)
     investigation_summary: str = Field(min_length=1, max_length=8000)
     overall_risk_level: Literal['LOW','MEDIUM','HIGH']
-    document_evidence_status: Literal['NOT_PROCESSED_IXP_DISABLED']
+    document_evidence_status: Literal['NOT_PROCESSED_IXP_DISABLED', 'API_ONLY', 'AGENT_ANALYZE_FILES']
     proposed_actions: list[ProposedAction] = Field(min_length=1, max_length=100)
 
 
