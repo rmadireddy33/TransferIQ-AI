@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+import base64
 import hashlib
 import sqlite3
 import time
@@ -53,6 +54,16 @@ def test_anonymous_actual_operations(client, app, settings, tid, counts):
     pdf = client.get(root + '/documents/' + doc['documentId'] + '/download')
     assert pdf.status_code == 200 and pdf.content.startswith(b'%PDF-')
     assert hashlib.sha256(pdf.content).hexdigest() == doc['checksumSha256']
+    content = client.get(root + '/documents/' + doc['documentId'] + '/content')
+    assert content.status_code == 200
+    encoded = content.json()
+    decoded = base64.b64decode(encoded['contentBase64'], validate=True)
+    assert decoded == pdf.content
+    assert encoded['documentId'] == doc['documentId']
+    assert encoded['transferId'] == tid
+    assert encoded['mimeType'] == 'application/pdf'
+    assert encoded['fileSize'] == len(decoded)
+    assert encoded['checksumSha256'] == hashlib.sha256(decoded).hexdigest()
     audit = client.get(root + '/audit').json()
     assert sum(x['action'] == 'RECONCILIATION_COMPLETED' for x in audit['items']) == 1
     assert audit['correctionsApplied'] == 0 and audit['maestroExecutionVerified'] is False
@@ -71,6 +82,7 @@ def test_retry_and_cross_run_isolation(client, app):
     a, b = [f"/api/demo/runs/{x['runId']}" for x in (first, second)]
     document = client.get(a + '/documents').json()['items'][0]['documentId']
     assert client.get(b + '/documents/' + document + '/download').status_code == 404
+    assert client.get(b + '/documents/' + document + '/content').status_code == 404
     assert client.get(a + '/delivering/accounts/ACC-SRC-1002/positions').status_code == 404
     assert client.get(a + '/receiving/accounts/ACC-DST-1002/positions').status_code == 404
     client.post(a + '/reconcile', json={})

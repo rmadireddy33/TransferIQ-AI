@@ -1,4 +1,5 @@
 """Anonymous allowlisted synthetic operations; no private session dependency."""
+import base64
 from typing import Annotated, Literal
 from datetime import date, datetime
 from fastapi import APIRouter, Depends, Header, Request, Response
@@ -83,6 +84,26 @@ class InvestigationReferences(Contract):
     securities: list[SecurityResponse]
     identifier_mappings: list[IdentifierMappingResponse]
     cost_basis: list[DemoCostBasis]
+
+
+class DemoDocumentContent(Contract):
+    """Integrity-checked fictional PDF content for UiPath file conversion.
+
+    The response stays scoped to the short-lived synthetic run.  It is base64
+    because Maestro/API Workflow must create a real JobAttachment before the
+    Analyze Files tool is called; a download URL is not a file reference.
+    """
+
+    run_id: str
+    transfer_id: str
+    document_id: str
+    document_type: str
+    mime_type: Literal['application/pdf'] = 'application/pdf'
+    file_name: str
+    file_size: int
+    checksum_sha256: str
+    content_base64: str
+    fictional_demo: Literal[True] = True
 
 
 def manager(request: Request):
@@ -207,6 +228,25 @@ def pdf(documentId: str, ctx: Context):
         'Content-Disposition': 'attachment; filename="fictional-demo.pdf"',
         'X-Checksum-SHA256': document.checksum_sha256, 'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store'})
+
+
+@router.get('/{runId}/documents/{documentId}/content', response_model=DemoDocumentContent)
+def pdf_content(documentId: str, ctx: Context, response: Response):
+    """Return an actual sample PDF in a bounded, file-conversion-safe shape."""
+    row, settings, session = ctx
+    document = session.get(TransferDocument, documentId)
+    if not document or document.transfer_id != row['transfer_id'] or not document.is_sample or document.evaluation_only:
+        fail(404, 'not_found', 'Unknown synthetic document')
+    if document.mime_type != 'application/pdf':
+        fail(415, 'unsupported_file', 'Only PDF evidence is supported')
+    data = read_document(settings, document)
+    response.headers['Cache-Control'] = 'no-store'
+    return DemoDocumentContent(
+        run_id=row['run_id'], transfer_id=row['transfer_id'],
+        document_id=document.document_id, document_type=document.document_type.value,
+        file_name='fictional-corporate-action.pdf', file_size=document.file_size,
+        checksum_sha256=document.checksum_sha256,
+        content_base64=base64.b64encode(data).decode('ascii'))
 
 
 @router.get('/{runId}/investigation-references', response_model=InvestigationReferences)

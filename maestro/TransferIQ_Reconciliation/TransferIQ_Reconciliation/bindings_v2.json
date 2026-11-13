@@ -19,6 +19,64 @@
         "UseConnectionService": "true",
         "Connector": "uipath-uipath-http"
       }
+    },
+    {
+      "resource": "connection",
+      "key": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+      "id": "connectionf6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+          "isExpression": false,
+          "displayName": "uipath-http-webhook connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "HTTP Webhook",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-http-webhook connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-http-webhook"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e_f03ff64a-0103-400f-8000-f13ce0120103",
+      "id": "EventTriggerf6f0ad2a-4998-43d7-aa24-24f6b2fc852e_f03ff64a-0103-400f-8000-f13ce0120103",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "f03ff64a-0103-400f-8000-f13ce0120103",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-http-webhook",
+        "ActivityName": "HTTP Webhook",
+        "BindingsVersion": "2.2",
+        "ObjectName": "HTTP_WEBHOOK",
+        "Operation": "GENERIC",
+        "FilterExpression": ""
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "GENERIC_f03ff64a-0103-400f-8000-f13ce0120103",
+      "value": {},
+      "activityDisplayName": "connector-activity",
+      "metadata": {
+        "ActivityName": "HTTP Webhook",
+        "BindingsVersion": "2.2",
+        "ObjectName": "HTTP_WEBHOOK",
+        "ParentResourceKey": "EventTrigger.f6f0ad2a-4998-43d7-aa24-24f6b2fc852e_f03ff64a-0103-400f-8000-f13ce0120103",
+        "TriggerCreateParameters": "",
+        "DebugQueryParameters": ""
+      },
+      "id": "Property_f03ff64a-0103-400f-8000-f13ce0120103"
     }
   ]
 }

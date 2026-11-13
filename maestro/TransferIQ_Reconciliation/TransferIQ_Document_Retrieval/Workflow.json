@@ -1,0 +1,237 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "TransferIQ Document Retrieval",
+    "tags": { "projectId": "1c2dbacb-a45c-49c1-8e8c-94d75d171955" },
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": { "variables": { "schema": { "format": "json", "document": { "type": "object", "title": "Variables", "properties": {} } } } }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "title": "Inputs",
+        "additionalProperties": false,
+        "required": ["runId", "transferId"],
+        "properties": {
+          "runId": { "type": "string", "pattern": "^DEMO-[0-9a-f]{32}$" },
+          "transferId": { "type": "string", "enum": ["TRF-1001", "TRF-1002", "TRF-1003", "TRF-1004", "TRF-1005"] }
+        }
+      }
+    }
+  },
+  "output": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "title": "Outputs",
+        "required": ["status", "reason", "documentId", "documentType", "contentChecksumSha256", "file"],
+        "properties": {
+          "status": { "type": "string", "enum": ["AVAILABLE", "UNAVAILABLE"] },
+          "reason": { "type": ["string", "null"] },
+          "documentId": { "type": ["string", "null"] },
+          "documentType": { "type": ["string", "null"] },
+          "contentChecksumSha256": { "type": ["string", "null"] },
+          "file": { "anyOf": [{ "$ref": "#/definitions/job-attachment" }, { "type": "null" }] }
+        },
+        "definitions": {
+          "job-attachment": {
+            "type": "object",
+            "properties": {
+              "ID": { "type": "string" },
+              "FullName": { "type": "string" },
+              "MimeType": { "type": "string" },
+              "Metadata": { "type": "object" }
+            },
+            "required": ["ID", "FullName", "MimeType"],
+            "x-uipath-resource-kind": "JobAttachment"
+          }
+        }
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${ { ...Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}), ...($workflow.input || {}) } }",
+              "output": { "as": "${$input}" },
+              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "fullName": "Assign", "isTransparent": true }
+            }
+          },
+          {
+            "HttpRequest_1": {
+              "call": "UiPath.Http",
+              "with": {
+                "connector": "uipath-uipath-http",
+                "connectionId": "ImplicitConnection",
+                "connectionResourceId": "ImplicitConnection",
+                "method": "POST",
+                "endpoint": "/http-request",
+                "bodyParameters": {
+                  "authentication": "manual",
+                  "method": "GET",
+                  "url": "${'https://transferiq-api.onrender.com/api/demo/runs/' + encodeURIComponent($workflow.input.runId) + '/documents?limit=100&offset=0'}",
+                  "headers": { "Accept": "application/json" }
+                }
+              },
+              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"http_request_1\": $output } }" },
+              "metadata": {
+                "fullName": "Connector", "activityType": "Connector", "displayName": "List run documents",
+                "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce", "assemblyQualifiedName": "Connector",
+                "configuration": "{\"essentialConfiguration\":{\"connectorVersion\":\"\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"version\":\"1.0.0\",\"connectorKey\":\"uipath-uipath-http\",\"activityType\":\"Curated\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"operation\":null,\"eventOperation\":null,\"eventMode\":null,\"connectorObjects\":null,\"previewEndpoint\":null},\"objectName\":\"http-request\",\"operation\":null,\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}"
+              }
+            }
+          },
+          {
+            "SelectDocument": {
+              "run": { "script": {
+                "language": "javascript",
+                "code": "const response = $context.outputs.http_request_1; let body = response?.content; try { if (typeof body === 'string') body = JSON.parse(body); } catch (_) { body = null; } const items = Array.isArray(body?.items) ? body.items : []; const candidates = items.filter(d => d && d.transferId === $workflow.input.transferId && d.documentType === 'CORPORATE_ACTION_NOTICE' && d.documentStatus === 'READY' && d.mimeType === 'application/pdf' && d.isSample === true && d.evaluationOnly === false); candidates.sort((a, b) => (Number(b.version) - Number(a.version)) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')) || String(a.documentId).localeCompare(String(b.documentId))); const document = candidates[0] || null; if (response?.statusCode !== 200 || !body || body.total !== items.length) return { available: false, reason: 'DOCUMENT_METADATA_UNAVAILABLE', documentId: null, documentType: null, checksumSha256: null }; if (!document) return { available: false, reason: 'CORPORATE_ACTION_DOCUMENT_NOT_FOUND', documentId: null, documentType: null, checksumSha256: null }; return { available: true, reason: null, documentId: document.documentId, documentType: document.documentType, checksumSha256: document.checksumSha256, fileSize: document.fileSize };",
+                "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+              } },
+              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"SelectDocument\": $output } }" },
+              "metadata": { "activityType": "JsInvoke", "displayName": "Select corporate-action notice", "fullName": "JsInvoke" }
+            }
+          },
+          {
+            "If_DocumentAvailable#Wrapper": {
+              "do": [
+                {
+                  "If_DocumentAvailable": {
+                    "switch": [
+                      { "case": { "when": "${$context.outputs.SelectDocument.available === true}", "then": "If_DocumentAvailable#Then" } },
+                      { "default": { "then": "If_DocumentAvailable#Else" } }
+                    ],
+                    "metadata": { "displayName": "Document available" }
+                  }
+                },
+                {
+                  "If_DocumentAvailable#Then": {
+                    "do": [
+                      {
+                        "HttpRequest_2": {
+                          "call": "UiPath.Http",
+                          "with": {
+                            "connector": "uipath-uipath-http", "connectionId": "ImplicitConnection", "connectionResourceId": "ImplicitConnection",
+                            "method": "POST", "endpoint": "/http-request",
+                            "bodyParameters": {
+                              "authentication": "manual", "method": "GET",
+                              "url": "${'https://transferiq-api.onrender.com/api/demo/runs/' + encodeURIComponent($workflow.input.runId) + '/documents/' + encodeURIComponent($context.outputs.SelectDocument.documentId) + '/content'}",
+                              "headers": { "Accept": "application/json" }
+                            }
+                          },
+                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"http_request_2\": $output } }" },
+                          "metadata": {
+                            "fullName": "Connector", "activityType": "Connector", "displayName": "Read verified PDF content",
+                            "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce", "assemblyQualifiedName": "Connector",
+                            "configuration": "{\"essentialConfiguration\":{\"connectorVersion\":\"\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"version\":\"1.0.0\",\"connectorKey\":\"uipath-uipath-http\",\"activityType\":\"Curated\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"operation\":null,\"eventOperation\":null,\"eventMode\":null,\"connectorObjects\":null,\"previewEndpoint\":null},\"objectName\":\"http-request\",\"operation\":null,\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}"
+                          }
+                        }
+                      },
+                      {
+                        "ValidateContent": {
+                          "run": { "script": {
+                            "language": "javascript",
+                            "code": "const response = $context.outputs.http_request_2; let body = response?.content; try { if (typeof body === 'string') body = JSON.parse(body); } catch (_) { body = null; } const content = body?.contentBase64; const validBase64 = typeof content === 'string' && content.length > 0 && content.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(content); const valid = response?.statusCode === 200 && body?.runId === $workflow.input.runId && body?.transferId === $workflow.input.transferId && body?.documentId === $context.outputs.SelectDocument.documentId && body?.documentType === $context.outputs.SelectDocument.documentType && body?.mimeType === 'application/pdf' && body?.checksumSha256 === $context.outputs.SelectDocument.checksumSha256 && Number.isInteger(body?.fileSize) && body.fileSize > 0 && body.fileSize <= 15728640 && body.fileSize === $context.outputs.SelectDocument.fileSize && validBase64; return valid ? { available: true, reason: null, contentBase64: content, documentId: body.documentId, documentType: body.documentType, checksumSha256: body.checksumSha256 } : { available: false, reason: 'DOCUMENT_CONTENT_INVALID', contentBase64: null, documentId: $context.outputs.SelectDocument.documentId, documentType: $context.outputs.SelectDocument.documentType, checksumSha256: null };",
+                            "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                          } },
+                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"ValidateContent\": $output } }" },
+                          "metadata": { "activityType": "JsInvoke", "displayName": "Validate document response", "fullName": "JsInvoke" }
+                        }
+                      },
+                      {
+                        "If_ContentValid#Wrapper": {
+                          "do": [
+                            {
+                              "If_ContentValid": {
+                                "switch": [
+                                  { "case": { "when": "${$context.outputs.ValidateContent.available === true}", "then": "If_ContentValid#Then" } },
+                                  { "default": { "then": "If_ContentValid#Else" } }
+                                ],
+                                "metadata": { "displayName": "Content valid" }
+                              }
+                            },
+                            {
+                              "If_ContentValid#Then": {
+                                "do": [
+                                  {
+                                    "Base64ToFile_1": {
+                                      "run": { "script": {
+                                        "code": "return { output: await $helpers.file.base64ToFile({ base64: $context.outputs.ValidateContent.contentBase64, fileName: 'corporate-action-notice.pdf', mimeType: 'application/pdf' }) }",
+                                        "language": "javascript",
+                                        "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                                      } },
+                                      "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Base64ToFile_1\": $output } }" },
+                                      "metadata": { "activityType": "Base64ToFile", "displayName": "Create PDF attachment", "fullName": "Base64ToFile", "icon": "sw:convert-base64-to-file" }
+                                    }
+                                  },
+                                  {
+                                    "Response_Available": {
+                                      "response": "${{ status: 'AVAILABLE', reason: null, documentId: $context.outputs.ValidateContent.documentId, documentType: $context.outputs.ValidateContent.documentType, contentChecksumSha256: $context.outputs.ValidateContent.checksumSha256, file: $context.outputs.Base64ToFile_1.output }}",
+                                      "markJobAsFailed": false, "then": "end",
+                                      "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_Available\": $output } }" },
+                                      "metadata": { "activityType": "Response", "displayName": "Return document attachment", "fullName": "Response" }
+                                    }
+                                  }
+                                ],
+                                "then": "exit"
+                              }
+                            },
+                            {
+                              "If_ContentValid#Else": {
+                                "do": [
+                                  {
+                                    "Response_InvalidContent": {
+                                      "response": "${{ status: 'UNAVAILABLE', reason: $context.outputs.ValidateContent.reason, documentId: $context.outputs.ValidateContent.documentId, documentType: $context.outputs.ValidateContent.documentType, contentChecksumSha256: null, file: null }}",
+                                      "markJobAsFailed": false, "then": "end",
+                                      "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_InvalidContent\": $output } }" },
+                                      "metadata": { "activityType": "Response", "displayName": "Return invalid-content status", "fullName": "Response" }
+                                    }
+                                  }
+                                ],
+                                "then": "exit"
+                              }
+                            }
+                          ],
+                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_ContentValid\": $output } }" },
+                          "metadata": { "activityType": "If", "displayName": "Content valid", "fullName": "If" }
+                        }
+                      }
+                    ],
+                    "then": "exit"
+                  }
+                },
+                {
+                  "If_DocumentAvailable#Else": {
+                    "do": [
+                      {
+                        "Response_Unavailable": {
+                          "response": "${{ status: 'UNAVAILABLE', reason: $context.outputs.SelectDocument.reason, documentId: null, documentType: null, contentChecksumSha256: null, file: null }}",
+                          "markJobAsFailed": false, "then": "end",
+                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_Unavailable\": $output } }" },
+                          "metadata": { "activityType": "Response", "displayName": "Return unavailable status", "fullName": "Response" }
+                        }
+                      }
+                    ],
+                    "then": "exit"
+                  }
+                }
+              ],
+              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_DocumentAvailable\": $output } }" },
+              "metadata": { "activityType": "If", "displayName": "Document available", "fullName": "If" }
+            }
+          }
+        ],
+        "metadata": { "activityType": "Sequence", "displayName": "Retrieve corporate-action document", "fullName": "Sequence" }
+      }
+    }
+  ],
+  "evaluate": { "mode": "strict", "language": "javascript" }
+}

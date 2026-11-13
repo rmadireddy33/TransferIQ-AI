@@ -12,6 +12,9 @@ from tests.test_maestro_contract import FLOW, collect
 from tests.test_step8_agent import mock_agent, run_graph
 
 
+API_WORKFLOW = FLOW.parents[1] / "TransferIQ_Document_Retrieval" / "Workflow.json"
+
+
 @pytest.fixture(scope="module")
 def trf1002(tmp_path_factory):
     with TestClient(create_app(Settings(data_dir=tmp_path_factory.mktemp("step11")))) as client:
@@ -30,10 +33,51 @@ def test_canonical_flow_has_only_the_builtin_analyze_files_tool():
 
     source = FLOW.parent / agent["inputs"]["source"]
     definition = json.loads((source / "agent.json").read_text())
-    attachment = definition["inputSchema"]["properties"]["ValidateInput__output__corporateActionPdf"]
+    attachment = definition["inputSchema"]["properties"]["agentDocument"]
     assert attachment == {"$ref": "#/definitions/job-attachment"}
+    assert definition["inputSchema"]["properties"]["SerializeInvestigationContext__output"] == {"type": "string"}
     assert definition["inputSchema"]["definitions"]["job-attachment"]["x-uipath-resource-kind"] == "JobAttachment"
     assert "documentEvidence" in definition["outputSchema"]["required"]
+    user_message = next(message for message in definition["messages"] if message["role"] == "user")
+    variable_tokens = [token["rawString"] for token in user_message["contentTokens"]
+                       if token["type"] == "variable"]
+    assert variable_tokens == [
+        "input.SerializeInvestigationContext__output",
+        "input.agentDocument",
+    ]
+    assert "{{input.SerializeInvestigationContext__output}}" in user_message["content"]
+    assert "{{input.agentDocument}}" in user_message["content"]
+    assert all("{{" not in token.get("rawString", "")
+               for token in user_message["contentTokens"] if token["type"] == "simpleText")
+    # The Flow node resolves upstream values before starting the agent job. The
+    # sidecar uses input.* tokens, but using those tokens in the Flow node made
+    # Maestro pass their names through as literal prompt text at runtime.
+    assert "{{ $vars.SerializeInvestigationContext.output }}" in agent["inputs"]["userPrompt"]
+    assert "{{ $vars.agentDocument }}" in agent["inputs"]["userPrompt"]
+    assert "{{input." not in agent["inputs"]["userPrompt"]
+
+
+def test_phase_b_uses_real_api_workflow_file_conversion_and_fail_closed_fallback():
+    flow = json.loads(FLOW.read_text())
+    by_id = {node["id"]: node for node in flow["nodes"]}
+    retrieval = by_id["RetrieveCorporateActionDocument"]
+    assert retrieval["type"].startswith("uipath.core.api-workflow.")
+    assert retrieval["inputs"]["runId"]["expression"] == "$vars.ValidateDemoRun.output.runId"
+    assert retrieval["inputs"]["transferId"]["expression"] == "$vars.ValidateInput.output.transferId"
+    assert by_id["TransferInvestigationAgent"]["inputs"]["agentInputVariables"][1] == {
+        "id": "agentDocument", "type": "object", "binding": "=js:$vars.agentDocument"
+    }
+    assert "object($vars.agentDocument)" in by_id["PrepareInvestigationContext"]["inputs"]["script"]
+    assert "DOCUMENT_RETRIEVAL_FAILED" in by_id["DocumentRetrievalUnavailable"]["inputs"]["script"]
+
+    workflow = json.loads(API_WORKFLOW.read_text())
+    sequence = workflow["do"][0]["Sequence_1"]["do"]
+    serialized = json.dumps(sequence)
+    assert serialized.count('"call": "UiPath.Http"') == 2
+    assert "$helpers.file.base64ToFile" in serialized
+    assert "corporate-action-notice.pdf" in serialized
+    assert "contentBase64" in serialized
+    assert "UIPATH_WEBHOOK" not in serialized and "API_KEY" not in serialized
 
 
 def test_analyze_files_test_double_is_independently_validated(trf1002):

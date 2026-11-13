@@ -73,6 +73,18 @@ export async function runLocal({ transferId, enableIXP = false, corporateActionP
       } else if (node.type === 'uipath.human-in-the-loop.quick-form') {
         if (!humanTestDouble) throw new Error('REAL_HUMAN_REQUIRED_NO_TEST_DOUBLE');
         vars[id] = {output:humanTestDouble.output}; port = 'outcome-' + humanTestDouble.outcome;
+      } else if (node.type.startsWith('uipath.core.api-workflow.')) {
+        // Explicit local contract double only. The real UiPath API Workflow is
+        // separately validated/deployed and creates the JobAttachment. Legacy
+        // API-only tests model an unavailable document rather than fabricating a
+        // successful file retrieval.
+        if (fault?.nodeId === id) throw new Error('Injected API workflow failure');
+        const supplied = responses?.[id];
+        const value = supplied?.body ?? supplied ?? {
+          status: 'UNAVAILABLE', reason: 'DOCUMENT_RETRIEVAL_NOT_RUN_IN_LOCAL_HARNESS',
+          documentId: null, documentType: null, contentChecksumSha256: null, file: null
+        };
+        vars[id] = { output: value }; port = 'output';
       } else throw new Error('Unsupported graph node ' + node.type);
       for (const update of flow.variables.variableUpdates?.[id] || []) vars[update.variableId] = expression(update.expression.expression,vars);
     } catch (e) {

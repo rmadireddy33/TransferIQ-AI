@@ -92,7 +92,8 @@ def test_openapi_security_inventory(client):
         '/api/demo/runs/{runId}/exceptions', '/api/demo/runs/{runId}/documents',
         '/api/demo/runs/{runId}/corporate-actions',
         '/api/demo/runs/{runId}/investigation-references',
-        '/api/demo/runs/{runId}/documents/{documentId}/download', '/api/demo/runs/{runId}/audit',
+        '/api/demo/runs/{runId}/documents/{documentId}/download',
+        '/api/demo/runs/{runId}/documents/{documentId}/content', '/api/demo/runs/{runId}/audit',
         '/api/portal/session'}
     for path, methods in spec['paths'].items():
         for operation in methods.values():

@@ -1,0 +1,41 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransferIQ_Document_Retrieval",
+    "kind": "process",
+    "type": "api",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7b9988ef-2daa-41d0-8c2d-d8ad623785c1",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TransferIQ_Document_Retrieval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Api",
+      "name": "TransferIQ_Document_Retrieval",
+      "package": {
+        "key": "e5653b56-bc49-45ce-bcdb-efaa69ab2ce9"
+      },
+      "packageName": "TransferIQ_Reconciliation.api.TransferIQ_Document_Retrieval",
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "{\n  \"$schema\": \"https://cloud.uipath.com/draft/2024-12/entry-point\",\n  \"$id\": \"entry-points.json\",\n  \"entryPoints\": [\n    {\n      \"filePath\": \"content/Workflow.json\",\n      \"uniqueId\": \"4abb7958-a66c-4b64-9f5e-a3ed23a5552a\",\n      \"type\": \"Api\",\n      \"input\": null,\n      \"output\": null\n    }\n  ]\n}\n",
+      "entryPointName": "content/Workflow.json",
+      "entryPointUniqueId": "4abb7958-a66c-4b64-9f5e-a3ed23a5552a"
+    },
+    "locks": [],
+    "key": "b41e40a5-172f-465d-8aee-01d75ea8e906",
+    "files": []
+  }
+}

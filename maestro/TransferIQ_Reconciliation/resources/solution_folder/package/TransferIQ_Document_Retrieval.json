@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransferIQ_Document_Retrieval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7b9988ef-2daa-41d0-8c2d-d8ad623785c1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TransferIQ_Document_Retrieval"
+    },
+    "locks": [],
+    "key": "e5653b56-bc49-45ce-bcdb-efaa69ab2ce9",
+    "files": []
+  }
+}

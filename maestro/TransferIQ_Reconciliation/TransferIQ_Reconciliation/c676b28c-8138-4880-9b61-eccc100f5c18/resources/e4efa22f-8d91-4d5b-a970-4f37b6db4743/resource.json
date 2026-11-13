@@ -1,25 +1,44 @@
 {
   "$resourceType": "tool",
   "id": "e4efa22f-8d91-4d5b-a970-4f37b6db4743",
-  "referenceKey": null,
   "name": "Analyze Files",
-  "type": "internal",
   "description": "Read the supplied fictional brokerage PDF and extract only the requested corporate-action evidence fields.",
-  "isEnabled": true,
-  "settings": {},
-  "guardrail": {
-    "policies": []
-  },
-  "argumentProperties": {},
+  "type": "internal",
   "inputSchema": {
     "type": "object",
     "properties": {
       "attachments": {
         "type": "array",
+        "description": "Array of files, documents, images, or other attachments to process",
         "items": {
-          "$ref": "#/definitions/job-attachment"
+          "type": "object",
+          "required": [
+            "ID"
+          ],
+          "x-uipath-resource-kind": "JobAttachment",
+          "properties": {
+            "ID": {
+              "type": "string",
+              "description": "Orchestrator attachment key"
+            },
+            "FullName": {
+              "type": "string",
+              "description": "File name"
+            },
+            "MimeType": {
+              "type": "string",
+              "description": "The MIME type of the content, such as \"application/json\" or \"image/png\""
+            },
+            "Metadata": {
+              "type": "object",
+              "description": "Dictionary of metadata",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
         },
-        "description": "Array of files, documents, images, or other attachments to process"
+        "x-attachmentMode": "prompt"
       },
       "analysisTask": {
         "type": "string",
@@ -29,38 +48,18 @@
     "required": [
       "attachments",
       "analysisTask"
-    ],
-    "definitions": {
-      "job-attachment": {
-        "type": "object",
-        "properties": {
-          "ID": {
-            "type": "string",
-            "description": "Orchestrator attachment key"
-          },
-          "FullName": {
-            "type": "string",
-            "description": "File name"
-          },
-          "MimeType": {
-            "type": "string",
-            "description": "MIME type, e.g. \"application/pdf\", \"image/png\""
-          },
-          "Metadata": {
-            "type": "object",
-            "description": "Dictionary<string, string> of metadata",
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "ID"
-        ],
-        "x-uipath-resource-kind": "JobAttachment"
-      }
-    }
+    ]
   },
+  "settings": {},
+  "properties": {
+    "toolType": "analyze-attachments",
+    "exampleCalls": []
+  },
+  "guardrail": {
+    "policies": []
+  },
+  "isEnabled": true,
+  "argumentProperties": {},
   "outputSchema": {
     "type": "object",
     "properties": {
@@ -73,8 +72,5 @@
       "analysis"
     ]
   },
-  "properties": {
-    "toolType": "analyze-attachments",
-    "exampleCalls": []
-  }
+  "canvasNodeId": "TransferInvestigationAgentTool"
 }
