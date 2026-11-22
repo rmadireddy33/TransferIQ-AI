@@ -27,7 +27,7 @@ This plan records implemented milestones and remaining work. Historical Step doc
 ## Verification baseline
 
 - Backend: **481 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
-- Frontend: **26 passed**, production build successful.
+- Frontend: **30 passed**, production build successful.
 - Canonical Flow: product validation **Valid**.
 - Editable source: **0 errors / 0 warnings**; clean compile **81 nodes / 86 edges**.
 - Solution: **1.1.1 Active / Successful**.
@@ -55,8 +55,7 @@ These are recorded audit/remediation results, not tests rerun by every documenta
 - The active transfer and PEX views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable using sanitized persisted state.
 - The unused legacy progress component and active-source encoding artifacts were removed.
 - The active timeline renders six backend-derived stages and separates workflow completion from unresolved brokerage exceptions.
-- Authorized operators can browse paginated persisted PEX history and reopen the existing timeline without creating another execution; historical null verification fields remain explicitly unrecorded.
-- Authorized operators can browse preserved PEX history without starting a workflow; historical null outcome and verification fields remain explicitly unrecorded.
+- Authorized operators can browse paginated persisted PEX history globally or within a selected transfer and reopen the existing timeline without creating another execution; historical null outcome and verification fields remain explicitly unrecorded.
 
 ### P2 - optional scope
 

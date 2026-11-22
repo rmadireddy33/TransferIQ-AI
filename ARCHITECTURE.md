@@ -56,7 +56,7 @@ See [API_SURFACES.md](docs/API_SURFACES.md) for exact routes.
 5. Investigation cases obtain API references and optionally a real PDF attachment, invoke the agent, and independently validate the structured result.
 6. Plan preview persists AWAITING_HUMAN_REVIEW. A real Quick Form captures Approve or Reject in Action Center.
 7. The Flow records the decision, applies only the allowed demo disposition, rereads state, verifies the audit, and persists COMPLETED or FAILED.
-8. The portal reads the same PEX record with bounded polling. Reloading does not start another run. The authenticated history route lists existing PEX records newest-first and links back to the same persisted six-stage detail view.
+8. The portal reads the same PEX record with bounded polling. Reloading does not start another run. The authenticated history route lists existing PEX records newest-first globally or filtered by an allowlisted transfer ID, and both views link to the same persisted six-stage detail view.
 
 Portal statuses are PENDING, TRIGGERED, INVESTIGATING, AWAITING_HUMAN_REVIEW, COMPLETED, FAILED, and TIMED_OUT. Browser polling expiration never changes server state.
 

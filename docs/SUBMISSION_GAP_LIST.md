@@ -67,7 +67,7 @@ Audit date: **2026-11-19**. Documentation-reconciliation update:
 - **Resolution:** The sanitized PEX projection now persists the plan's document-evidence method. Both active investigation views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable; the legacy component and active-source encoding artifacts are removed; and a concise evidence-method panel explains the deterministic API validation boundary without exposing capabilities or file URLs.
 - **Safety:** The portal remains read-only for decisions. No Flow, prompt, Quick Form, webhook, financial rule, or position was changed.
 - **Complexity:** Medium; 0.5-1 day plus tests.
-- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and operator-scoped history remain backend-derived; 26 frontend tests and the production build pass; all 481 backend tests pass. Render deployment and a new production asset hash remain owner handoff steps.
+- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and global/transfer-specific operator history remain backend-derived; 30 frontend tests and the production build pass; all 481 backend tests pass. Render deployment and a new production asset hash remain owner handoff steps.
 
 ### P1-4 - Rehearse tenant dependencies and portable assignment
 

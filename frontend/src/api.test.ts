@@ -36,6 +36,20 @@ describe('read-only API client', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
+  it('requests operator history with an encoded transfer filter and no write body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      items: [], total: 0, limit: 10, offset: 0,
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(api.investigationHistory(10, 0, undefined, 'TRF-1002')).resolves.toMatchObject({total:0})
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/portal/investigations?limit=10&offset=0&transferId=TRF-1002')
+    expect(options.method).toBe('GET')
+    expect(options.credentials).toBe('same-origin')
+    expect(options.body).toBeUndefined()
+  })
+
   it('encodes identifiers used in document download links', () => {
     expect(api.documentUrl('DEMO-a/b', 'DOC x')).toBe('/api/demo/runs/DEMO-a%2Fb/documents/DOC%20x/download')
   })

@@ -157,8 +157,8 @@ export const api = {
     }),
   investigation: (executionRequestId: string, signal?: AbortSignal) => request(
     `/api/portal/investigations/${encodeURIComponent(executionRequestId)}`, investigationSchema, signal),
-  investigationHistory: (limit = 10, offset = 0, signal?: AbortSignal) => request(
-    `/api/portal/investigations?${new URLSearchParams({ limit: String(limit), offset: String(offset) })}`,
+  investigationHistory: (limit = 10, offset = 0, signal?: AbortSignal, transferId?: string) => request(
+    `/api/portal/investigations?${new URLSearchParams({ limit: String(limit), offset: String(offset), ...(transferId ? { transferId } : {}) })}`,
     investigationHistorySchema, signal),
 }
 

@@ -106,7 +106,7 @@ Before any live workflow start:
 
 1. GET /api/portal/session and confirm enabled=true.
 2. Authenticate through the portal with the owner-supplied access code.
-3. Open **Investigation History** and confirm existing PEX records are retained before considering a new run.
+3. Open global **Investigation History**, then open one TRF transfer's **Investigation history** tab and confirm existing PEX records are retained and correctly filtered before considering a new run.
 4. Open an existing record and confirm its six-stage detail route survives refresh without starting a workflow.
 5. Only if a new business-path check is necessary, start one allowlisted scenario once and record its PEX ID.
 6. Confirm webhook acceptance yields TRIGGERED, not COMPLETED.
@@ -122,7 +122,7 @@ Do not repeatedly retry an uncertain webhook delivery. The backend intentionally
     npm test --prefix frontend -- --run
     npm run build --prefix frontend
 
-The latest audited results are 481 backend tests and 26 frontend tests passed. The frontend production build also succeeded. These results include the portal presentation cleanup, operator-scoped Investigation History, pagination/access-control coverage, and registry v2-to-v3 migration coverage.
+The latest audited results are 481 passing backend tests and 30 passing frontend tests, plus a successful production build. Coverage includes global and transfer-specific operator-scoped history, filtering, pagination, access controls, and registry v2-to-v3 migration.
 
 ## Troubleshooting
 

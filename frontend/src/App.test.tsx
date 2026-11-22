@@ -113,6 +113,47 @@ describe('Operations portal', () => {
     expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
   })
 
+  it('loads only the selected transfer history and opens its existing PEX timeline', async () => {
+    const user=userEvent.setup()
+    const reviewed=tracked({
+      executionRequestId:'PEX-cccccccccccccccccccccccccccccccc', transferId:'TRF-1002',
+      investigationStatus:'COMPLETED', reviewStatus:'APPROVED', workflowOutcome:'REVIEWED_WITH_OPEN_EXCEPTIONS',
+      verificationStatus:'VERIFIED_DEMO_STATE', transferCompleted:false,
+      unresolvedExceptions:[{securityId:'SEC-104',difference:'-20',resolutionStatus:'UNRESOLVED'}],
+    })
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:true,operatorId:'demo-operator'})
+    mockedApi.investigationHistory.mockResolvedValueOnce({items:[reviewed],total:1,limit:10,offset:0})
+    mockedApi.investigation.mockResolvedValueOnce(reviewed)
+    render(<MemoryRouter initialEntries={['/transfers/TRF-1002/history']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Investigation History for TRF-1002')).toBeInTheDocument()
+    await waitFor(()=>expect(mockedApi.investigationHistory).toHaveBeenCalledWith(10,0,expect.any(AbortSignal),'TRF-1002'))
+    expect(screen.getByText('APPROVED')).toBeInTheDocument()
+    expect(screen.getByText('REVIEWED WITH OPEN EXCEPTIONS')).toBeInTheDocument()
+    expect(screen.getByText('VERIFIED DEMO STATE')).toBeInTheDocument()
+    expect(screen.getByText('OPEN EXCEPTIONS')).toBeInTheDocument()
+    await user.click(screen.getByRole('link',{name:'PEX-cccccccccccccccccccccccccccccccc'}))
+    expect(await screen.findByText('Investigation progress')).toBeInTheDocument()
+    expect(screen.getByRole('link',{name:'Back to TRF-1002'})).toHaveAttribute('href',expect.stringContaining('/transfers/TRF-1002/investigation'))
+    expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
+  })
+
+  it('shows a transfer-specific empty history without fabricating records', async () => {
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:true,operatorId:'demo-operator'})
+    mockedApi.investigationHistory.mockResolvedValueOnce({items:[],total:0,limit:10,offset:0})
+    render(<MemoryRouter initialEntries={['/transfers/TRF-1004/history']}><App /></MemoryRouter>)
+    expect(await screen.findByText('No investigations for TRF-1004')).toBeInTheDocument()
+    expect(screen.getByText('No persisted Maestro executions are associated with this transfer.')).toBeInTheDocument()
+    await waitFor(()=>expect(mockedApi.investigationHistory).toHaveBeenCalledWith(10,0,expect.any(AbortSignal),'TRF-1004'))
+  })
+
+  it('keeps transfer-specific history behind operator authorization', async () => {
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:false,operatorId:null})
+    render(<MemoryRouter initialEntries={['/transfers/TRF-1003/history']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Authorized operator access required')).toBeInTheDocument()
+    expect(screen.getByText(/Transfer investigation history is scoped to the signed-in operator/)).toBeInTheDocument()
+    expect(mockedApi.investigationHistory).not.toHaveBeenCalled()
+  })
+
   it('shows the precomputed TRF-1002 shortage without creating a run', async () => {
     render(<MemoryRouter initialEntries={['/transfers/TRF-1002/reconciliation']}><App /></MemoryRouter>)
 

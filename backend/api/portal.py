@@ -27,8 +27,11 @@ class LoginRequest(Contract):
     access_code: str = Field(min_length=1, max_length=512)
 
 
+TransferId = Literal["TRF-1001", "TRF-1002", "TRF-1003", "TRF-1004", "TRF-1005"]
+
+
 class InvestigationRequest(Contract):
-    transfer_id: Literal["TRF-1001", "TRF-1002", "TRF-1003", "TRF-1004", "TRF-1005"]
+    transfer_id: TransferId
 
 
 def _b64(data: bytes) -> str:
@@ -169,11 +172,12 @@ def list_investigations(
     response: Response,
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
     offset: Annotated[int, Query(ge=0)] = 0,
+    transferId: Annotated[TransferId | None, Query()] = None,
     token: Annotated[str | None, Security(portal_cookie)] = None,
 ):
     claims = _read_session(request, token)
     response.headers["Cache-Control"] = "no-store"
-    return _manager(request).list_for_operator(claims["sub"], limit, offset)
+    return _manager(request).list_for_operator(claims["sub"], limit, offset, transferId)
 
 
 @router.get("/investigations/{executionRequestId}")

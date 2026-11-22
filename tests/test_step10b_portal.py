@@ -174,6 +174,22 @@ def test_investigation_history_is_operator_scoped_newest_first_and_paginated(tmp
         assert historical["verificationStatus"] is None
         assert historical["transferCompleted"] is None
 
+        filtered = client.get("/api/portal/investigations?limit=10&offset=0&transferId=TRF-1002")
+        assert filtered.status_code == 200
+        filtered_body = filtered.json()
+        assert filtered_body["total"] == 1
+        assert [item["executionRequestId"] for item in filtered_body["items"]] == [
+            own_rows[1]["execution_request_id"]
+        ]
+        assert filtered_body["items"][0]["transferId"] == "TRF-1002"
+
+        empty = client.get("/api/portal/investigations?limit=10&offset=0&transferId=TRF-1004")
+        assert empty.status_code == 200
+        assert empty.json()["items"] == [] and empty.json()["total"] == 0
+        assert client.get(
+            "/api/portal/investigations?limit=10&offset=0&transferId=TRF-9999"
+        ).status_code == 422
+
 
 def test_webhook_failure_is_recorded_without_retry(tmp_path, monkeypatch):
     settings = configured_settings(tmp_path)

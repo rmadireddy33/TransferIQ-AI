@@ -9,7 +9,7 @@ TransferIQ AI is a fictional brokerage-transfer reconciliation demonstration. It
 - Editable Flow SDK source: reproducible, with **0 source errors / 0 warnings**.
 - Flow toolchain: UiPath CLI **1.205.0** pinned in the Flow SDK lockfile. CLI 1.206.0 has a documented dynamic Quick Form validation regression.
 - Backend regression: **481 passed**.
-- Frontend regression: **26 passed**, production build successful.
+- Frontend regression: **30 passed**, production build successful.
 - Hosting: one Render Python service with a persistent /data disk; FastAPI serves the React build at /portal.
 - Real runtime evidence: portal-triggered CLEAN, approval, rejection, Autonomous Agent Analyze Files, Quick Form completion, independent verification, and audit.
 
@@ -18,7 +18,7 @@ The current audit and limits are documented in [FINAL_PROJECT_AUDIT.md](docs/FIN
 ## What the system does
 
 1. A user browses one of five allowlisted fictional transfers in the public portal.
-2. An authorized operator can browse paginated persisted investigation history or start one investigation. The backend persists a PEX correlation record and sends one bounded authenticated webhook request to Maestro only for an explicit start.
+2. An authorized operator can browse global persisted investigation history, filter history inside an individual transfer, or start one investigation. The backend persists a PEX correlation record and sends one bounded authenticated webhook request to Maestro only for an explicit start.
 3. Manual Trigger and Portal Webhook enter the same Flow graph. The Flow creates an isolated DEMO run and invokes deterministic reconciliation APIs.
 4. CLEAN cases end without document retrieval, an agent, or a human task.
 5. Investigation cases can retrieve the run-scoped fictional corporate-action PDF through TransferIQ_Document_Retrieval and pass a real file attachment to the Autonomous Agent's built-in Analyze Files tool.

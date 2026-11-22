@@ -36,7 +36,7 @@ this workspace, and a second-tenant import rehearsal has not been performed.
 - Deterministic reconciliation, immutable custody positions, isolated receiving staging, corporate actions, identifier mapping, cost basis, idempotency, and append-only audit controls.
 - Canonical 81-node/86-edge Maestro Flow, Manual Trigger, authenticated Portal Webhook, multi-step API orchestration, real Autonomous Agent, Analyze Files, document retrieval API Workflow, Approve/Reject Quick Form, independent verification, and audit continuation.
 - Current real 1.1.1 evidence for `TRF-1001` CLEAN and `TRF-1002` approval and rejection, including unchanged positions and the unresolved SEC-104 shortage.
-- Fresh automated verification: 481 backend tests and 26 frontend tests passed and the production frontend build succeeded. The earlier dependency audit found no vulnerabilities; the canonical Flow and solution dry run remain unchanged by this portal-only work.
+- Fresh automated verification: 481 backend tests and 30 frontend tests passed and the production frontend build succeeded. The earlier dependency audit found no vulnerabilities; the canonical Flow and solution dry run remain unchanged by this portal-only work.
 
 ### B. Implemented but not live-verified
 
@@ -116,7 +116,7 @@ The production OpenAPI contract contains the same 51 paths as the audited local 
 
 ### Frontend and portal
 
-The React/TypeScript/Vite portal supports public read-only browsing and authorized history/workflow-start paths. Investigation tracking is persisted on the backend using the `PEX-...` correlation rather than React memory. The operator-scoped, paginated Investigation History lists existing rows newest-first; a stored execution can be reopened or refreshed without starting another Flow.
+The React/TypeScript/Vite portal supports public read-only browsing and authorized history/workflow-start paths. Investigation tracking is persisted on the backend using the `PEX-...` correlation rather than React memory. The operator-scoped, paginated Investigation History lists existing rows newest-first globally or filtered inside a selected TRF transfer; a stored execution can be reopened or refreshed without starting another Flow.
 
 The progress page distinguishes active processing, human review, completed approval, rejection, failure, and timeout states. It uses a stage timeline rather than an invented completion percentage and stops automatic polling on terminal results. A browser polling window ending does not change server state to `TIMED_OUT`.
 
@@ -124,7 +124,7 @@ Before the presentation cleanup, production parity evidence was unusually strong
 
 The portal presentation debt is closed locally. The unused legacy progress component was removed; active portal sources pass UTF-8/mojibake checks; transfer and PEX investigation views read the sanitized persisted document method; and the six-stage timeline displays backend-reported lifecycle state. `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable are distinct. Workflow completion remains separate from transfer completion, including the unresolved TRF-1002 shortage. The dashboard remains explicitly labeled as a synthetic read-only demonstration.
 
-The latest local deployment candidate contains `index-CoYW9UVy.js` (406,218 bytes, SHA-256 `3BCEF8BC133C9D696BB827F8B6E532C46B64C2748AB1FBE4F8ECC6DAB405F5DC`) and `index-geRLnWzM.css` (22,146 bytes, SHA-256 `FD8F30A9B1DDB0CB58F69D0A4915C7C29C5A5681E8812D3130D7B111A1C77434`). It includes Investigation History and its operator/session controls. Deployment and a new production asset-parity check remain outstanding. This is a release handoff item, not a financial-integrity defect.
+The latest local deployment candidate contains `index-Cr6Ra30d.js` (412,198 bytes, SHA-256 `9D9506947F4B64B1C0FCBBCD5BAC1A15CB36D4C19FB24C4708FE0E3BBC2F7032`) and `index-CX0vCK5-.css` (22,423 bytes, SHA-256 `26C5A4BA0A8088AD8EEE1CDAFCBBC2995F6461B52BDB6AF2251C8EA7175D884E`). It includes global and transfer-specific Investigation History with existing operator/session controls. Deployment and a new production asset-parity check remain outstanding. This is a release handoff item, not a financial-integrity defect.
 
 ### UiPath Maestro orchestration
 
@@ -216,7 +216,7 @@ Command:
 & .\.venv\Scripts\python.exe -m pytest -q --tb=short
 ```
 
-Observed result after Investigation History: **481 passed, 0 failed, 0 skipped, 1 warning in 145.61 seconds**. The focused portal suite passed **12 tests** in 15.32 seconds. The warning is the existing Starlette/httpx `TestClient` deprecation warning. The focused suite's first attempt exposed a missing test-directory setup and was corrected before the passing rerun; it is not counted as a successful run.
+Observed result after transfer-specific Investigation History: **481 passed, 0 failed, 0 skipped, 1 warning in 162.16 seconds**. The focused portal suite passed **12 tests** in 4.64 seconds. The warning is the existing Starlette/httpx `TestClient` deprecation warning.
 
 Additional checks:
 
@@ -240,9 +240,9 @@ npm audit --omit=dev --json
 
 Observed results:
 
-- unit tests: **26 passed, 0 failed, 0 skipped** across two files in 5.56 seconds;
-- production build: **successful**, 2,162 modules transformed in 1.41 seconds;
-- built JavaScript: 406.21 kB, 121.72 kB gzip; built CSS: 22.14 kB, 5.87 kB gzip;
+- unit tests: **30 passed, 0 failed, 0 skipped** across two files in 8.95 seconds;
+- production build: **successful**, 2,162 modules transformed in 914 milliseconds;
+- built JavaScript: 412.19 kB, 122.29 kB gzip; built CSS: 22.42 kB, 5.92 kB gzip;
 - the dependency-audit result remains the earlier **0 vulnerabilities** result; it was not rerun for this cleanup.
 
 ### Production read checks
@@ -296,7 +296,7 @@ uip solution pack maestro\TransferIQ_Reconciliation --dry-run --output json
 - retained rejection Flow instance: **Completed**;
 - retained CLEAN Flow instance: **Completed**;
 - retained Action Center approval task: **Completed / Approve**;
-- post-history regression: **481 backend tests passed**, **26 frontend tests passed**, frontend production build successful; the earlier focused Flow/agent contract run remains **116 passed**.
+- post-history regression: **481 backend tests passed**, **30 frontend tests passed**, frontend production build successful; the earlier focused Flow/agent contract run remains **116 passed**.
 
 The source check failure described in the original audit is closed. UiPath CLI 1.206.0 currently rejects the same dynamic Quick Form outcome handles in both the unchanged canonical artifact and equivalent candidate; the lockfile therefore pins the product-validating 1.205.0 toolchain until that registry-validator regression is resolved.
 
