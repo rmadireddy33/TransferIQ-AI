@@ -39,7 +39,9 @@ const referencesSchema = z.object({
 }).passthrough()
 const planSchema = z.object({
   planId: z.string(), status: z.string(), investigationSummary: z.string(), proposedActions: z.array(z.record(z.string(), z.unknown())),
-  evidenceReferences: z.array(z.string()), decision: z.record(z.string(), z.unknown()).nullable().optional(),
+  evidenceReferences: z.array(z.string()),
+  documentEvidenceStatus: z.enum(['NOT_PROCESSED_IXP_DISABLED', 'API_ONLY', 'AGENT_ANALYZE_FILES']),
+  decision: z.record(z.string(), z.unknown()).nullable().optional(),
 }).passthrough()
 const verificationSchema = z.object({
   planId: z.string(), planStatus: z.string(), humanReviewOutcome: z.string().nullable(), verificationStatus: z.string(),
@@ -55,6 +57,7 @@ const investigationSchema = z.object({
     'PENDING', 'TRIGGERED', 'INVESTIGATING', 'AWAITING_HUMAN_REVIEW', 'COMPLETED', 'FAILED', 'TIMED_OUT',
   ]), reviewStatus: z.string(), workflowOutcome: z.string().nullable(), lastUpdated: z.string(),
   startedAt: z.string(), deadlineAt: z.string(), verificationStatus: z.string().nullable(),
+  documentEvidenceStatus: z.enum(['NOT_PROCESSED_IXP_DISABLED', 'API_ONLY', 'AGENT_ANALYZE_FILES']).nullable(),
   errorSummary: z.string().nullable(), auditReference: z.string().nullable(), runId: z.string().nullable(),
   planId: z.string().nullable(), auditUrl: z.string().nullable(), investigationSummary: z.string().nullable(), evidenceReferences: z.array(z.string()),
   proposedActions: z.array(z.record(z.string(), z.unknown())), unresolvedExceptions: z.array(z.record(z.string(), z.unknown())),
@@ -71,6 +74,7 @@ export type RunBundle = {
 export type ReviewBundle = { plan: z.infer<typeof planSchema>; verification: z.infer<typeof verificationSchema>; audit: z.infer<typeof auditSchema> }
 export type PortalSession = z.infer<typeof portalSessionSchema>
 export type InvestigationStatus = z.infer<typeof investigationSchema>
+export type DocumentEvidenceStatus = InvestigationStatus['documentEvidenceStatus']
 
 export class ApiError extends Error {
   constructor(public status: number | null, public code: string, message: string, public retryAfter?: string | null) { super(message) }
@@ -132,6 +136,8 @@ export const api = {
     ])
     return { plan, verification, audit }
   },
+  plan: (runId: string, planId: string, signal?: AbortSignal) => request(
+    `/api/demo/runs/${encodeURIComponent(runId)}/resolution-plans/${encodeURIComponent(planId)}`, planSchema, signal),
   documentUrl: (runId: string, documentId: string) => apiUrl(`/api/demo/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(documentId)}/download`),
   portalSession: (signal?: AbortSignal) => request('/api/portal/session', portalSessionSchema, signal),
   login: (accessCode: string, signal?: AbortSignal) => request('/api/portal/session', portalSessionSchema, signal, {

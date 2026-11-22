@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "document-status-exact-ac0afac4",
+  "name": "Document Status Exact",
+  "description": "Document evidence mode must match the supplied context.",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "Document Status Exact",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "documentEvidenceStatus"
+  },
+  "fileName": "document-status-exact-ac0afac4.json",
+  "createdAt": "2026-11-22T21:26:26.401Z",
+  "updatedAt": "2026-11-22T21:26:26.401Z"
+}

@@ -1,5 +1,8 @@
 # Step 8 — Autonomous transfer investigation
 
+> Historical first Agent milestone. Step 11 supersedes its file-analysis and
+> deployment instructions while preserving this evidence record.
+
 The existing Flow now includes a real `uipath.agent.autonomous` node named `TransferInvestigationAgent`. It uses `gpt-4.1-2025-04-14`, returned by the tenant's `uip agent model list --output json` on 2026-11-05 America/New_York. It has no financial mutation tools, escalation resources, or private backend credentials. The original solution and deterministic financial engine are retained.
 
 Real cloud execution has verified the clean branch and TRF-1002/TRF-1004/TRF-1005 agent invocation, input, output and validation. TRF-1002 explained the SEC-103 2-for-1 split and preserved the SEC-104 20-share shortage. The initial run required review because supplemental references returned 404. After deployment, the new run returned `INVESTIGATION_COMPLETED` with HTTP 200 references, no missing supplemental evidence and no output validation errors. See [post-deployment verification](STEP8_DEPLOYED_VERIFICATION.md). See [actual test evidence](STEP8_AGENT_TEST_CASES.md).

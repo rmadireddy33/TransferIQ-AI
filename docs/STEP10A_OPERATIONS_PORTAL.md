@@ -1,5 +1,9 @@
 # Step 10A — TransferIQ Operations Portal
 
+> Historical milestone record (2026-11-09). It accurately describes the
+> read-only Step 10A release, not the current 1.1.1 architecture. Portal starts,
+> Agent document analysis, and Quick Form review were added later.
+
 ## Delivered scope
 
 The portal is a read-only React/TypeScript single-page application under `frontend/`. It uses Vite, React Router, Tailwind's Vite integration, Zod runtime response validation, and a typed GET-only API client. FastAPI serves the compiled application at `/portal` and its immutable build assets at `/portal/assets` when `frontend/dist` exists.

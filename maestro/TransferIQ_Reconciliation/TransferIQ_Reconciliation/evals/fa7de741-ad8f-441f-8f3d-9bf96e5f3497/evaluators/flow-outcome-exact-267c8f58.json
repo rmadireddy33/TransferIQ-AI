@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "flow-outcome-exact-267c8f58",
+  "name": "Flow Outcome Exact",
+  "description": "Final Flow business outcome must match the deterministic expected outcome.",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "Flow Outcome Exact",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "result.workflowOutcome"
+  },
+  "fileName": "flow-outcome-exact-267c8f58.json",
+  "createdAt": "2026-11-22T21:26:29.133Z",
+  "updatedAt": "2026-11-22T21:26:29.133Z"
+}

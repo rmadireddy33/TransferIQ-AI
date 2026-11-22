@@ -159,7 +159,14 @@ An earlier complete run produced 477 passed and one failed security-inventory as
 
 The local runner uses an explicit test double for the API Workflow and defaults it to `UNAVAILABLE`; it does not fabricate file-analysis success.
 
-The Flow SDK source checker still reports pre-existing brownfield reconstruction diagnostics around the manually authored Quick Form. The installed canonical Flow itself product-validates as `Valid` with no warnings. A candidate Flow-side metadata conversion was rejected because product validation warned that the expression was not a file, so it was not installed. The canonical Flow artifact was left unchanged.
+At the time of this Step 11 deployment, the Flow SDK source checker still
+reported brownfield reconstruction diagnostics around the manually authored
+Quick Form. Those source-only diagnostics were later remediated: the editable
+source now checks with 0 errors/0 warnings and reproduces a product-valid
+81-node/86-edge candidate with the pinned CLI 1.205.0 toolchain. The canonical
+1.1.1 runtime behavior was not changed by that remediation. The rejected
+Flow-side metadata conversion remains historical evidence and was never
+installed.
 
 ## UiPath deployment — 2026-11-13 UTC
 

@@ -1,38 +1,55 @@
 # TransferIQ AI final project audit
 
 Audit date: **2026-11-19**  
+Documentation reconciliation: **2026-11-22**  
+Native evaluation update: **2026-11-22**  
+Portal presentation cleanup: **2026-11-22**  
 Audit role: independent solution architecture, QA, security, and submission-readiness review  
-Overall feature completion: **90%**  
+Overall feature completion: **92%**  
 Release status: **READY WITH LIMITATIONS**  
-Challenge-readiness score: **89/100**
+Challenge-readiness score: **91/100**
 
 ## Executive conclusion
 
-TransferIQ AI is a functioning, deployed demonstration rather than a prototype represented only by mocks. The production backend and portal are reachable, the deployed frontend exactly matches the current local build, UiPath solution version 1.1.1 is active, and retained live records prove real portal-triggered approval, rejection, CLEAN routing, Autonomous Agent execution, Analyze Files document processing, Action Center review, independent backend verification, and append-only audit behavior.
+TransferIQ AI is a functioning, deployed demonstration rather than a prototype represented only by mocks. The production backend and portal are reachable, UiPath solution version 1.1.1 is active, and retained live records prove real portal-triggered approval, rejection, CLEAN routing, Autonomous Agent execution, Analyze Files document processing, Action Center review, independent backend verification, and append-only audit behavior. The local portal presentation cleanup described below has passed regression checks but has not been deployed, so the earlier deployed/local asset-parity claim is now historical.
 
 The core financial safety outcome is also intact: AI and humans can explain or approve a disposition, but the deterministic backend remains authoritative. In the verified `TRF-1002` approval, SEC-103 was explained by independently verified corporate-action evidence while SEC-104 remained an unresolved 20-share shortage. Original positions did not change, no correction was applied, and the transfer was not falsely marked completed.
 
-The targeted Flow-source reproducibility blocker is closed: the editable TypeScript now passes strict source checking, a clean-directory build with documented tenant-local bindings produces a product-valid 81-node/86-edge candidate, and semantic comparison finds no missing node IDs or edge tuples. The solution is still not submission-final because broader documentation contains stale statements, the checked-in evaluation set has no data points or executed Maestro evaluation evidence, source/deployment provenance is limited, and a second-tenant import rehearsal has not been performed.
+The targeted Flow-source reproducibility blocker is closed: the editable
+TypeScript passes strict source checking, a clean-directory build with
+documented tenant-local bindings produces a product-valid 81-node/86-edge
+candidate, and semantic comparison finds no missing node IDs or edge tuples.
+The documentation blocker is also closed: root, API, deployment, judge,
+tenant-binding, reviewer-assignment, and evidence guidance now agree with
+release 1.1.1, while older milestones are explicitly historical. The solution
+remains READY WITH LIMITATIONS. Ten native evaluation cases now exist and a
+bounded `TRF-1001` Flow evaluation passed at 1.0, but inline-Agent node
+evaluation is blocked before agent execution by an upstream file-input
+expression that node scope cannot populate. Provenance is owner-managed outside
+this workspace, and a second-tenant import rehearsal has not been performed.
 
 ## Executive status summary
 
 ### A. Complete and verified
 
-- Production FastAPI service, public portal, five synthetic transfer fixtures, 51-path API contract, and exact deployed/local frontend asset parity.
+- Production FastAPI service, public portal, five synthetic transfer fixtures, and 51-path API contract. Exact deployed/local frontend parity was verified before the current undeployed presentation cleanup.
 - Deterministic reconciliation, immutable custody positions, isolated receiving staging, corporate actions, identifier mapping, cost basis, idempotency, and append-only audit controls.
 - Canonical 81-node/86-edge Maestro Flow, Manual Trigger, authenticated Portal Webhook, multi-step API orchestration, real Autonomous Agent, Analyze Files, document retrieval API Workflow, Approve/Reject Quick Form, independent verification, and audit continuation.
 - Current real 1.1.1 evidence for `TRF-1001` CLEAN and `TRF-1002` approval and rejection, including unchanged positions and the unresolved SEC-104 shortage.
-- Fresh automated verification: 478 backend tests and 18 frontend tests passed, production frontend build succeeded, dependency audit found no vulnerabilities, and the canonical Flow and solution dry run validated.
+- Fresh automated verification: 479 backend tests and 22 frontend tests passed and the production frontend build succeeded. The earlier dependency audit found no vulnerabilities; the canonical Flow and solution dry run remain unchanged by this portal-only work.
 
 ### B. Implemented but not live-verified
 
 - `TRF-1003`, `TRF-1004`, and current `TRF-1005` behavior is covered by current deterministic/Flow tests, but not every case has a retained 1.1.1 end-to-end trace.
 - Invalid-ID and duplicate-trigger controls are implemented and test-verified; the requested current in-Maestro 422 and live same-key replay captures are absent.
 - Judge reproduction instructions and a clean source-to-candidate Flow build are verified; a clean second-tenant resource-binding/import rehearsal has not been demonstrated.
+- Native Maestro Flow evaluation is configured and the CLEAN case passed. The
+  nine Agent-quality cases are configured, but the bounded Agent smoke run
+  failed before agent output; see
+  [MAESTRO_EVALUATION_REPORT.md](MAESTRO_EVALUATION_REPORT.md).
 
 ### C. Incomplete or placeholder
 
-- The native Maestro evaluation set has evaluator definitions but zero data points and no evaluation-run result.
 - The current Quick Form exposes Approve and Reject only. Request Evidence and Escalate must not be advertised as implemented outcomes.
 
 ### D. Blocked by UiPath platform
@@ -47,15 +64,20 @@ The targeted Flow-source reproducibility blocker is closed: the editable TypeScr
 
 The detailed [feature completeness matrix](FEATURE_COMPLETENESS_MATRIX.md) contains 50 independently assessed requirements:
 
-- **A — Complete and verified:** 42 items, full credit.
+- **A — Complete and verified:** 43 items, full credit.
 - **B — Implemented with a documented limitation:** 6 items, half credit.
-- **C — Missing or unverified:** 2 items, no credit.
+- **C — Missing or unverified:** 1 item, no credit.
 - **D — Not applicable:** excluded if used.
 - **E — Contradicted or unsafe:** excluded if used.
 
-Calculated completion is `(42 x 1 + 6 x 0.5 + 2 x 0) / 50 = 90%`.
+Calculated completion is `(43 x 1 + 6 x 0.5 + 1 x 0) / 50 = 92%`.
 
-`READY WITH LIMITATIONS` means the deployed demonstration is usable and financially safe and its Flow source is locally reproducible, but the repository should not be described as submission-complete until the remaining P0 documentation/provenance gap is closed. It is not a recommendation to change the financial engine, webhook architecture, Manual Trigger, Autonomous Agent, Quick Form, or IXP setting.
+`READY WITH LIMITATIONS` means the deployed demonstration is usable,
+financially safe, locally reproducible, and consistently documented. It must
+not be described as Agent-evaluation-complete, source-to-deployment
+provenance-verified, or second-tenant rehearsed. This is not a recommendation
+to change the financial engine, webhook, Manual Trigger, Agent, Quick Form, or
+IXP setting.
 
 ## Scope and evidence policy
 
@@ -98,16 +120,11 @@ The React/TypeScript/Vite portal supports public read-only browsing and an autho
 
 The progress page distinguishes active processing, human review, completed approval, rejection, failure, and timeout states. It uses a stage timeline rather than an invented completion percentage and stops automatic polling on terminal results. A browser polling window ending does not change server state to `TIMED_OUT`.
 
-Fresh production parity evidence is unusually strong for the frontend: the deployed asset `index-C0vY8r6s.js` was HTTP 200, 394,523 bytes, and had the exact same filename and SHA-256 as the freshly built local asset (`7F5FE09A9B306F7E56186E679BB3FEE685C5CF1FE3DB2854445F934A1D36102D`).
+Before the presentation cleanup, production parity evidence was unusually strong: deployed asset `index-C0vY8r6s.js` exactly matched the then-current local build. The current local build is intentionally different and must be deployed before exact parity can be re-established.
 
-Remaining portal quality issues:
+The portal presentation debt is closed locally. The unused legacy progress component was removed; active portal sources pass UTF-8/mojibake checks; transfer and PEX investigation views read the sanitized persisted document method; and the six-stage timeline displays backend-reported lifecycle state. `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable are distinct. Workflow completion remains separate from transfer completion, including the unresolved TRF-1002 shortage. The dashboard remains explicitly labeled as a synthetic read-only demonstration.
 
-- `App.tsx` retains an unused legacy progress component;
-- some source strings contain mojibake characters;
-- the transfer Investigation tab can show the legacy `NOT_PROCESSED_IXP_DISABLED` label even after Analyze Files evidence exists, while the dedicated tracking page is accurate;
-- the portal dashboard remains a synthetic read-only demonstration and should continue to be labeled as such.
-
-These issues affect clarity and polish, not financial integrity.
+The local deployment candidate contains `index-BakwYnZN.js` (399,240 bytes, SHA-256 `967C64DC940A8B5B4E1A6C7B2AC008FC0B75681E44AE7D0A0A21A1D80ECDDF63`) and `index-DC6I6w5f.css` (21,173 bytes, SHA-256 `9C668F066E5B6432B22EEB0AF67B74FFD23133A298ACC631B3FC5F1052DB5106`). Deployment and a new production asset-parity check remain outstanding. This is a release handoff item, not a financial-integrity defect.
 
 ### UiPath Maestro orchestration
 
@@ -199,7 +216,7 @@ Command:
 & .\.venv\Scripts\python.exe -m pytest -q --tb=short
 ```
 
-Observed result: **478 passed, 0 failed, 0 skipped, 1 warning in 145.37 seconds**. The warning is the existing Starlette/httpx `TestClient` deprecation warning. One earlier process launch returned a temporary file-access error before pytest started; the successful rerun above is the executed test result and the launch error is not counted as a test failure.
+Observed result after portal cleanup: **479 passed, 0 failed, 0 skipped, 1 warning in 248.73 seconds**. The warning is the existing Starlette/httpx `TestClient` deprecation warning. A sandboxed launch could not access the WindowsApps base interpreter before pytest started; the approved rerun above is the executed test result and the launch error is not counted as a test failure.
 
 Additional checks:
 
@@ -223,10 +240,10 @@ npm audit --omit=dev --json
 
 Observed results:
 
-- unit tests: **18 passed, 0 failed, 0 skipped** across two files in 7.37 seconds;
-- production build: **successful**, 2,162 modules transformed in 879 ms;
-- built JavaScript: 394.52 kB, 119.44 kB gzip;
-- dependency audit: **0 vulnerabilities**, 189 dependencies assessed.
+- unit tests: **22 passed, 0 failed, 0 skipped** across two files in 7.08 seconds;
+- production build: **successful**, 2,162 modules transformed in 1.16 seconds;
+- built JavaScript: 399.24 kB, 120.48 kB gzip; built CSS: 21.17 kB, 5.65 kB gzip;
+- the dependency-audit result remains the earlier **0 vulnerabilities** result; it was not rerun for this cleanup.
 
 ### Production read checks
 
@@ -279,7 +296,7 @@ uip solution pack maestro\TransferIQ_Reconciliation --dry-run --output json
 - retained rejection Flow instance: **Completed**;
 - retained CLEAN Flow instance: **Completed**;
 - retained Action Center approval task: **Completed / Approve**;
-- post-remediation regression: **478 backend tests passed**, **18 frontend tests passed**, frontend production build successful; focused Flow/agent contract run **116 passed**.
+- post-presentation regression: **479 backend tests passed**, **22 frontend tests passed**, frontend production build successful; the earlier focused Flow/agent contract run remains **116 passed**.
 
 The source check failure described in the original audit is closed. UiPath CLI 1.206.0 currently rejects the same dynamic Quick Form outcome handles in both the unchanged canonical artifact and equivalent candidate; the lockfile therefore pins the product-validating 1.205.0 toolchain until that registry-validator regression is resolved.
 
@@ -289,7 +306,10 @@ The UiPath CLI results did not report a test-style elapsed duration, and no sepa
 
 No hardcoded production secret was found in the audited source scan. The local `.env` was treated as secret material; only its key name was inspected, never its value. `.gitignore` excludes environment files, databases, generated data, private key material, user profiles, local runtime evidence, and Flow bindings.
 
-The checked-out directory does not contain Git repository metadata. Therefore this audit cannot prove commit history, committed-secret history, tag integrity, or the exact source commit deployed to Render. That absence is a submission-traceability gap even though the working tree itself passed the source scan.
+Version control is maintained manually by the owner in another folder and was
+outside this audit scope. This workspace therefore does not prove commit
+history, secret-history hygiene, tag integrity, or the exact source commit
+deployed to Render. Documentation does not prescribe or perform Git operations.
 
 The frontend does not contain UiPath webhook secrets, portal access codes, session signing keys, authentication headers, or privileged approval capabilities. The backend returns sanitized tracking and error information. Retained evidence in the repository is sanitized; raw runtime capabilities and credentials should remain excluded.
 
@@ -300,9 +320,9 @@ The official challenge weights are Innovation & Idea 30%, Build Quality & Comple
 | Criterion | Weight | Score | Assessment |
 |---|---:|---:|---|
 | Innovation & idea | 30 | 28 | Strong multi-actor orchestration, evidence trust separation, agentic document analysis, human decisioning, and deterministic financial safety. |
-| Build quality & completeness | 40 | 35 | Broad automated coverage, real live evidence and a clean reproducible Flow build; reduced by stale documentation, no executed evaluation dataset, limited provenance metadata and no second-tenant rehearsal. |
+| Build quality & completeness | 40 | 37 | Broad automated coverage, real live evidence, a reproducible Flow build, reconciled guides, and a passed native CLEAN evaluation; reduced by blocked inline-Agent evaluation, limited provenance metadata, and no second-tenant rehearsal. |
 | Real-world relevance | 30 | 26 | Credible brokerage-transfer exception workflow with failure handling and auditability; still a fictional demonstration without production identity or real ACATS integration by design. |
-| **Total** | **100** | **89** | **Competitive demo; close the remaining documentation, evaluation and provenance gaps before final judging.** |
+| **Total** | **100** | **91** | **Competitive demo; close the Agent-evaluation, provenance, and second-tenant rehearsal gaps before final judging.** |
 
 Additional requested readiness factors map into that rubric as follows:
 
@@ -310,41 +330,42 @@ Additional requested readiness factors map into that rubric as follows:
 - **Autonomous Agent contribution:** strong and bounded; it analyzes evidence and recommends, while deterministic policy validates and authorizes.
 - **Human collaboration:** strong for real Approve and Reject paths; extra form outcomes are absent.
 - **Failure handling:** strong automated coverage plus retained real 429 and agent-startup failures; several current live negative captures remain missing.
-- **Demo clarity:** good tracking page and safe terminology, weakened by the legacy IXP-disabled badge and encoding/dead-code artifacts.
+- **Demo clarity:** strong locally; the active transfer and tracking views use persisted evidence-method labels, a six-stage status timeline, explicit human decision state, and workflow-versus-transfer completion language. Deployment remains pending.
 - **Codex usage:** substantial project work and verification reports are present, but the absence of repository history prevents an independent audit of the exact coding-agent contribution over time.
 - **Reproducibility:** clean TypeScript source-to-candidate regeneration is verified; second-tenant setup remains unrehearsed and requires tenant-owned bindings/resources.
 
 ## Top five remaining gaps
 
-1. **Reconcile stale documentation and environment guidance.** Update root and deployment docs that still describe the agent, Quick Form, portal, or document analysis as future/unverified, and correct `.env.example` comments.
-2. **Create and execute a real Maestro evaluation set.** `evals/evaluation-set.json` currently contains evaluator definitions but zero data points; no evaluation-run evidence exists.
-3. **Improve submission traceability.** Restore/provide Git metadata or a clean tagged checkout and expose a safe build/version identifier so source, Render, and UiPath artifacts can be correlated.
-4. **Finish portal presentation polish.** Remove the dead legacy progress component, repair mojibake, and replace the misleading legacy IXP-disabled badge with the persisted Analyze Files/API-only evidence state.
-5. **Rehearse a second-tenant import.** Resolve tenant-owned webhook, folder, reviewer, model and solution resources using the documented binding procedure without editing business logic.
+1. **Complete native Agent evaluation.** Ten logical cases and a passed native CLEAN Flow run now exist, but inline-Agent node evaluation stops before agent output because node scope cannot resolve the upstream file expression.
+2. **Improve submission traceability.** In the owner's external version-control process, correlate the submitted revision, Render build, and UiPath package without exposing secrets.
+3. **Deploy the verified portal cleanup and re-establish asset parity.** No UiPath solution change is required.
+4. **Rehearse a second-tenant import.** Resolve tenant-owned webhook, folder, reviewer, model, and solution resources using the documented procedure.
+5. **Close only material remaining live gaps.** Use bounded runs for secondary scenarios or replay behavior when they add judging value.
 
 Detailed ownership, priority, acceptance criteria, and evidence requirements are in [SUBMISSION_GAP_LIST.md](SUBMISSION_GAP_LIST.md).
 
 ## Release recommendation
 
-The project may be demonstrated in its current state with explicit limitations. The Flow source is cleanly reproducible with documented tenant-local bindings, but the project should not yet be described as fully complete, evaluation-complete or second-tenant verified.
+The project may be demonstrated in its current state with explicit limitations. The Flow source is cleanly reproducible with documented tenant-local bindings, but the project should not yet be described as fully complete, Agent-evaluation-complete or second-tenant verified.
 
 Recommended order before final submission:
 
-1. reconcile all stale project and deployment documentation;
-2. populate and run the official Maestro evaluation set;
-3. establish source/deployment version traceability;
+1. establish a supported isolated Agent-evaluation harness without changing business behavior;
+2. establish source/deployment traceability in the owner's external repository;
+3. deploy the tested portal/backend projection update through the existing Render service and verify the new asset;
 4. rehearse target-tenant resource binding/import;
-5. apply portal copy/encoding cleanup and repeat focused regression checks;
-6. capture a final bounded acceptance record only if a material deployed artifact changes.
+5. capture a final bounded acceptance record only if a material artifact changes.
 
 No change to the financial reconciliation rules, IXP default, existing webhook integration, Manual Trigger, Autonomous Agent, Quick Form, or audit model is recommended for these readiness tasks.
 
 ## Audit deliverables
 
-- [FEATURE_COMPLETENESS_MATRIX.md](FEATURE_COMPLETENESS_MATRIX.md) — requirement-by-requirement status and 90% calculation.
+- [FEATURE_COMPLETENESS_MATRIX.md](FEATURE_COMPLETENESS_MATRIX.md) — requirement-by-requirement status and 92% calculation.
+- [MAESTRO_EVALUATION_REPORT.md](MAESTRO_EVALUATION_REPORT.md) — native evaluation configuration, passed CLEAN run, failed Agent probes, and remaining limitations.
 - [MAESTRO_SOURCE_REPRODUCIBILITY.md](MAESTRO_SOURCE_REPRODUCIBILITY.md) — pinned clean-build, binding, finalization, validation and semantic-comparison procedure.
 - [LIVE_EXECUTION_EVIDENCE.md](LIVE_EXECUTION_EVIDENCE.md) — sanitized real-run catalog and exact nonclaims.
 - [SUBMISSION_GAP_LIST.md](SUBMISSION_GAP_LIST.md) — prioritized remediation backlog.
 - [JUDGE_REPRODUCTION_GUIDE.md](JUDGE_REPRODUCTION_GUIDE.md) — public, authorized, local, and judge-tenant reproduction paths.
 
-Final determination after targeted Flow-source remediation: **90% complete, READY WITH LIMITATIONS, 89/100 challenge readiness**.
+Final determination after Flow-source and documentation remediation:
+**92% complete, READY WITH LIMITATIONS, 91/100 challenge readiness**.

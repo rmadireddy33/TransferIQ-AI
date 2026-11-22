@@ -1,0 +1,13 @@
+{
+  "fileName": "evaluator-6516c388.json",
+  "id": "6516c388-2f26-4caa-8b63-72766e26653c",
+  "name": "Submission Evidence Faithfulness",
+  "description": "Score whether findings and evidence IDs are grounded only in the supplied investigation context.",
+  "category": 1,
+  "type": 9,
+  "prompt": "You are an evaluation judge. Score whether the claims in the agent output are grounded in the provided context.\nScore from 0 to 1 based on faithfulness.\n\nAgent Output:\n{{AgentOutput}}\n\nContext:\n{{Context}}\n\nReturn a JSON object with:\n- \"score\": a number between 0 and 1\n- \"reason\": a brief explanation",
+  "model": "same-as-agent",
+  "targetOutputKey": "*",
+  "createdAt": "2026-11-22T21:35:17.231Z",
+  "updatedAt": "2026-11-22T21:35:17.231Z"
+}

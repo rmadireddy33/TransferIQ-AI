@@ -1,6 +1,9 @@
 # Step 10C — Persisted portal workflow status
 
-Status: **implemented, locally verified, deployed to Render, and publicly verified; authenticated PEX lifecycle acceptance remains to be captured**.
+Status: **implemented and deployed. Later 1.1.1 approval, rejection, and CLEAN
+PEX lifecycles were live-verified and are recorded in
+[Step 11](STEP11_AGENT_DOCUMENT_ANALYSIS.md) and
+[live evidence](LIVE_EXECUTION_EVIDENCE.md).**
 
 This increment improves how the existing portal reports the already deployed Maestro workflow. It does not change the HTTP Webhook request, the Flow artifact, Manual Trigger, Autonomous Agent, Quick Form, IXP configuration, reconciliation rules, or financial state.
 
@@ -29,6 +32,10 @@ The response now also includes:
 - `auditUrl`, derived only when a correlated run, plan, and audit reference exist.
 
 Portal registry schema v2 adds only nullable `verification_status`. Startup migrates schema v1 with `ALTER TABLE`, preserves every PEX row, and rejects unsupported schemas instead of resetting them.
+
+The 2026-11-22 presentation cleanup advances the isolated portal registry to schema v3 by adding only nullable `document_evidence_status`. Startup migrates either v1 or v2 in place and preserves every PEX row. The resolution-plan preview copies the existing `documentEvidenceStatus` into this sanitized projection; it does not store document bytes, capabilities, signed URLs, or credentials.
+
+The active transfer Investigation tab and the dedicated PEX page now use that persisted value to distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable. The previous hardcoded legacy IXP badge and unused duplicate progress component were removed. The active timeline now shows six backend-derived stages: investigation started, Maestro triggered, AI investigation in progress, awaiting human review, human decision recorded, and verified final outcome. CLEAN runs explicitly mark the two human stages as not required.
 
 Completion semantics are unchanged and explicit:
 
@@ -115,7 +122,9 @@ Observed: **470 passed**, one existing Starlette/httpx deprecation warning, **15
 
 ## Render deployment and live acceptance
 
-The changed backend and rebuilt frontend were deployed through the existing Render-connected source. No new environment variable was required. The existing persistent disk remains mounted at `/data`; startup migrates `/data/portal/transferiq.db` from registry v1 to v2 without resetting rows. `PORTAL_INVESTIGATION_ENABLED` and the existing webhook settings remain unchanged.
+The original Step 10C backend and frontend were deployed through the existing Render-connected source. The 2026-11-22 presentation cleanup documented above is local and intentionally not deployed by this task. It requires no new environment variable. On the next Render deployment, startup migrates `/data/portal/transferiq.db` from registry v1 or v2 to v3 without resetting rows. `PORTAL_INVESTIGATION_ENABLED` and the existing webhook settings remain unchanged.
+
+Presentation-cleanup verification: full backend **479 passed** with the existing Starlette/httpx warning; frontend **22 passed**; production build succeeded with 2,162 modules transformed. Static UTF-8 and asset checks passed. These are local automated results, not a new Maestro execution or Render deployment.
 
 For authenticated lifecycle acceptance, use bounded reads before any new workflow:
 
@@ -124,7 +133,9 @@ For authenticated lifecycle acceptance, use bounded reads before any new workflo
 3. verify its audit link returns the existing audit ledger;
 4. only if another business-path check is required, launch one new portal run—do not repeatedly execute Maestro to test display-only behavior.
 
-The prior UiPath solution 1.0.1 TRF-1002 approval remains valid Step 10B evidence. It is not relabelled as authenticated live verification of the new Step 10C status view. Separate post-1.0.1 portal rejection and clean live runs remain unexecuted.
+At the time of this Step 10C deployment, only the prior 1.0.1 approval was
+available. This sentence is historical: solution 1.1.1 later completed
+portal-triggered approval, rejection, and CLEAN controls.
 
 After the user completed deployment, bounded verification on 2026-11-11 returned:
 

@@ -1,5 +1,9 @@
 # Step 9 — isolated human review
 
+> Historical implementation and incident record. The Quick Form failure below
+> was subsequently resolved. Use STEP9_MANUAL_FORM_VERIFICATION.md and the
+> Step 11 1.1.1 record for current approval/rejection evidence.
+
 Implemented on 2026-11-06. Backend redeployment is now verified: real Maestro run creation returned 201 and plan preview returned 200. The compiled Flow passes product validation; TRF-1001 completed CLEAN. **No Step 9 Action Center task or human completion has yet been observed.** TRF-1002's real agent and preview succeed, but Quick Form creation fails with UiPath HTTP 400 / incident 170000 (`Failure in the AppTasks request`). One same-user GUID comparison had the same failure; the exact rejected property is unconfirmed. See [actual tests and instance IDs](STEP9_TEST_RESULTS.md) and [API contracts](STEP9_API_CONTRACTS.md).
 
 ## Flow and form

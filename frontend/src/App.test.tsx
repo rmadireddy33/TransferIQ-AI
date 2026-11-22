@@ -13,7 +13,7 @@ vi.mock('./api', async importOriginal => {
     api: {
       ...actual.api,
       catalog: vi.fn(), scenario: vi.fn(), run: vi.fn(), review: vi.fn(), portalSession: vi.fn(),
-      login: vi.fn(), startInvestigation: vi.fn(), investigation: vi.fn(),
+      login: vi.fn(), startInvestigation: vi.fn(), investigation: vi.fn(), plan: vi.fn(),
     },
   }
 })
@@ -23,7 +23,7 @@ const tracked = (overrides: Partial<InvestigationStatus> = {}): InvestigationSta
   executionRequestId:'PEX-0123456789abcdef0123456789abcdef', transferId:'TRF-1002', triggerStatus:'ACCEPTED',
   investigationStatus:'TRIGGERED', reviewStatus:'NOT_STARTED', workflowOutcome:null,
   startedAt:'2026-11-10T00:00:00Z', lastUpdated:'2026-11-10T00:01:00Z', deadlineAt:'2026-11-10T01:00:00Z',
-  verificationStatus:null, errorSummary:null, auditReference:null, auditUrl:null, runId:null, planId:null,
+  verificationStatus:null, documentEvidenceStatus:null, errorSummary:null, auditReference:null, auditUrl:null, runId:null, planId:null,
   investigationSummary:null, evidenceReferences:[], proposedActions:[], unresolvedExceptions:[],
   positionsUnchanged:null, transferCompleted:null, ...overrides,
 })
@@ -35,6 +35,9 @@ describe('Operations portal', () => {
     mockedApi.catalog.mockResolvedValue(catalog())
     mockedApi.scenario.mockImplementation(async id => transfer(Number(id.slice(-4)), id === 'TRF-1002' ? 'INVESTIGATION_REQUIRED' : 'CLEAN'))
     mockedApi.portalSession.mockResolvedValue({enabled:false,authorized:false,operatorId:null})
+    mockedApi.investigation.mockResolvedValue(tracked())
+    mockedApi.plan.mockResolvedValue({planId:'PLAN-plan',status:'PREVIEWED',investigationSummary:'Plan summary',
+      proposedActions:[],evidenceReferences:[],documentEvidenceStatus:'AGENT_ANALYZE_FILES'})
   })
 
   it('renders backend-derived dashboard metrics and filters transfers', async () => {
@@ -107,9 +110,45 @@ describe('Operations portal', () => {
     expect(mockedApi.investigation).toHaveBeenCalledTimes(1)
   })
 
+  it('shows the persisted Analyze Files method on the production transfer investigation route', async () => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({
+      investigationStatus:'AWAITING_HUMAN_REVIEW', reviewStatus:'PENDING',
+      documentEvidenceStatus:'AGENT_ANALYZE_FILES', investigationSummary:'Document fields matched independent API evidence.',
+      evidenceReferences:['CA-2026-081'],
+    }))
+    render(<MemoryRouter initialEntries={['/transfers/TRF-1002/investigation?executionRequestId=PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Agent file analysis performed')).toBeInTheDocument()
+    expect(screen.getByText('AGENT ANALYZE FILES')).toBeInTheDocument()
+    expect(screen.getByText('Document fields matched independent API evidence.')).toBeInTheDocument()
+    expect(screen.queryByText(/IXP/i)).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['API_ONLY','Structured API evidence used','API ONLY'],
+    [null,'Document evidence unavailable','DOCUMENT EVIDENCE UNAVAILABLE'],
+  ] as const)('renders document evidence mode %s without claiming file extraction', async (mode, heading, badge) => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({documentEvidenceStatus:mode}))
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText(heading)).toBeInTheDocument()
+    expect(screen.getByText(badge)).toBeInTheDocument()
+    expect(screen.queryByText(/IXP/i)).not.toBeInTheDocument()
+  })
+
+  it('reads the persisted plan method for a pre-migration completed tracking row', async () => {
+    mockedApi.investigation.mockResolvedValueOnce(tracked({
+      investigationStatus:'COMPLETED', reviewStatus:'APPROVED', workflowOutcome:'REVIEWED_WITH_OPEN_EXCEPTIONS',
+      verificationStatus:'VERIFIED_DEMO_STATE', runId:'DEMO-old', planId:'PLAN-old', documentEvidenceStatus:null,
+    }))
+    mockedApi.plan.mockResolvedValueOnce({planId:'PLAN-old',status:'EXECUTED',investigationSummary:'Historical plan',
+      proposedActions:[],evidenceReferences:['CA-2026-081'],documentEvidenceStatus:'AGENT_ANALYZE_FILES'})
+    render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Agent file analysis performed')).toBeInTheDocument()
+    expect(mockedApi.plan).toHaveBeenCalledWith('DEMO-old','PLAN-old',expect.any(AbortSignal))
+  })
+
   it.each([
     ['REVIEW_REJECTED','REJECTED','Review rejected','The human reviewer rejected the plan. No disposition was applied.'],
-    ['CLEAN','NOT_REQUIRED','Workflow completed','The persisted workflow result and audit state are available.'],
+    ['CLEAN','NOT_REQUIRED','Clean outcome recorded','CLEAN reconciliation completed. No human review or resolution-plan audit was required.'],
   ])('renders terminal outcome %s after a direct URL reload', async (outcome,review,stage,message) => {
     mockedApi.investigation.mockResolvedValueOnce(tracked({
       transferId:outcome==='CLEAN'?'TRF-1001':'TRF-1002', investigationStatus:'COMPLETED',
@@ -127,14 +166,14 @@ describe('Operations portal', () => {
       investigationSummary:'Plan preview is ready.',
     }))
     render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
-    expect(await screen.findByText('Awaiting human approval')).toBeInTheDocument()
+    expect((await screen.findAllByText('Awaiting human review')).length).toBeGreaterThan(0)
     expect(screen.getByText(/Complete the real Quick Form/)).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:/approve|reject/i})).not.toBeInTheDocument()
   })
 
   it('keeps the PEX correlation visible after returning to the transfer', async () => {
     render(<MemoryRouter initialEntries={['/transfers/TRF-1002/investigation?executionRequestId=PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
-    expect(await screen.findByText('Maestro execution available')).toBeInTheDocument()
+    expect(await screen.findByText('Tracked Maestro execution')).toBeInTheDocument()
     expect(screen.getByRole('link',{name:'View Maestro progress'})).toHaveAttribute('href','/investigations/PEX-0123456789abcdef0123456789abcdef')
   })
 
@@ -166,7 +205,7 @@ describe('Operations portal', () => {
     render(<MemoryRouter initialEntries={['/investigations/PEX-0123456789abcdef0123456789abcdef']}><App /></MemoryRouter>)
     expect(await screen.findByText('Status unavailable')).toBeInTheDocument()
     await user.click(screen.getByRole('button',{name:'Refresh status'}))
-    expect(await screen.findByText('Maestro accepted the request')).toBeInTheDocument()
+    expect((await screen.findAllByText('Maestro triggered')).length).toBeGreaterThan(0)
     expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
   })
 })

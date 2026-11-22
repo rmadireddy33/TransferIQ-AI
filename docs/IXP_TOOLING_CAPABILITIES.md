@@ -1,5 +1,8 @@
 # Installed IXP-in-Flow tooling investigation
 
+> Historical tooling research. It records why IXP-in-Flow was not used in the
+> Community tenant; it is not a deployment guide for solution 1.1.1.
+
 ## Finding
 
 The installed **UiPath CLI 1.205.0** and **@uipath/maestro-builder-sdk 6.66.5** do not expose a documented operation that creates a new IXP model owned by an existing Flow's Extract document node, together with its model-definition resources and ownership/binding metadata. The SDK can author an extraction node and its inline schema **once a real model identity is available**. This is a finding about these installed public interfaces, not a claim that no UiPath internal API could perform the operation.

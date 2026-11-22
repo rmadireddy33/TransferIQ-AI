@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "id": "clean-routing-trajectory-1bd50eae",
+  "name": "Clean Routing Trajectory",
+  "description": "Judge clean-transfer routing.",
+  "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+  "evaluatorConfig": {
+    "name": "Clean Routing Trajectory",
+    "prompt": "Pass only if the clean transfer completes through the CLEAN path without invoking TransferInvestigationAgent, Analyze Files, document retrieval, resolution-plan review writes, or TransferOperationsReview Quick Form.",
+    "temperature": 0,
+    "maxTokens": 8192,
+    "model": "anthropic.claude-sonnet-5"
+  },
+  "fileName": "clean-routing-trajectory-1bd50eae.json",
+  "createdAt": "2026-11-22T21:26:30.031Z",
+  "updatedAt": "2026-11-22T21:26:30.031Z"
+}

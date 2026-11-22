@@ -10,5 +10,10 @@
   "devDependencies": {
     "@uipath/cli": "1.205.0",
     "@uipath/maestro-builder-sdk": "6.66.5"
+  },
+  "dependencies": {
+    "@uipath/agent-tool": "1.205.0",
+    "@uipath/eval-tool": "1.205.0",
+    "@uipath/maestro-tool": "1.205.0"
   }
 }

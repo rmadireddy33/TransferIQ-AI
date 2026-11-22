@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "transfer-id-exact-32cfcb0f",
+  "name": "Transfer ID Exact",
+  "description": "Transfer ID must match the evaluation input.",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "Transfer ID Exact",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "transferId"
+  },
+  "fileName": "transfer-id-exact-32cfcb0f.json",
+  "createdAt": "2026-11-22T21:26:24.585Z",
+  "updatedAt": "2026-11-22T21:26:24.585Z"
+}

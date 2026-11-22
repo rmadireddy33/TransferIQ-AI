@@ -148,7 +148,7 @@ def test_portal_correlation_reaches_real_isolated_backend_and_final_audit(
             "agentInvestigationId": execution_id + ":TransferInvestigationAgent",
             "investigationSummary": "Explicit agent test double; not a live UiPath agent result.",
             "overallRiskLevel": "MEDIUM",
-            "documentEvidenceStatus": "NOT_PROCESSED_IXP_DISABLED",
+            "documentEvidenceStatus": "AGENT_ANALYZE_FILES",
             "proposedActions": [{
                 "exceptionId": item["exceptionId"], "securityId": item["securityId"],
                 "evidenceReferences": item["evidenceReferences"],
@@ -164,6 +164,7 @@ def test_portal_correlation_reaches_real_isolated_backend_and_final_audit(
         assert pending["investigationStatus"] == "AWAITING_HUMAN_REVIEW"
         assert pending["reviewStatus"] == "PENDING"
         assert pending["verificationStatus"] == "NOT_VERIFIED"
+        assert pending["documentEvidenceStatus"] == "AGENT_ANALYZE_FILES"
         assert "SEC-104" in {x["securityId"] for x in pending["unresolvedExceptions"]}
         path = root + "/resolution-plans/" + plan["planId"]
         binding = {"planVersion": plan["planVersion"], "planHash": plan["planHash"]}
@@ -181,6 +182,7 @@ def test_portal_correlation_reaches_real_isolated_backend_and_final_audit(
         assert shortage["difference"] == "-20"
         assert final["auditReference"] == plan["planId"]
         assert final["verificationStatus"] == "VERIFIED_DEMO_STATE"
+        assert final["documentEvidenceStatus"] == "AGENT_ANALYZE_FILES"
         assert final["auditUrl"] == path + "/audit"
         audit = client.get(final["auditUrl"])
         assert audit.status_code == 200
@@ -208,6 +210,7 @@ def test_clean_portal_run_completes_without_human_review_or_plan_audit(tmp_path,
         assert final["reviewStatus"] == "NOT_REQUIRED"
         assert final["workflowOutcome"] == "CLEAN"
         assert final["planId"] is None and final["auditUrl"] is None
+        assert final["documentEvidenceStatus"] is None
         assert final["positionsUnchanged"] is True and final["transferCompleted"] is False
 
 
@@ -229,7 +232,8 @@ def test_server_deadline_not_browser_polling_marks_workflow_timed_out(tmp_path, 
         assert "configured deadline" in final["errorSummary"]
 
 
-def test_registry_v1_upgrade_preserves_existing_tracking_row(tmp_path):
+@pytest.mark.parametrize("source_version", [1, 2])
+def test_registry_upgrade_preserves_existing_tracking_row(tmp_path, source_version):
     settings = configured_settings(tmp_path)
     settings.data_dir.mkdir(parents=True)
     registry = PortalInvestigations(settings)
@@ -238,11 +242,14 @@ def test_registry_v1_upgrade_preserves_existing_tracking_row(tmp_path):
     registry.engine.dispose()
     database = settings.data_dir / "portal" / "transferiq.db"
     with sqlite3.connect(database) as connection:
-        connection.execute("ALTER TABLE portal_investigations DROP COLUMN verification_status")
-        connection.execute("PRAGMA user_version=1")
+        connection.execute("ALTER TABLE portal_investigations DROP COLUMN document_evidence_status")
+        if source_version == 1:
+            connection.execute("ALTER TABLE portal_investigations DROP COLUMN verification_status")
+        connection.execute(f"PRAGMA user_version={source_version}")
     upgraded = PortalInvestigations(settings)
     persisted = upgraded.read(row["execution_request_id"], "demo-operator")
     assert persisted["executionRequestId"] == row["execution_request_id"]
+    assert persisted["documentEvidenceStatus"] is None
     assert persisted["verificationStatus"] is None
     with sqlite3.connect(database) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3

@@ -1,6 +1,11 @@
 # Current Step 9 verification
 
-The manually created form and repaired original approval path now work end to end. Real TRF-1002 approval and rejection are VERIFIED_DEMO_STATE with SEC-104 still unresolved at -20; original TRF-1001 is CLEAN. Full local suite: 460 passed. See [current verification and remaining live cases](STEP9_MANUAL_FORM_VERIFICATION.md). The earlier deployment and 400-error records below are historical.
+The manually created form and repaired original approval path work end to end.
+Real TRF-1002 approval and rejection are VERIFIED_DEMO_STATE with SEC-104 still
+unresolved at -20; TRF-1001 is CLEAN. The 460-test count below belongs to this
+Step 9 milestone; the current audited backend suite is 478 passed. See
+[current verification](STEP9_MANUAL_FORM_VERIFICATION.md). Earlier deployment
+and 400-error records below are historical.
 
 # Step 9 verification — 2026-11-06
 

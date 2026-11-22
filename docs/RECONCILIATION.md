@@ -1,5 +1,9 @@
 # Deterministic reconciliation (Step 3)
 
+> The rules remain current. Statements later in this file about absent
+> Maestro, Agent, portal, or human-review features describe the earlier Step 3
+> milestone, not the current 1.1.1 orchestration.
+
 The engine compares fictional delivering custody snapshots with receiving transfer staging. It runs entirely in Python, independently of AI. It never changes quantities, creates settlement records, or advances the transfer lifecycle. A completed calculation is not a completed securities transfer.
 
 ## Database migration and input selection

@@ -1,5 +1,9 @@
 # Step 7: corporate-action evidence in the existing Maestro Automate Flow
 
+> Historical Step 7 experiment. Do not use this as current setup guidance.
+> IXP-in-Flow was unavailable; solution 1.1.1 instead uses real Agent Analyze
+> Files plus deterministic API validation.
+
 ## Status and boundary
 
 **Partial integration: the real in-Flow IXP model still requires Studio Web setup. No successful IXP extraction has been recorded.** The existing reconciliation calls and outcomes remain intact. The repository adds the optional File input, missing-evidence branch, reference API, taxonomy specification, validation Script and evidence Decision. Until the model is created, the clearly labelled `CorporateActionExtractor` **Script is an explicit setup stop that throws**, not an Extract node or a successful mock. Its error edge returns `EVIDENCE_REVIEW_REQUIRED` / `EXTRACTION_FAILED`.

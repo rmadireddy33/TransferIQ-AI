@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "human-review-exact-abda2c40",
+  "name": "Human Review Exact",
+  "description": "Agent policy requires human review for every investigation result.",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "Human Review Exact",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "requiresHumanReview"
+  },
+  "fileName": "human-review-exact-abda2c40.json",
+  "createdAt": "2026-11-22T21:26:25.478Z",
+  "updatedAt": "2026-11-22T21:26:25.478Z"
+}

@@ -1,0 +1,183 @@
+{
+  "fileName": "evaluation-set-b29e0cff.json",
+  "id": "b29e0cff-3acb-4ef7-9865-6f6321856622",
+  "name": "Submission Agent Native Smoke",
+  "batchSize": 10,
+  "evaluatorRefs": [
+    "676eae20-dbde-458e-b872-60eb3919c890",
+    "6516c388-2f26-4caa-8b63-72766e26653c",
+    "75c0f4ee-1604-4154-a818-deba990218a0"
+  ],
+  "evaluations": [
+    {
+      "id": "fe438faf-d669-4160-8b29-7246a92d796d",
+      "name": "TRF-1002 verified 2-for-1 split",
+      "inputs": {
+        "SerializeInvestigationContext__output": "{\"contractVersion\":\"1.0\",\"transferId\":\"TRF-1002\",\"reconciliation\":{\"transferId\":\"TRF-1002\",\"status\":\"EXCEPTIONS_DETECTED\",\"executionStatus\":\"COMPLETED\",\"summary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":1,\"unresolved\":0,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SPLIT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"80.00000000\",\"normalizedQuantity\":\"80.00000000\",\"difference\":\"0\",\"description\":\"Verified reference evidence explains the 2-for-1 split timing difference; no position was changed.\",\"evidenceReferences\":[\"CA-2026-081\"],\"resolutionStatus\":\"EXPLAINED\",\"status\":\"EXPLAINED\"}]},\"reconciliationSummary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":1,\"unresolved\":0,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SPLIT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"80.00000000\",\"normalizedQuantity\":\"80.00000000\",\"difference\":\"0\",\"description\":\"Verified reference evidence explains the 2-for-1 split timing difference; no position was changed.\",\"evidenceReferences\":[\"CA-2026-081\"],\"resolutionStatus\":\"EXPLAINED\",\"status\":\"EXPLAINED\"}],\"corporateActions\":[{\"corporateActionId\":\"CA-2026-081\",\"securityId\":\"SEC-103\",\"actionType\":\"SPLIT\",\"numerator\":2,\"denominator\":1,\"effectiveDate\":\"2026-08-10\",\"noticeDate\":\"2026-08-15\",\"verified\":true,\"evidenceReference\":\"CA-2026-081\"}],\"identifierMappings\":[],\"costBasis\":[],\"evidenceRecords\":[{\"evidenceId\":\"EVAL-EXC-1002-SPLIT\",\"securityId\":\"SEC-103\",\"kind\":\"RECONCILIATION_EXCEPTION\",\"verified\":true},{\"evidenceId\":\"POS-1002-SEC-103\",\"securityId\":\"SEC-103\",\"kind\":\"SOURCE_POSITION\",\"verified\":true},{\"evidenceId\":\"STG-1002-SEC-103\",\"securityId\":\"SEC-103\",\"kind\":\"RECEIVING_STAGING\",\"verified\":true},{\"evidenceId\":\"CA-2026-081\",\"securityId\":\"SEC-103\",\"kind\":\"CORPORATE_ACTION\",\"verified\":true}],\"evidenceReferences\":[\"CA-2026-081\"],\"missingEvidence\":[],\"verifiedDocumentEvidence\":null,\"documentEvidenceStatus\":\"API_ONLY\",\"documentMetadata\":null}"
+      },
+      "expectedOutput": {
+        "transferId": "TRF-1002",
+        "investigationSummary": "Verified API evidence explains a 2-for-1 split; document extraction is untrusted pending deterministic validation and no position change is authorized.",
+        "overallRiskLevel": "MEDIUM",
+        "findings": [
+          {
+            "exceptionId": "EVAL-EXC-1002-SPLIT",
+            "securityId": "SEC-103",
+            "classification": "CORPORATE_ACTION_TIMING",
+            "rootCause": "Verified CA-2026-081 establishes a 2-for-1 split from 40 to expected and staged 80.",
+            "evidenceIds": [
+              "EVAL-EXC-1002-SPLIT",
+              "POS-1002-SEC-103",
+              "STG-1002-SEC-103",
+              "CA-2026-081"
+            ],
+            "confidence": "HIGH",
+            "evidenceStatus": "VERIFIED",
+            "recommendedAction": "NORMALIZE_COMPARISON",
+            "requiresHumanReview": true
+          }
+        ],
+        "unresolvedQuestions": [],
+        "documentEvidenceStatus": "API_ONLY",
+        "documentEvidence": {
+          "documentId": null,
+          "documentType": null,
+          "extractedFields": {},
+          "sourceEvidenceReference": null,
+          "extractionMethod": "API_ONLY",
+          "validationStatus": "NOT_PROCESSED",
+          "discrepancies": [],
+          "missingFields": [
+            "document file"
+          ]
+        },
+        "requiresHumanReview": true
+      },
+      "simulationInstructions": "",
+      "expectedAgentBehavior": "Use API_ONLY: do not call Analyze Files or any side-effecting tool; return the complete structured contract; cite only supplied evidence; require human review; authorize no financial change.",
+      "simulateInput": false,
+      "inputGenerationInstructions": "",
+      "simulateTools": false,
+      "evalSetId": "b29e0cff-3acb-4ef7-9865-6f6321856622",
+      "createdAt": "2026-11-22T21:35:39.029Z",
+      "updatedAt": "2026-11-22T21:35:39.029Z",
+      "source": "manual"
+    },
+    {
+      "id": "be64b933-580f-44f6-a73d-e6385f14e663",
+      "name": "TRF-1002 unresolved 20-share shortage",
+      "inputs": {
+        "SerializeInvestigationContext__output": "{\"contractVersion\":\"1.0\",\"transferId\":\"TRF-1002\",\"reconciliation\":{\"transferId\":\"TRF-1002\",\"status\":\"EXCEPTIONS_DETECTED\",\"executionStatus\":\"COMPLETED\",\"summary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SHORTAGE\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-104\",\"exceptionType\":\"QUANTITY_MISMATCH\",\"sourceQuantity\":\"120.00000000\",\"targetQuantity\":\"100.00000000\",\"expectedQuantity\":\"120.00000000\",\"normalizedQuantity\":\"120.00000000\",\"difference\":\"-20\",\"description\":\"Receiving quantity is 20 shares below expected and no verified evidence explains the shortage.\",\"evidenceReferences\":[],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}]},\"reconciliationSummary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SHORTAGE\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-104\",\"exceptionType\":\"QUANTITY_MISMATCH\",\"sourceQuantity\":\"120.00000000\",\"targetQuantity\":\"100.00000000\",\"expectedQuantity\":\"120.00000000\",\"normalizedQuantity\":\"120.00000000\",\"difference\":\"-20\",\"description\":\"Receiving quantity is 20 shares below expected and no verified evidence explains the shortage.\",\"evidenceReferences\":[],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}],\"corporateActions\":[],\"identifierMappings\":[],\"costBasis\":[],\"evidenceRecords\":[{\"evidenceId\":\"EVAL-EXC-1002-SHORTAGE\",\"securityId\":\"SEC-104\",\"kind\":\"RECONCILIATION_EXCEPTION\",\"verified\":true},{\"evidenceId\":\"POS-1002-SEC-104\",\"securityId\":\"SEC-104\",\"kind\":\"SOURCE_POSITION\",\"verified\":true},{\"evidenceId\":\"STG-1002-SEC-104\",\"securityId\":\"SEC-104\",\"kind\":\"RECEIVING_STAGING\",\"verified\":true}],\"evidenceReferences\":[],\"missingEvidence\":[],\"verifiedDocumentEvidence\":null,\"documentEvidenceStatus\":\"API_ONLY\",\"documentMetadata\":null}"
+      },
+      "expectedOutput": {
+        "transferId": "TRF-1002",
+        "investigationSummary": "The genuine 20-share shortage remains unresolved; no adjustment is authorized.",
+        "overallRiskLevel": "HIGH",
+        "findings": [
+          {
+            "exceptionId": "EVAL-EXC-1002-SHORTAGE",
+            "securityId": "SEC-104",
+            "classification": "QUANTITY_MISMATCH",
+            "rootCause": "Verified positions show expected 120 versus staged 100, but no independent evidence explains the -20 difference.",
+            "evidenceIds": [
+              "EVAL-EXC-1002-SHORTAGE",
+              "POS-1002-SEC-104",
+              "STG-1002-SEC-104"
+            ],
+            "confidence": "MEDIUM",
+            "evidenceStatus": "INCOMPLETE",
+            "recommendedAction": "INVESTIGATE_POSITION_SHORTAGE",
+            "requiresHumanReview": true
+          }
+        ],
+        "unresolvedQuestions": [
+          "What independently verified evidence explains the 20-share shortage?"
+        ],
+        "documentEvidenceStatus": "API_ONLY",
+        "documentEvidence": {
+          "documentId": null,
+          "documentType": null,
+          "extractedFields": {},
+          "sourceEvidenceReference": null,
+          "extractionMethod": "API_ONLY",
+          "validationStatus": "NOT_PROCESSED",
+          "discrepancies": [],
+          "missingFields": [
+            "document file"
+          ]
+        },
+        "requiresHumanReview": true
+      },
+      "simulationInstructions": "",
+      "expectedAgentBehavior": "Use API_ONLY: do not call Analyze Files or any side-effecting tool; return the complete structured contract; cite only supplied evidence; require human review; authorize no financial change.",
+      "simulateInput": false,
+      "inputGenerationInstructions": "",
+      "simulateTools": false,
+      "evalSetId": "b29e0cff-3acb-4ef7-9865-6f6321856622",
+      "createdAt": "2026-11-22T21:35:39.654Z",
+      "updatedAt": "2026-11-22T21:35:39.654Z",
+      "source": "manual"
+    },
+    {
+      "id": "37d58ada-0cee-4b93-8a4d-1faaf58f47c3",
+      "name": "Conflicting corporate-action evidence",
+      "inputs": {
+        "SerializeInvestigationContext__output": "{\"contractVersion\":\"1.0\",\"transferId\":\"TRF-1002\",\"reconciliation\":{\"transferId\":\"TRF-1002\",\"status\":\"EXCEPTIONS_DETECTED\",\"executionStatus\":\"COMPLETED\",\"summary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-CONFLICT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"40.00000000\",\"normalizedQuantity\":\"40.00000000\",\"difference\":\"40\",\"description\":\"Two independently supplied corporate-action records disagree about the split ratio.\",\"evidenceReferences\":[\"CA-EVAL-A\",\"CA-EVAL-B\"],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}]},\"reconciliationSummary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-CONFLICT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"40.00000000\",\"normalizedQuantity\":\"40.00000000\",\"difference\":\"40\",\"description\":\"Two independently supplied corporate-action records disagree about the split ratio.\",\"evidenceReferences\":[\"CA-EVAL-A\",\"CA-EVAL-B\"],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}],\"corporateActions\":[{\"corporateActionId\":\"CA-EVAL-A\",\"securityId\":\"SEC-103\",\"actionType\":\"SPLIT\",\"numerator\":2,\"denominator\":1,\"effectiveDate\":\"2026-08-10\",\"verified\":true,\"evidenceReference\":\"CA-EVAL-A\"},{\"corporateActionId\":\"CA-EVAL-B\",\"securityId\":\"SEC-103\",\"actionType\":\"SPLIT\",\"numerator\":3,\"denominator\":1,\"effectiveDate\":\"2026-08-10\",\"verified\":true,\"evidenceReference\":\"CA-EVAL-B\"}],\"identifierMappings\":[],\"costBasis\":[],\"evidenceRecords\":[{\"evidenceId\":\"EVAL-EXC-CONFLICT\",\"securityId\":\"SEC-103\",\"kind\":\"RECONCILIATION_EXCEPTION\",\"verified\":true},{\"evidenceId\":\"CA-EVAL-A\",\"securityId\":\"SEC-103\",\"kind\":\"CORPORATE_ACTION\",\"verified\":true},{\"evidenceId\":\"CA-EVAL-B\",\"securityId\":\"SEC-103\",\"kind\":\"CORPORATE_ACTION\",\"verified\":true}],\"evidenceReferences\":[\"CA-EVAL-A\",\"CA-EVAL-B\"],\"missingEvidence\":[],\"verifiedDocumentEvidence\":null,\"documentEvidenceStatus\":\"API_ONLY\",\"documentMetadata\":null}"
+      },
+      "expectedOutput": {
+        "transferId": "TRF-1002",
+        "investigationSummary": "Conflicting split ratios prevent verification and require human review.",
+        "overallRiskLevel": "HIGH",
+        "findings": [
+          {
+            "exceptionId": "EVAL-EXC-CONFLICT",
+            "securityId": "SEC-103",
+            "classification": "CORPORATE_ACTION_TIMING",
+            "rootCause": "Verified references conflict: one reports 2-for-1 and the other 3-for-1.",
+            "evidenceIds": [
+              "EVAL-EXC-CONFLICT",
+              "CA-EVAL-A",
+              "CA-EVAL-B"
+            ],
+            "confidence": "MEDIUM",
+            "evidenceStatus": "CONFLICTING",
+            "recommendedAction": "REQUEST_ADDITIONAL_EVIDENCE",
+            "requiresHumanReview": true
+          }
+        ],
+        "unresolvedQuestions": [
+          "Which corporate-action record is authoritative?"
+        ],
+        "documentEvidenceStatus": "API_ONLY",
+        "documentEvidence": {
+          "documentId": null,
+          "documentType": null,
+          "extractedFields": {},
+          "sourceEvidenceReference": null,
+          "extractionMethod": "API_ONLY",
+          "validationStatus": "NOT_PROCESSED",
+          "discrepancies": [],
+          "missingFields": [
+            "document file"
+          ]
+        },
+        "requiresHumanReview": true
+      },
+      "simulationInstructions": "",
+      "expectedAgentBehavior": "Use API_ONLY: do not call Analyze Files or any side-effecting tool; return the complete structured contract; cite only supplied evidence; require human review; authorize no financial change.",
+      "simulateInput": false,
+      "inputGenerationInstructions": "",
+      "simulateTools": false,
+      "evalSetId": "b29e0cff-3acb-4ef7-9865-6f6321856622",
+      "createdAt": "2026-11-22T21:35:40.292Z",
+      "updatedAt": "2026-11-22T21:35:40.292Z",
+      "source": "manual"
+    }
+  ],
+  "modelSettings": [],
+  "agentMemoryEnabled": false,
+  "agentMemorySettings": [],
+  "lineByLineEvaluation": false,
+  "createdAt": "2026-11-22T21:35:25.712Z",
+  "updatedAt": "2026-11-22T21:35:25.712Z"
+}

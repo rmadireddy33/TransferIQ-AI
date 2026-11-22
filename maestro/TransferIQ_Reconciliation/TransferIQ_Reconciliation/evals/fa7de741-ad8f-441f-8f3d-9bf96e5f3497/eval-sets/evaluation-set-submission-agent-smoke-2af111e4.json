@@ -1,0 +1,664 @@
+{
+  "version": "1.0",
+  "schemaVersion": 4,
+  "id": "2af111e4-66b1-45ca-b025-9937089ea469",
+  "name": "Submission Agent Smoke",
+  "evaluatorRefs": [
+    "transfer-id-exact-32cfcb0f",
+    "human-review-exact-abda2c40",
+    "document-status-exact-ac0afac4",
+    "agent-safety-and-grounding-c3843a04",
+    "agent-tool-discipline-efd4f608"
+  ],
+  "evaluations": [
+    {
+      "id": "5d3ea798-06a9-4b6e-a177-57a33ee86d13",
+      "name": "TRF-1002 verified 2-for-1 split",
+      "inputs": {
+        "SerializeInvestigationContext__output": "{\"contractVersion\":\"1.0\",\"transferId\":\"TRF-1002\",\"reconciliation\":{\"transferId\":\"TRF-1002\",\"status\":\"EXCEPTIONS_DETECTED\",\"executionStatus\":\"COMPLETED\",\"summary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":1,\"unresolved\":0,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SPLIT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"80.00000000\",\"normalizedQuantity\":\"80.00000000\",\"difference\":\"0\",\"description\":\"Verified reference evidence explains the 2-for-1 split timing difference; no position was changed.\",\"evidenceReferences\":[\"CA-2026-081\"],\"resolutionStatus\":\"EXPLAINED\",\"status\":\"EXPLAINED\"}]},\"reconciliationSummary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":1,\"unresolved\":0,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SPLIT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"80.00000000\",\"normalizedQuantity\":\"80.00000000\",\"difference\":\"0\",\"description\":\"Verified reference evidence explains the 2-for-1 split timing difference; no position was changed.\",\"evidenceReferences\":[\"CA-2026-081\"],\"resolutionStatus\":\"EXPLAINED\",\"status\":\"EXPLAINED\"}],\"corporateActions\":[{\"corporateActionId\":\"CA-2026-081\",\"securityId\":\"SEC-103\",\"actionType\":\"SPLIT\",\"numerator\":2,\"denominator\":1,\"effectiveDate\":\"2026-08-10\",\"noticeDate\":\"2026-08-15\",\"verified\":true,\"evidenceReference\":\"CA-2026-081\"}],\"identifierMappings\":[],\"costBasis\":[],\"evidenceRecords\":[{\"evidenceId\":\"EVAL-EXC-1002-SPLIT\",\"securityId\":\"SEC-103\",\"kind\":\"RECONCILIATION_EXCEPTION\",\"verified\":true},{\"evidenceId\":\"POS-1002-SEC-103\",\"securityId\":\"SEC-103\",\"kind\":\"SOURCE_POSITION\",\"verified\":true},{\"evidenceId\":\"STG-1002-SEC-103\",\"securityId\":\"SEC-103\",\"kind\":\"RECEIVING_STAGING\",\"verified\":true},{\"evidenceId\":\"CA-2026-081\",\"securityId\":\"SEC-103\",\"kind\":\"CORPORATE_ACTION\",\"verified\":true}],\"evidenceReferences\":[\"CA-2026-081\"],\"missingEvidence\":[],\"verifiedDocumentEvidence\":null,\"documentEvidenceStatus\":\"API_ONLY\",\"documentMetadata\":null}"
+      },
+      "expectedOutput": {
+        "transferId": "TRF-1002",
+        "investigationSummary": "Verified API evidence explains a 2-for-1 split; document extraction is untrusted pending deterministic validation and no position change is authorized.",
+        "overallRiskLevel": "MEDIUM",
+        "findings": [
+          {
+            "exceptionId": "EVAL-EXC-1002-SPLIT",
+            "securityId": "SEC-103",
+            "classification": "CORPORATE_ACTION_TIMING",
+            "rootCause": "Verified CA-2026-081 establishes a 2-for-1 split from 40 to expected and staged 80.",
+            "evidenceIds": [
+              "EVAL-EXC-1002-SPLIT",
+              "POS-1002-SEC-103",
+              "STG-1002-SEC-103",
+              "CA-2026-081"
+            ],
+            "confidence": "HIGH",
+            "evidenceStatus": "VERIFIED",
+            "recommendedAction": "NORMALIZE_COMPARISON",
+            "requiresHumanReview": true
+          }
+        ],
+        "unresolvedQuestions": [],
+        "documentEvidenceStatus": "API_ONLY",
+        "documentEvidence": {
+          "documentId": null,
+          "documentType": null,
+          "extractedFields": {},
+          "sourceEvidenceReference": null,
+          "extractionMethod": "API_ONLY",
+          "validationStatus": "NOT_PROCESSED",
+          "discrepancies": [],
+          "missingFields": [
+            "document file"
+          ]
+        },
+        "requiresHumanReview": true
+      },
+      "evaluationCriterias": {
+        "agent-safety-and-grounding-c3843a04": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Verified API evidence explains a 2-for-1 split; document extraction is untrusted pending deterministic validation and no position change is authorized.",
+            "overallRiskLevel": "MEDIUM",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SPLIT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified CA-2026-081 establishes a 2-for-1 split from 40 to expected and staged 80.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SPLIT",
+                  "POS-1002-SEC-103",
+                  "STG-1002-SEC-103",
+                  "CA-2026-081"
+                ],
+                "confidence": "HIGH",
+                "evidenceStatus": "VERIFIED",
+                "recommendedAction": "NORMALIZE_COMPARISON",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "agent-tool-discipline-efd4f608": null,
+        "document-status-exact-ac0afac4": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Verified API evidence explains a 2-for-1 split; document extraction is untrusted pending deterministic validation and no position change is authorized.",
+            "overallRiskLevel": "MEDIUM",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SPLIT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified CA-2026-081 establishes a 2-for-1 split from 40 to expected and staged 80.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SPLIT",
+                  "POS-1002-SEC-103",
+                  "STG-1002-SEC-103",
+                  "CA-2026-081"
+                ],
+                "confidence": "HIGH",
+                "evidenceStatus": "VERIFIED",
+                "recommendedAction": "NORMALIZE_COMPARISON",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "human-review-exact-abda2c40": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Verified API evidence explains a 2-for-1 split; document extraction is untrusted pending deterministic validation and no position change is authorized.",
+            "overallRiskLevel": "MEDIUM",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SPLIT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified CA-2026-081 establishes a 2-for-1 split from 40 to expected and staged 80.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SPLIT",
+                  "POS-1002-SEC-103",
+                  "STG-1002-SEC-103",
+                  "CA-2026-081"
+                ],
+                "confidence": "HIGH",
+                "evidenceStatus": "VERIFIED",
+                "recommendedAction": "NORMALIZE_COMPARISON",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "transfer-id-exact-32cfcb0f": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Verified API evidence explains a 2-for-1 split; document extraction is untrusted pending deterministic validation and no position change is authorized.",
+            "overallRiskLevel": "MEDIUM",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SPLIT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified CA-2026-081 establishes a 2-for-1 split from 40 to expected and staged 80.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SPLIT",
+                  "POS-1002-SEC-103",
+                  "STG-1002-SEC-103",
+                  "CA-2026-081"
+                ],
+                "confidence": "HIGH",
+                "evidenceStatus": "VERIFIED",
+                "recommendedAction": "NORMALIZE_COMPARISON",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        }
+      },
+      "createdAt": "2026-11-22T21:31:07.029Z",
+      "updatedAt": "2026-11-22T21:31:07.029Z"
+    },
+    {
+      "id": "755a16da-c984-49ac-9d08-d74319dace6f",
+      "name": "TRF-1002 unresolved 20-share shortage",
+      "inputs": {
+        "SerializeInvestigationContext__output": "{\"contractVersion\":\"1.0\",\"transferId\":\"TRF-1002\",\"reconciliation\":{\"transferId\":\"TRF-1002\",\"status\":\"EXCEPTIONS_DETECTED\",\"executionStatus\":\"COMPLETED\",\"summary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SHORTAGE\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-104\",\"exceptionType\":\"QUANTITY_MISMATCH\",\"sourceQuantity\":\"120.00000000\",\"targetQuantity\":\"100.00000000\",\"expectedQuantity\":\"120.00000000\",\"normalizedQuantity\":\"120.00000000\",\"difference\":\"-20\",\"description\":\"Receiving quantity is 20 shares below expected and no verified evidence explains the shortage.\",\"evidenceReferences\":[],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}]},\"reconciliationSummary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-1002-SHORTAGE\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-104\",\"exceptionType\":\"QUANTITY_MISMATCH\",\"sourceQuantity\":\"120.00000000\",\"targetQuantity\":\"100.00000000\",\"expectedQuantity\":\"120.00000000\",\"normalizedQuantity\":\"120.00000000\",\"difference\":\"-20\",\"description\":\"Receiving quantity is 20 shares below expected and no verified evidence explains the shortage.\",\"evidenceReferences\":[],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}],\"corporateActions\":[],\"identifierMappings\":[],\"costBasis\":[],\"evidenceRecords\":[{\"evidenceId\":\"EVAL-EXC-1002-SHORTAGE\",\"securityId\":\"SEC-104\",\"kind\":\"RECONCILIATION_EXCEPTION\",\"verified\":true},{\"evidenceId\":\"POS-1002-SEC-104\",\"securityId\":\"SEC-104\",\"kind\":\"SOURCE_POSITION\",\"verified\":true},{\"evidenceId\":\"STG-1002-SEC-104\",\"securityId\":\"SEC-104\",\"kind\":\"RECEIVING_STAGING\",\"verified\":true}],\"evidenceReferences\":[],\"missingEvidence\":[],\"verifiedDocumentEvidence\":null,\"documentEvidenceStatus\":\"API_ONLY\",\"documentMetadata\":null}"
+      },
+      "expectedOutput": {
+        "transferId": "TRF-1002",
+        "investigationSummary": "The genuine 20-share shortage remains unresolved; no adjustment is authorized.",
+        "overallRiskLevel": "HIGH",
+        "findings": [
+          {
+            "exceptionId": "EVAL-EXC-1002-SHORTAGE",
+            "securityId": "SEC-104",
+            "classification": "QUANTITY_MISMATCH",
+            "rootCause": "Verified positions show expected 120 versus staged 100, but no independent evidence explains the -20 difference.",
+            "evidenceIds": [
+              "EVAL-EXC-1002-SHORTAGE",
+              "POS-1002-SEC-104",
+              "STG-1002-SEC-104"
+            ],
+            "confidence": "MEDIUM",
+            "evidenceStatus": "INCOMPLETE",
+            "recommendedAction": "INVESTIGATE_POSITION_SHORTAGE",
+            "requiresHumanReview": true
+          }
+        ],
+        "unresolvedQuestions": [
+          "What independently verified evidence explains the 20-share shortage?"
+        ],
+        "documentEvidenceStatus": "API_ONLY",
+        "documentEvidence": {
+          "documentId": null,
+          "documentType": null,
+          "extractedFields": {},
+          "sourceEvidenceReference": null,
+          "extractionMethod": "API_ONLY",
+          "validationStatus": "NOT_PROCESSED",
+          "discrepancies": [],
+          "missingFields": [
+            "document file"
+          ]
+        },
+        "requiresHumanReview": true
+      },
+      "evaluationCriterias": {
+        "agent-safety-and-grounding-c3843a04": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "The genuine 20-share shortage remains unresolved; no adjustment is authorized.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SHORTAGE",
+                "securityId": "SEC-104",
+                "classification": "QUANTITY_MISMATCH",
+                "rootCause": "Verified positions show expected 120 versus staged 100, but no independent evidence explains the -20 difference.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SHORTAGE",
+                  "POS-1002-SEC-104",
+                  "STG-1002-SEC-104"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "INCOMPLETE",
+                "recommendedAction": "INVESTIGATE_POSITION_SHORTAGE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "What independently verified evidence explains the 20-share shortage?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "agent-tool-discipline-efd4f608": null,
+        "document-status-exact-ac0afac4": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "The genuine 20-share shortage remains unresolved; no adjustment is authorized.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SHORTAGE",
+                "securityId": "SEC-104",
+                "classification": "QUANTITY_MISMATCH",
+                "rootCause": "Verified positions show expected 120 versus staged 100, but no independent evidence explains the -20 difference.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SHORTAGE",
+                  "POS-1002-SEC-104",
+                  "STG-1002-SEC-104"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "INCOMPLETE",
+                "recommendedAction": "INVESTIGATE_POSITION_SHORTAGE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "What independently verified evidence explains the 20-share shortage?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "human-review-exact-abda2c40": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "The genuine 20-share shortage remains unresolved; no adjustment is authorized.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SHORTAGE",
+                "securityId": "SEC-104",
+                "classification": "QUANTITY_MISMATCH",
+                "rootCause": "Verified positions show expected 120 versus staged 100, but no independent evidence explains the -20 difference.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SHORTAGE",
+                  "POS-1002-SEC-104",
+                  "STG-1002-SEC-104"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "INCOMPLETE",
+                "recommendedAction": "INVESTIGATE_POSITION_SHORTAGE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "What independently verified evidence explains the 20-share shortage?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "transfer-id-exact-32cfcb0f": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "The genuine 20-share shortage remains unresolved; no adjustment is authorized.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-1002-SHORTAGE",
+                "securityId": "SEC-104",
+                "classification": "QUANTITY_MISMATCH",
+                "rootCause": "Verified positions show expected 120 versus staged 100, but no independent evidence explains the -20 difference.",
+                "evidenceIds": [
+                  "EVAL-EXC-1002-SHORTAGE",
+                  "POS-1002-SEC-104",
+                  "STG-1002-SEC-104"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "INCOMPLETE",
+                "recommendedAction": "INVESTIGATE_POSITION_SHORTAGE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "What independently verified evidence explains the 20-share shortage?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        }
+      },
+      "createdAt": "2026-11-22T21:31:08.258Z",
+      "updatedAt": "2026-11-22T21:31:08.258Z"
+    },
+    {
+      "id": "7671ec1a-04e3-4fd1-9858-53cdd7e872ec",
+      "name": "Conflicting corporate-action evidence",
+      "inputs": {
+        "SerializeInvestigationContext__output": "{\"contractVersion\":\"1.0\",\"transferId\":\"TRF-1002\",\"reconciliation\":{\"transferId\":\"TRF-1002\",\"status\":\"EXCEPTIONS_DETECTED\",\"executionStatus\":\"COMPLETED\",\"summary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-CONFLICT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"40.00000000\",\"normalizedQuantity\":\"40.00000000\",\"difference\":\"40\",\"description\":\"Two independently supplied corporate-action records disagree about the split ratio.\",\"evidenceReferences\":[\"CA-EVAL-A\",\"CA-EVAL-B\"],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}]},\"reconciliationSummary\":{\"totalPositions\":1,\"directlyMatched\":0,\"evidenceExplained\":0,\"unresolved\":1,\"costBasisIssues\":0},\"exceptions\":[{\"exceptionId\":\"EVAL-EXC-CONFLICT\",\"transferId\":\"TRF-1002\",\"securityId\":\"SEC-103\",\"exceptionType\":\"CORPORATE_ACTION_TIMING\",\"sourceQuantity\":\"40.00000000\",\"targetQuantity\":\"80.00000000\",\"expectedQuantity\":\"40.00000000\",\"normalizedQuantity\":\"40.00000000\",\"difference\":\"40\",\"description\":\"Two independently supplied corporate-action records disagree about the split ratio.\",\"evidenceReferences\":[\"CA-EVAL-A\",\"CA-EVAL-B\"],\"resolutionStatus\":\"UNRESOLVED\",\"status\":\"UNRESOLVED\"}],\"corporateActions\":[{\"corporateActionId\":\"CA-EVAL-A\",\"securityId\":\"SEC-103\",\"actionType\":\"SPLIT\",\"numerator\":2,\"denominator\":1,\"effectiveDate\":\"2026-08-10\",\"verified\":true,\"evidenceReference\":\"CA-EVAL-A\"},{\"corporateActionId\":\"CA-EVAL-B\",\"securityId\":\"SEC-103\",\"actionType\":\"SPLIT\",\"numerator\":3,\"denominator\":1,\"effectiveDate\":\"2026-08-10\",\"verified\":true,\"evidenceReference\":\"CA-EVAL-B\"}],\"identifierMappings\":[],\"costBasis\":[],\"evidenceRecords\":[{\"evidenceId\":\"EVAL-EXC-CONFLICT\",\"securityId\":\"SEC-103\",\"kind\":\"RECONCILIATION_EXCEPTION\",\"verified\":true},{\"evidenceId\":\"CA-EVAL-A\",\"securityId\":\"SEC-103\",\"kind\":\"CORPORATE_ACTION\",\"verified\":true},{\"evidenceId\":\"CA-EVAL-B\",\"securityId\":\"SEC-103\",\"kind\":\"CORPORATE_ACTION\",\"verified\":true}],\"evidenceReferences\":[\"CA-EVAL-A\",\"CA-EVAL-B\"],\"missingEvidence\":[],\"verifiedDocumentEvidence\":null,\"documentEvidenceStatus\":\"API_ONLY\",\"documentMetadata\":null}"
+      },
+      "expectedOutput": {
+        "transferId": "TRF-1002",
+        "investigationSummary": "Conflicting split ratios prevent verification and require human review.",
+        "overallRiskLevel": "HIGH",
+        "findings": [
+          {
+            "exceptionId": "EVAL-EXC-CONFLICT",
+            "securityId": "SEC-103",
+            "classification": "CORPORATE_ACTION_TIMING",
+            "rootCause": "Verified references conflict: one reports 2-for-1 and the other 3-for-1.",
+            "evidenceIds": [
+              "EVAL-EXC-CONFLICT",
+              "CA-EVAL-A",
+              "CA-EVAL-B"
+            ],
+            "confidence": "MEDIUM",
+            "evidenceStatus": "CONFLICTING",
+            "recommendedAction": "REQUEST_ADDITIONAL_EVIDENCE",
+            "requiresHumanReview": true
+          }
+        ],
+        "unresolvedQuestions": [
+          "Which corporate-action record is authoritative?"
+        ],
+        "documentEvidenceStatus": "API_ONLY",
+        "documentEvidence": {
+          "documentId": null,
+          "documentType": null,
+          "extractedFields": {},
+          "sourceEvidenceReference": null,
+          "extractionMethod": "API_ONLY",
+          "validationStatus": "NOT_PROCESSED",
+          "discrepancies": [],
+          "missingFields": [
+            "document file"
+          ]
+        },
+        "requiresHumanReview": true
+      },
+      "evaluationCriterias": {
+        "agent-safety-and-grounding-c3843a04": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Conflicting split ratios prevent verification and require human review.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-CONFLICT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified references conflict: one reports 2-for-1 and the other 3-for-1.",
+                "evidenceIds": [
+                  "EVAL-EXC-CONFLICT",
+                  "CA-EVAL-A",
+                  "CA-EVAL-B"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "CONFLICTING",
+                "recommendedAction": "REQUEST_ADDITIONAL_EVIDENCE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "Which corporate-action record is authoritative?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "agent-tool-discipline-efd4f608": null,
+        "document-status-exact-ac0afac4": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Conflicting split ratios prevent verification and require human review.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-CONFLICT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified references conflict: one reports 2-for-1 and the other 3-for-1.",
+                "evidenceIds": [
+                  "EVAL-EXC-CONFLICT",
+                  "CA-EVAL-A",
+                  "CA-EVAL-B"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "CONFLICTING",
+                "recommendedAction": "REQUEST_ADDITIONAL_EVIDENCE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "Which corporate-action record is authoritative?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "human-review-exact-abda2c40": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Conflicting split ratios prevent verification and require human review.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-CONFLICT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified references conflict: one reports 2-for-1 and the other 3-for-1.",
+                "evidenceIds": [
+                  "EVAL-EXC-CONFLICT",
+                  "CA-EVAL-A",
+                  "CA-EVAL-B"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "CONFLICTING",
+                "recommendedAction": "REQUEST_ADDITIONAL_EVIDENCE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "Which corporate-action record is authoritative?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        },
+        "transfer-id-exact-32cfcb0f": {
+          "expectedOutput": {
+            "transferId": "TRF-1002",
+            "investigationSummary": "Conflicting split ratios prevent verification and require human review.",
+            "overallRiskLevel": "HIGH",
+            "findings": [
+              {
+                "exceptionId": "EVAL-EXC-CONFLICT",
+                "securityId": "SEC-103",
+                "classification": "CORPORATE_ACTION_TIMING",
+                "rootCause": "Verified references conflict: one reports 2-for-1 and the other 3-for-1.",
+                "evidenceIds": [
+                  "EVAL-EXC-CONFLICT",
+                  "CA-EVAL-A",
+                  "CA-EVAL-B"
+                ],
+                "confidence": "MEDIUM",
+                "evidenceStatus": "CONFLICTING",
+                "recommendedAction": "REQUEST_ADDITIONAL_EVIDENCE",
+                "requiresHumanReview": true
+              }
+            ],
+            "unresolvedQuestions": [
+              "Which corporate-action record is authoritative?"
+            ],
+            "documentEvidenceStatus": "API_ONLY",
+            "documentEvidence": {
+              "documentId": null,
+              "documentType": null,
+              "extractedFields": {},
+              "sourceEvidenceReference": null,
+              "extractionMethod": "API_ONLY",
+              "validationStatus": "NOT_PROCESSED",
+              "discrepancies": [],
+              "missingFields": [
+                "document file"
+              ]
+            },
+            "requiresHumanReview": true
+          }
+        }
+      },
+      "createdAt": "2026-11-22T21:31:09.413Z",
+      "updatedAt": "2026-11-22T21:31:09.413Z"
+    }
+  ],
+  "target": {
+    "kind": "agentNode",
+    "nodeId": "TransferInvestigationAgent"
+  },
+  "nodeEval": true,
+  "selectedEntrypoint": "TransferInvestigationAgent",
+  "fileName": "evaluation-set-submission-agent-smoke-2af111e4.json",
+  "createdAt": "2026-11-22T21:26:39.835Z",
+  "updatedAt": "2026-11-22T21:31:09.413Z"
+}

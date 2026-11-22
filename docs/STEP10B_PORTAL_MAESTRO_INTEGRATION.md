@@ -1,6 +1,13 @@
 # Step 10B — Portal-triggered Maestro investigation
 
-Status: **implemented, Render-enabled, upgraded/activated in UiPath as solution version 1.0.1, and live-verified end to end for the TRF-1002 approval path**.
+> Historical Step 10B deployment record. Version 1.0.1 evidence below remains
+> valid for that milestone; active solution 1.1.1 and current document-analysis
+> evidence are documented in Step 11. Do not use the old brownfield
+> decompile/merge procedure below for a current rebuild; use
+> [source reproducibility](MAESTRO_SOURCE_REPRODUCIBILITY.md) and the
+> [judge guide](JUDGE_REPRODUCTION_GUIDE.md).
+
+Status at this milestone: **implemented, Render-enabled, and live-verified on version 1.0.1**.
 
 The existing Manual Trigger, Autonomous Agent, Transfer Operations Quick Form, review APIs, and deterministic financial rules are unchanged. The authored Flow source adds `PortalWebhook` as a second entry point into the same first `ValidateInput` step. It does not copy the investigation or reconciliation graph.
 

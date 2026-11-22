@@ -1,209 +1,118 @@
-# TransferIQ AI Architecture
+# TransferIQ AI architecture
 
-Step 11 attaches one built-in Analyze Files resource to the existing inline agent. A real Manual Trigger file selects `AGENT_ANALYZE_FILES`; absence of a file selects `TransferIQ_Document_Retrieval`, with an explicit `API_ONLY` fallback. Model extraction remains untrusted and is compared deterministically with the corporate-action API. Solution 1.1.1 string-normalizes provider attachment metadata at the API Workflow boundary while preserving the real file and existing Flow behavior. Real no-upload portal approval and rejection runs prove automated retrieval, Analyze Files, independent validation, Quick Form outcomes, and audit end to end; a TRF-1001 CLEAN control bypasses document analysis, planning, and human review. SEC-104 remains unresolved and financial state remains immutable. See [Step 11 design and verification](docs/STEP11_AGENT_DOCUMENT_ANALYSIS.md).
+This document describes the implemented 1.1.1 architecture. Older Step documents are historical evidence, not current-state specifications.
 
-Step 10A adds a read-only React/TypeScript/Vite operations layer under `frontend/`. The browser uses same-origin, GET-only anonymous demo contracts and validates responses at runtime. FastAPI conditionally mounts compiled assets at `/portal`; API, health, documentation, SQLite, document storage, Maestro, agent, IXP, and financial-policy boundaries are unchanged. The packaged transfer catalog now carries explicit fictional display metadata but still never queries live storage. Run/plan discovery and complete durable agent results are not public contracts, so the interface requires optional known IDs and shows honest empty states. See [Step 10A architecture and deployment](docs/STEP10A_OPERATIONS_PORTAL.md).
+## System context
 
-Current Step 9 continuation preserves the manually created quickForm1 and its schema. Approve/Reject adapters read actual node output, validate the matching action and optional comments, and use the unchanged validated backend proposal. Reject continues through decision/audit instead of ending early. Original approval and rejection are live-verified; see [current evidence](docs/STEP9_MANUAL_FORM_VERIFICATION.md).
+    Public portal user ---- read-only GETs ----> React portal
+    Authorized operator --- session/CSRF/idempotency --> React portal
+    React portal ---------- same-origin API -------> Render FastAPI
+    Render FastAPI -------- durable state ---------> SQLite and PDFs on /data
+    Render FastAPI -------- one authenticated POST -> UiPath HTTP Webhook
+    Manual Trigger --------\
+                            > Maestro TransferIQ_Reconciliation
+    Portal Webhook --------/
+    Maestro Flow ---------- bounded demo APIs -----> Render FastAPI
+    Maestro Flow ---------- file request ----------> TransferIQ_Document_Retrieval
+    Retrieval Workflow ---- real attachment -------> Autonomous Agent + Analyze Files
+    Maestro Flow ---------- review task -----------> Action Center Quick Form
+    Maestro Flow ---------- verify/audit ----------> Render FastAPI
 
-Earlier milestone notes below are historical; the linked verification supersedes their Quick Form blocker status.
+One Render service hosts the API and compiled React application. It uses one worker and one persistent disk because SQLite and PDF integrity depend on a single coordinated writable store. No external database, Redis service, or public document directory exists.
 
-## Scope and status
+## Persistence boundaries
 
-November 9 follow-up distinguishes HTTP success from business completion: a real TRF-1002 run returned a null top-level agent `requiresHumanReview` and safely stopped before plan preview/Quick Form. The current diagnostic canvas is the minimal 76-node, two-outcome form candidate, with the original full form backed up. Agent-contract hardening requires an explicit top-level true flag and preserves independent fail-closed validation; it does not change reconciliation or authorize financial writes. See [current runtime evidence and verification status](docs/STEP9_NOV9_DATA_DIAGNOSIS.md).
+DATA_DIR is repository-relative ./data locally and /data on Render.
 
-Step 9 adds an isolated demo disposition ledger after successful agent validation. `POST /api/demo/runs/review` issues a per-run capability automatically; only its holder can preview, decide or execute constrained synthetic dispositions. Public plan IDs/hashes grant no write authority. Reviewer strings are explicitly unverified demo references; protected private writes fail closed without verified-review configuration. No custody/staging quantities, financial rules, underlying exceptions or transfer lifecycle states are changed. SQLite v4 adds plans/decisions/dispositions and nullable audit metadata; registry v2 adds capability storage. The real Quick Form's four outcomes lead to durable decisions and independently checked rereads. The Flow validates and deployed Render review/preview routes now return 201/200 in actual Maestro execution. TRF-1001 completes CLEAN; TRF-1002 completes real investigation and preview but fails at Quick Form creation with UiPath HTTP 400 / incident 170000. Human participation remains unverified; the exact task-service rejection cause is unconfirmed. See [Step 9 details](docs/STEP9_HUMAN_APPROVAL.md) and [contracts](docs/STEP9_API_CONTRACTS.md). Earlier step descriptions below are historical implementation boundaries.
+    DATA_DIR/
+      transferiq.db                       private application database, schema v4
+      documents/                          private generated/uploaded PDFs
+      staging/ and tmp/                   bounded document write areas
+      competition/transferiq.db           anonymous demo-run registry, schema v2
+      competition/runs/{DEMO-id}/         isolated run SQLite database and PDFs
+      portal/transferiq.db                PEX lifecycle registry, schema v3
 
-Step 8 extends the existing Flow with the real `uipath.agent.autonomous` node `TransferInvestigationAgent`, supplied by actual run-scoped API records. Quantity or cost-basis exceptions enter investigation. A deterministic post-agent validator enforces exact output shape, exception/security/evidence ownership and controlled recommendation categories; all recommendations remain advisory and no financial state is changed. `enableIXP=false` bypasses the existing extraction setup-stop, with explicit `NOT_PROCESSED_IXP_DISABLED`. Missing APIs and agent failures retain reconciliation and require review. A new read-only `/api/demo/runs/{runId}/investigation-references` endpoint exposes bounded security/mapping/basis data only from the selected isolated run. Its Render deployment is now verified: the GET returns 200 and the real TRF-1002 agent receives the actual security and basis records. The new run returns INVESTIGATION_COMPLETED with no missing supplemental-reference evidence while the SEC-104 shortage remains unresolved. See [deployed verification](docs/STEP8_DEPLOYED_VERIFICATION.md). Agent reports remain in Maestro traces/results, not a new backend persistence layer. See [Step 8 contracts, live evidence and limitations](docs/STEP8_AGENT_INTEGRATION.md).
+The private database, each demo-run database, and the portal registry have different purposes and authorization boundaries. Public demo routes never open the private session factory. The React build is served from application source, not from DATA_DIR.
 
+## Backend components
 
-Step 7 adds a read-only `/api/demo/runs/{runId}/corporate-actions` reference view over the run's isolated database, scoped to the selected transfer's securities. The Flow accepts an optional manual File input and preserves the reconciliation outcome while reporting evidence status separately. Validation compares extracted fields against a corporate-action exception and independently fetched reference rows; it never writes positions or resolves exceptions. IXP model creation and the actual output adapter require Studio Web completion; the current artifact reaches a labelled setup stop only when IXP is explicitly enabled and a file is supplied. Extraction results currently live in the Flow result/trace, not a new backend extraction table. See [Step 7 status and setup](docs/IXP_STEP7_SETUP.md).
+The backend uses FastAPI, SQLAlchemy, Pydantic, and SQLite.
 
-Judging now supports real anonymous execution under `/api/demo/runs`. Each public run owns SQLite and seeded PDF storage under DATA_DIR/competition, separately from the private root database/documents. Existing reconciliation logic is reused with a run-specific session. The run registry persists request idempotency and expiry; scoped endpoints, bounded work and retention quotas constrain public execution. Original private APIs retain X-API-Key. `/api/demo/transfers` still serves explicitly precomputed fixtures. See [the complete public/private boundary](docs/ZERO_CREDENTIAL_DEMO.md). The deployed Render routes now have [actual Maestro execution evidence](docs/MAESTRO_LIVE_EXECUTION.md).
+- Core/private APIs manage fictional clients, firms, accounts, securities, transfers, immutable source positions, receiving staging, reconciliation, and private documents. X-API-Key is required, including for GETs.
+- The packaged demo catalog exposes five precomputed fictional scenarios and never queries private live storage.
+- Demo-run APIs create bounded, TTL-governed, run-isolated state. They expose only the selected allowlisted scenario and issue a capability for constrained review writes.
+- Portal APIs authenticate an operator with a short-lived signed HttpOnly cookie, require CSRF and idempotency for starts, and persist sanitized workflow state by executionRequestId.
+- Resolution services bind plans to transfer, reconciliation, evidence versions, hashes, capabilities, expiry, and decisions. Demo execution records dispositions; it never mutates custody or staging quantities.
+- Audit events are append-only and final verification independently rereads plan, decision, disposition, reconciliation, and audit state.
 
-Render is now the requested manual deployment target: one Starter Python Web Service, one `/data` disk, and the existing `python -m backend.start` entry point. Render supplies `RENDER=true` and `PORT`; startup validates production configuration and the real disk mount, then uses the same migrations, seeding, recovery, authentication and readiness behavior. The Step 10A build installs frontend and backend dependencies and compiles the portal before startup. Render preparation passed 252 local tests at its earlier milestone; later Step 8 checks verified the deployed APIs. See [Render deployment guide](docs/RENDER_DEPLOYMENT.md). Railway remains an alternative; the platforms do not share a database or documents automatically.
+See [API_SURFACES.md](docs/API_SURFACES.md) for exact routes.
 
-Railway backend preparation now supplies Railpack configuration at repository root, `python -m backend.start`, and a single service/worker/replica using one `/data` volume. Startup validates the mounted volume and production secret, initializes/migrates SQLite, recovers pending documents, optionally adds missing fictional fixtures/PDFs (`SEED_DEMO_DATA=1`), then enables `/health` readiness. Existing data and document IDs are preserved; migration failures stop startup. JSON console logging omits raw exception details and credentials. Local verification passed 243 tests; cloud deployment and volume acceptance remain unperformed. See [deployment guide](docs/RAILWAY_DEPLOYMENT.md).
+## Portal-to-audit lifecycle
 
-Step 5's manually triggered Maestro Automate Flow creates an anonymous demo run, validates its runId, and calls run-scoped transfer, source-position, receiving-staging and reconciliation endpoints. All five HTTP nodes use Manual authentication with no credentials. Normalization maps `summary.unresolved` to `unresolvedCount`; quantity CLEAN and INVESTIGATION_REQUIRED retain independent cost-basis review flags. Errors produce FAILED; no calculation or correction occurs in JavaScript. The hosted backend must support these routes, and UiPath runtime permissions remain required. The original IXP and privileged approval design below remains planned; Step 8 implements advisory investigation and Step 9 implements isolated demo review as described above.
+1. The operator authenticates to the portal. A start request requires the signed session, CSRF token, and an Idempotency-Key.
+2. The backend persists PENDING before dispatch, sends one bounded webhook POST, and records TRIGGERED on acceptance. HTTP 200 is not workflow completion.
+3. The Flow creates and binds an isolated review run, reconciles it, and advances the PEX record to INVESTIGATING.
+4. CLEAN cases persist COMPLETED/CLEAN without document retrieval, an agent, or a human task.
+5. Investigation cases obtain API references and optionally a real PDF attachment, invoke the agent, and independently validate the structured result.
+6. Plan preview persists AWAITING_HUMAN_REVIEW. A real Quick Form captures Approve or Reject in Action Center.
+7. The Flow records the decision, applies only the allowed demo disposition, rereads state, verifies the audit, and persists COMPLETED or FAILED.
+8. The portal reads the same PEX record with bounded polling. Reloading does not start another run.
 
-Step 4 implements the private PDF document repository and deterministic generation from stored fictional records. SQLite schema v3 adds TransferDocument metadata; bytes live under DATA_DIR/documents in generated transfer buckets. All document routes require X-API-Key. Pending writes recover on startup, and downloads verify size and checksum before returning actual PDF bytes. See [DOCUMENT_API.md](docs/DOCUMENT_API.md) for storage/versioning/validation details and [IXP_INTEGRATION_PLAN.md](docs/IXP_INTEGRATION_PLAN.md) for the unimplemented future file handoff.
+Portal statuses are PENDING, TRIGGERED, INVESTIGATING, AWAITING_HUMAN_REVIEW, COMPLETED, FAILED, and TIMED_OUT. Browser polling expiration never changes server state.
 
-Step 3 implements deterministic reconciliation independently of AI, an additive SQLite v2 migration, verified synthetic reference tables, exact split/identifier comparison, separate cost-basis checks, and persisted fingerprinted results. All seven new reconciliation/reference endpoints require X-API-Key, including exception reads. See [the detailed rules and contract](docs/RECONCILIATION.md). No quantities or lifecycle states are automatically corrected.
+## Maestro Flow
 
-Step 2 implements the local FastAPI/SQLite foundation, core reference and transfer APIs, immutable custody snapshots, receiving staging records, explicit demo seeding, and atomic transfer-creation audit/idempotency records. Step 4 document IDs use a DOC- prefix plus UUID; each immutable document version has its own ID. The broader architecture below remains planned unless identified as implemented here. UiPath tenant availability, authentication scopes, resource identifiers, and concrete invocation contracts must be verified during integration implementation. No successful integrations are claimed.
+The canonical Flow has 81 nodes and 86 edges. Manual Trigger and authenticated Portal Webhook share one graph. Major node families are:
 
-### Step 2 decisions that supersede the initial foundation
+- input normalization and allowlist validation;
+- isolated run creation and deterministic reconciliation HTTP calls;
+- CLEAN/investigation/failure decisions;
+- automated document retrieval API Workflow;
+- TransferInvestigationAgent with built-in Analyze Files;
+- independent structured-output and evidence validation;
+- plan preview, Quick Form, decision, execution, verification, and audit;
+- explicit controlled return/error terminals.
 
-- The database filename is `transferiq.db`, as requested for Step 2.
-- Implemented routes use `/api`, exactly as requested; `/api/v1` remains a future versioning decision.
-- API keys protect original private business routes through `X-API-Key` and `API_KEY`. Anonymous run-isolated demo routes never receive a private database session or arbitrary user financial data. Precomputed samples and health/docs are public. Reviewer sessions and broader resource-level access control remain unimplemented.
-- New transfer creation records intent only, starts in DRAFT, and does not generate positions, perform ACATS processing, submit, settle, or alter source records. PARTIAL is metadata only until later asset-selection rules exist.
-- `/api/transfers/{transferId}/assets` returns receiving staging positions. Receiving account positions are transfer-specific staging rows, never settled or aggregated custody holdings. Delivering positions return the latest snapshot date for that account.
-- Status transitions are validated by a service validator and SQLite triggers; no status-mutation API is exposed. The initial graph is listed below. Business gates for approvals and reconciliation are deferred.
-- Decimal quantities use exact TEXT storage with 18 integer and 8 fractional digits; excess precision is rejected rather than silently rounded. UTC-aware timestamps are stored as ISO 8601 text and returned with UTC offsets.
-- `PRAGMA user_version=3` marks the current schema; an additive transactional migration upgrades version 1 without modifying original record values. Existing unversioned or unsupported databases are rejected, never reset or silently adopted. Future revisions require ordered migrations; `create_all` is used only for an empty version-zero database.
-- Audit events and optional idempotency records commit with transfer creation. Reuse an `Idempotency-Key` for retry-safe creation; omitted keys create distinct requests. The key scope is the single API service principal and sole mutation operation in Step 2. Outbox dispatch and external calls are not implemented.
-- Seed IDs such as `TRF-1001` are fixed fictional fixtures; API-created transfer IDs use a `TRF-` prefix plus a UUID.
+The editable TypeScript source is reproducible with the pinned toolchain. It preserves canonical node IDs, edge tuples, agent input contract, Quick Form outcome IDs, and trigger/resource references. Tenant-local bindings remain ignored. Details are in [MAESTRO_SOURCE_REPRODUCIBILITY.md](docs/MAESTRO_SOURCE_REPRODUCIBILITY.md).
 
-The system simulates transfer exception resolution using fictional data only. Eight logical systems share one FastAPI application and SQLite database; they are module boundaries, not separate cloud services. No PostgreSQL, MySQL, MongoDB, Redis, external database server, trading connection, or real ACATS connection is permitted.
+## Document evidence
 
-## Architecture diagram
+TransferInvestigationAgent supports two honest routes:
 
-The competition execution boundary extends the private application without opening its database:
+- AGENT_ANALYZE_FILES when a real PDF job attachment is supplied. The built-in Analyze Files tool extracts document fields.
+- API_ONLY when file analysis is disabled or no valid document is available. API evidence remains usable, but document validation is not claimed.
 
-```mermaid
-flowchart LR
-    Judge[Judge's Maestro Automate Flow] -->|Manual HTTP, no credentials| Demo[Allowlisted /api/demo/runs APIs]
-    Demo --> Registry[(DATA_DIR/competition registry)]
-    Demo --> Engine[Existing deterministic reconciliation services]
-    Engine --> Runs[(Run-specific SQLite and synthetic PDFs)]
-    Private[Original APIs with X-API-Key] --> Custody[(Private root SQLite and documents)]
-    Samples[Public /api/demo/transfers] --> Fixture[Labelled precomputed fixture]
-```
+For automated portal runs, TransferIQ_Document_Retrieval selects the allowlisted run-scoped corporate-action notice, obtains bounded base64 content, validates metadata/checksum/type/ownership, and returns a real file resource. It does not pass a URL string as a file.
 
-Run creation accepts only the five seed IDs. Public reconciliation records an actual backend result/audit in the selected run; it never changes custody or applies corrections. Quotas and expiry cleanup bound synthetic storage. Actual Flow and advisory agent execution are separately evidenced in the Step 5 and Step 8 guides. IXP extraction and human approvals remain unimplemented.
+Extracted security ID, action type, split ratio, dates, and evidence reference are initially unverified document evidence. Flow validation compares them with GET /api/demo/runs/{runId}/corporate-actions; mismatches or missing fields stay REVIEW_REQUIRED.
 
-```mermaid
-flowchart TD
-    User[Transfer operations user] --> UI[React / TypeScript UI]
-    subgraph Railway[One Railway application service]
-        UI --> API[FastAPI authenticated API boundary]
-        API --> TMS[Transfer Management]
-        API --> DOC[Document Repository]
-        API --> REC[Reconciliation and Exception Resolution]
-        TMS --> ACATS[Mock ACATS]
-        ACATS --> DEL[Delivering Brokerage]
-        ACATS --> RCV[Receiving Brokerage]
-        REC --> DEL
-        REC --> RCV
-        REC --> SEC[Security Master and Corporate Actions]
-        TMS --> AUD[Audit and Reporting]
-        DOC --> AUD
-        REC --> AUD
-        DB[(SQLite: all module state)]
-        FILES[Uploaded document bytes]
-    end
-    API <--> M[UiPath Maestro Automate / Flow]
-    M <--> IXP[UiPath IXP]
-    M <--> AG[UiPath Autonomous Agent]
-    M <--> HITL[UiPath Human Quick Form]
-    M -. optional retrieval .-> RPA[UiPath RPA]
-    TMS --> DB
-    ACATS --> DB
-    DEL --> DB
-    RCV --> DB
-    SEC --> DB
-    REC --> DB
-    AUD --> DB
-    DOC --> DB
-    DOC --> FILES
-    subgraph Volume[One persistent volume: /data]
-        DB
-        FILES
-    end
-```
+IXP-in-Flow is unavailable in the Community tenant and is not part of this path. enableIXP=false is preserved. No document extraction alone can authorize a correction.
 
-FastAPI will serve the compiled frontend in cloud deployment; Vite can run separately during local development. All module writes use the shared database transaction layer. UiPath receives only authorized evidence through the API, never filesystem paths or database access.
+## Financial and security invariants
 
-## Component responsibilities
+- All data is fictional and allowlisted.
+- Delivering custody positions and receiving staging positions are separate and immutable.
+- Decimal arithmetic and deterministic policy remain authoritative.
+- Unknown cost basis is unknown, never zero.
+- Agent output and PDF content are untrusted evidence.
+- Demo plan capabilities are scoped, short-lived, and absent from read responses.
+- The portal cannot approve, reject, upload arbitrary files, or call private APIs.
+- A completed workflow is not necessarily a completed transfer.
+- TRF-1002 approval leaves SEC-104 at UNRESOLVED/-20 with unchanged positions and transferCompleted=false.
+- Private resolution writes fail closed because production-grade reviewer identity is not configured.
+- Secrets, webhook headers, signed file URLs, capabilities, and document contents are excluded from public responses.
 
-| Logical system | Responsibility and boundary |
-|---|---|
-| Transfer Management System | Own transfer identity, fictional account references, lifecycle state, document requirements, correlation to Maestro runs, and allowed transitions. |
-| Mock ACATS System | Simulate submission, validation, processing, exceptions, and completion with reproducible scenarios. Never connect to real transfer infrastructure. |
-| Delivering Brokerage System | Provide immutable original mock custody positions, dated snapshots, and fictional source statements. Corrections never overwrite source holdings. |
-| Receiving Brokerage System | Hold expected and simulated received positions and separately versioned adjustment records. Represent only simulated outcomes. |
-| Security Master and Corporate Actions Service | Provide fictional identifiers, effective-dated identifier mappings and corporate-action evidence. Ambiguous mappings require review. |
-| Document Repository | Store authorized uploads, hashes, metadata, ownership, versions, and extraction references; stream bytes through access-controlled APIs. |
-| Reconciliation and Exception Resolution Engine | Compare normalized snapshots, classify exceptions, validate recommendations, apply permitted adjustments, and rerun reconciliation. Own deterministic correction policy. |
-| Audit and Reporting Service | Persist append-only events, actor identity, evidence references, decisions, state transitions, and operation correlation; provide authorized reporting. |
+## Deployment and portability
 
-`backend/api/` owns routers and HTTP dependencies; `backend/models/` owns database entities; `backend/schemas/` owns Pydantic contracts; `backend/core/` owns configuration; `backend/services/` owns implemented transfer validation and planned business logic/adapters; `backend/database/` owns engine/session configuration, transactions, schema versions, and migrations. Split submodules incrementally as needed.
+Production uses Render with DATA_DIR=/data, one instance/worker, build-time frontend compilation, and runtime-only database initialization. UiPath solution 1.1.1 contains the Flow, document-retrieval API Workflow, HTTP Webhook connection resource, Autonomous Agent configuration, and Quick Form configuration.
 
-## End-to-end process
+Another tenant must supply its own entitled organization/tenant/folder, HTTP Webhook connection, eligible single-user Quick Form reviewer, Agent/Analyze Files availability, ignored Flow bindings, and deployed webhook URL. No owner tenant identifier or secret is a portable default.
 
-1. An authenticated receiving-firm operator creates a fictional transfer request. Transfer Management assigns a `transferId` and records its initial state and audit event.
-2. The operator attaches fictional statements and transfer records. Each accepted document receives a `documentId` linked to the transfer. Optional RPA may retrieve documents from a mock source through the same ingestion boundary.
-3. Mock ACATS simulates processing against immutable delivering custody snapshots and receiving expectations. Reconciliation identifies quantity mismatches, missing securities, identifier changes, corporate-action timing differences, missing cost basis, and unsupported or incomplete records.
-4. A persisted orchestration request starts Maestro investigation. Maestro retrieves authorized transfer context and document evidence, invokes IXP, and returns correlated extraction results. Low-confidence, incomplete, or contradictory extraction stays unresolved pending review; extracted text is evidence, not authoritative instruction.
-5. The Autonomous Agent investigates using evidence, security mappings, and corporate actions. It returns a structured recommendation with evidence references and uncertainty. It cannot authorize or directly apply financial changes.
-6. The backend validates the recommendation against deterministic policy. Human Quick Form collects approval or rejection where required. Default policy is no automatic correction until an explicit, tested allowlist exists; missing cost basis is never invented, and unsupported records remain held for review.
-7. The backend verifies the decision and current proposal version, applies an authorized adjustment in a transaction, and reconciles again. Original custody snapshots remain unchanged. Failed reconciliation remains open; approval alone never marks a transfer successful.
-8. Final simulated completion or rejection and all intermediate decisions remain available in audit history.
+## Current limitations
 
-Step 2 lifecycle: DRAFT -> SUBMITTED -> UNDER_REVIEW. UNDER_REVIEW permits EXCEPTION_DETECTED, RESOLVED, or ESCALATED. EXCEPTION_DETECTED permits INVESTIGATING or ESCALATED. INVESTIGATING permits PENDING_APPROVAL, RESOLVED, or ESCALATED. PENDING_APPROVAL permits RESOLVED or ESCALATED. ESCALATED permits UNDER_REVIEW. RESOLVED permits COMPLETED. COMPLETED is terminal. No arbitrary status updates are accepted. These are structural transitions, not implemented approval or reconciliation controls; no status-changing API exists yet. Technical retry state is distinct from business outcome.
-
-## Identifiers and evidence relationships
-
-- `transferId`: backend-generated opaque UUID, stable for the entire transfer; internal and public correlation key, never a credential. One transfer has many documents, exceptions, audit events, and investigation attempts.
-- `documentId`: backend-generated opaque UUID identifying one immutable document version. Each document belongs to exactly one transfer in the initial design, enforced by a non-null foreign key. Re-uploaded or corrected evidence gets a new ID and may reference the prior version through `supersedesDocumentId`.
-- Document metadata includes transfer ownership, document type, generated storage key, SHA-256 hash, original display filename, size, MIME type, creation time, and ingestion status. Physical paths are not exposed as API identifiers.
-- Extraction attempts reference `documentId`, `transferId`, provider job/run ID, extractor version, extracted fields, confidence when supplied, and status. Repeated extraction does not replace source bytes or prior results.
-- Exceptions, recommendations, approvals, and adjustments reference their transfer and exact evidence/proposal versions. Backend validation rejects cross-transfer document references even if IDs are otherwise valid.
-- Maestro run IDs and external task/job IDs are stored separately from `transferId`. Multiple attempts may concern one transfer; callbacks must match the stored attempt and expected state.
-
-## UiPath and API interaction contract
-
-Design versioned JSON APIs under `/api/v1` with Pydantic validation and generated OpenAPI documentation suitable for Maestro HTTP calls. Concrete routes are deferred. Use explicit states, UTC timestamps, decimal strings, stable error codes, correlation IDs, and paginated collections. Long-running operations return an accepted operation identifier and expose persisted status; acceptance must not be reported as completed work.
-
-Step 10B implements the bounded portal-to-Maestro adapter for synthetic scenarios. An authenticated portal operator creates a persisted execution request before the backend makes one non-retried, header-authenticated HTTP Webhook call. The webhook's acceptance event is recorded separately from workflow completion. The existing review-run, reconciliation, preview, decision and execute APIs advance the same record by `executionRequestId`; the portal reads only sanitized state. The adapter is disabled by default and cannot start until real tenant connection, URL and authentication values are configured. Private production transfer orchestration and trusted reviewer identity remain outside this synthetic adapter.
-
-Use separate backend service credentials and UiPath OAuth configuration. Persist operation intent before external dispatch (a SQLite outbox), store remote correlation once acknowledged, and reconcile ambiguous timeouts before resubmission. Do not hold database transactions open across network calls. Bounded retries, timeouts, durable attempt counts, and manual recovery handle failures. An in-process dispatcher can service the SQLite outbox without Redis or an additional hosted worker service.
-
-Require idempotency keys for retriable mutations. Persist principal, operation scope, key, canonical request hash, status, and result with a uniqueness constraint. Same key and payload returns the recorded outcome; a changed payload conflicts. Deduplicate callbacks by provider event or operation identity and verify sequence/version. Business changes, audit events, and idempotency completion commit together. External side effects cannot share that transaction; outbox recovery and provider correlation address that boundary.
-
-## SQLite and document persistence
-
-Resolve `DATA_DIR` to an absolute path once at startup: default `./data` relative to the repository root locally, `/data` in Railway. Derive the SQLAlchemy SQLite connection URL safely from `DATA_DIR/transferiq.db`; do not build platform-dependent URLs by string concatenation. Create directories when appropriate and fail clearly if the configured storage is unwritable. Never silently fall back to ephemeral storage in cloud.
-
-Runtime layout (document and staging directories are now implemented):
-
-```text
-DATA_DIR/
-|-- transferiq.db
-|-- transferiq.db-wal   # SQLite-managed when WAL is active
-|-- transferiq.db-shm   # SQLite-managed when WAL is active
-|-- documents/              # Generated storage keys, never user paths
-|-- staging/                # Incomplete uploads awaiting finalization
-|-- tmp/                    # Multipart spool files
-|-- portal/                 # Isolated portal execution registry (SQLite), no webhook secrets
-|-- sample_exports/         # Optional explicit developer seed exports
-`-- verification/           # Optional developer checks and visual QA
-```
-
-Use SQLAlchemy sessions per request/unit of work, foreign-key enforcement on every connection, WAL mode, a bounded busy timeout, short transactions, and optimistic version checks. SQLite serializes writers; use one application replica and one worker initially. Test filesystem support for WAL on the mounted volume and validate restart behavior before deployment. Do not add replicas sharing the database file.
-
-Persist transfers, immutable custody snapshots, receiving records, security mappings, corporate actions, document metadata, extraction attempts, exceptions, recommendations, approvals, adjustments, audit events, idempotency records, and outbox operations. Version schema migrations and test upgrades; startup must not recreate or drop existing data.
-
-Use Python `Decimal` with explicit scales and rounding policies for quantities, cost basis, and monetary values. Store exact values as validated canonical decimal text or explicitly scaled integers; do not rely on SQLite floating-point arithmetic for financial calculations. Missing values remain unknown, distinct from zero. Effective dates, policy versions, and evidence determine reconciliation; tolerance and corporate-action rules require explicit specification before implementation.
-
-Database transactions and filesystem writes are not atomic together. Stage and hash uploads, persist pending metadata, atomically move bytes within the volume, then mark ready; recovery handles interrupted moves and orphan staging files. Never serve incomplete documents. Backups must use SQLite-consistent backup procedures and a coordinated document manifest, followed by restore verification; raw copying an active database alone is insufficient. A persistent volume is not a backup. Backup retention and export destination must be selected before deployment without adding an unapproved service.
-
-## Security, approvals, and audit
-
-Authenticate private business APIs and authorize access to each private transfer/document. The explicitly allowlisted synthetic run APIs above are anonymous and isolated; they never authorize access to private data. Browser bundles never contain backend or UiPath credentials. Step 10B's synthetic execution control uses a configured single demo-operator access code, a signed short-lived HttpOnly/SameSite cookie, and CSRF validation; public read-only judging remains anonymous. This is not private-client identity or trusted reviewer verification. Configure exact local origins if Vite runs separately; cloud uses same-origin hosting.
-
-Uploaded documents are private: validate file size/type, sanitize display filenames, generate storage keys, reject path traversal, and stream through authorization checks. Public run downloads serve only fixed synthetic PDFs from that run's selected transfer; they cannot retrieve private uploads. Future private UiPath document transport must use narrowly scoped authorized access with credential redaction. Treat uploaded text and agent output as untrusted data, including instructions embedded in statements.
-
-An approval is a persisted decision tied to an authenticated authorized reviewer, transfer, exception, proposal version/hash, evidence version, expiry, outcome, and reason. A posted `approved=true` or reviewer name is not proof of approval. Verify the UiPath task and trusted decision identity through the supported integration; fail closed until this is possible. Prevent unauthorized self-approval, stale proposals, replay, double application, and approval after expiry. Revalidate policy and state at application time; changed proposals require a new approval.
-
-Original custody records must have application-level update/delete denial plus database protections and regression tests. Store all changes as separate versioned adjustment records. Audit events are append-only through application interfaces and commit with business writes, recording actor, action, time, correlation, prior/new state, reason, and evidence. This is persistent history, not a claim of cryptographic tamper-proof storage against a database administrator. Never log secrets or entire document contents.
-
-## Deployment and unresolved decisions
-
-One Railway application service serves FastAPI and the compiled frontend; one persistent volume stores SQLite and documents at `/data`. Runtime dependencies are limited to the chosen stack, deployment platform, and required UiPath services. Validate deployment-specific settings when implementing them; no Railway resources exist yet.
-
-Before the relevant implementation phases, specify correction allowlists and tolerances, document schema and confidence policy, reviewer roles and assignment, supported security/corporate-action scenarios, UiPath resource contracts, and backup retention. These are intentionally unresolved business/integration details, not working defaults that permit financial changes.
-
-## Next steps
-
-Steps 1�4 are implemented. Step 5 now has real cloud traces for the three requested valid scenarios and safe FAILED traces for rate-limited unknown-ID attempts. Capturing the unknown-ID 422 response in Maestro remains a verification limitation. Follow [PROJECT_PLAN.md](PROJECT_PLAN.md) and [Step 5 setup](docs/MAESTRO_STEP5_SETUP.md) for remaining IXP/approval work; Step 8 advisory agent status is documented above.
-
-
-
-The isolated diagnostic solution in maestro/TransferIQ_QuickForm_Test uses only dummy data and a real Quick Form. It does not connect to the backend or alter the reconciliation solution. See [test evidence](docs/STEP9_QUICK_FORM_SMOKE_TEST.md).
-
-The original diagnostic Quick Form now uses the SDK-emitted node with Approve/Reject, retaining real validated plan data and original node identity. Its local validation passes; live task creation remains blocked. Runtime profile was restored to Lite after a failed controlled Standard comparison. No business-policy change. See [evidence](docs/STEP9_WORKING_FORM_PORT.md).
-
-Current saved Quick Form comments field is reviewerCommentsOptional. Decision scripts consume that field and validate compatibility aliases for prior task shapes; backend reviewerComments contract is unchanged.
+- Native Maestro evaluation data points and run evidence are absent.
+- A second-tenant import/binding rehearsal has not been retained.
+- Demo reviewer references are not suitable for real financial authority.
+- Real ACATS, settlement, trading, and custody mutation are deliberately absent.
+- Release/source provenance is maintained outside this workspace and is not inferred here.
+- Additional live scenario coverage remains a backlog item; portal presentation labels and the active status timeline are reconciled with persisted backend state.

@@ -1,5 +1,9 @@
 # Future UiPath IXP document handoff
 
+> Historical planning document. IXP-in-Flow is unavailable in the Community
+> tenant and was not implemented. The current supported path is Autonomous Agent
+> Analyze Files, documented in STEP11_AGENT_DOCUMENT_ANALYSIS.md.
+
 This is a planned integration contract only. Step 4 implements the backend document service; no Maestro Flow, IXP project/model, file-output activity, extraction call, or agent integration has been created or verified.
 
 ## Backend contract available now

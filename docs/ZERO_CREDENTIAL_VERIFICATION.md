@@ -46,4 +46,8 @@ No business reconciliation algorithm, custody schema, approval/correction rule, 
 
 ## Remaining acceptance
 
-Manually deploy the revision using [Render instructions](RENDER_DEPLOYMENT.md). Run the anonymous verifier against the hosted URL; then run the supplied Automate Flow in an entitled UiPath tenant using TRF-1001 and TRF-1002 and inspect its real node statuses/Decision branches. Follow [exact judge setup and remaining dependencies](ZERO_CREDENTIAL_DEMO.md). IXP, Autonomous Agents and human tasks remain future integrations.
+This historical checkpoint asked the owner to deploy and run the then-current
+reconciliation-only Flow. Autonomous Agent, Analyze Files, portal trigger, and
+Quick Form integration were added and live-verified later. Follow
+[the current judge guide](JUDGE_REPRODUCTION_GUIDE.md), not this old rollout
+instruction.

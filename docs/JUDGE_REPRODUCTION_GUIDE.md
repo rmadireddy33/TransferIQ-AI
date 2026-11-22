@@ -152,7 +152,11 @@ This is not a zero-configuration path. It uses the judge's own tenant, licenses,
    ```
 
 4. In the solution configuration, resolve every imported resource with resources owned by that tenant.
-5. Assign the Quick Form to an eligible user in that tenant.
+5. Open Transfer Operations Review in the Flow designer. In Assignment criteria,
+   select one assignable user from the target folder/tenant and keep Action Center
+   delivery enabled. Save the form, then confirm the generated node still has the
+   same Approve and Reject outcomes. The owner-tenant reviewer/default email is
+   not portable and must not be copied as a tenant binding.
 6. If the portal-triggered path is required, create an authenticated HTTP Webhook connection, then prepare the binding using the real connection ID:
 
    ```powershell
@@ -162,7 +166,9 @@ This is not a zero-configuration path. It uses the judge's own tenant, licenses,
    ```
 
 7. Configure the deployed backend with the new webhook URL and matching authentication header through secret environment settings. Never put them in Flow source or frontend variables.
-8. Validate, publish, deploy, and activate in the chosen folder.
+8. Validate, publish, deploy, and activate in the chosen folder. The audited
+   owner deployment is version 1.1.1; a judge-owned import may receive a different
+   tenant-local package version and must be reported as a separate deployment.
 9. For an initial proof, use the Manual Trigger shown by the imported Flow designer and supply its required values. Keep `enableIXP=false`; the document path uses the Autonomous Agent's Analyze Files tool, not IXP-in-Flow.
 10. Run one test, inspect the actual agent tool invocation, complete the Action Center task, and verify the final plan and audit endpoints.
 

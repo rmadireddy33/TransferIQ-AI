@@ -1,10 +1,21 @@
 # Judge access
 
-Judges now use real, anonymous, isolated synthetic executions. Follow [the complete credential-free judge setup](ZERO_CREDENTIAL_DEMO.md) for endpoint inventory, Flow import/run steps, safeguards, quotas and independent reproduction. See [actual verification and deployment limitations](ZERO_CREDENTIAL_VERIFICATION.md).
+Use [JUDGE_REPRODUCTION_GUIDE.md](JUDGE_REPRODUCTION_GUIDE.md) as the authoritative procedure.
 
-- `/api/demo/runs` creates a bounded run; its transfer, position, reconciliation, exception, PDF and audit operations need no TransferIQ credentials.
-- `/api/demo/transfers` list/detail remains a separately labelled **precomputed** sample view. It is not execution evidence.
-- All original private business APIs still require `X-API-Key`; arbitrary uploads, transfer creation and private reconciliation are protected. Public corrections, approvals, resets and workflow triggers are absent.
-- UiPath sign-in, tenant entitlement and run permissions remain necessary. IXP, Autonomous Agents and human tasks are future integrations with their own tenant requirements.
+## Public review
 
-The earlier read-only-only judging policy and mandatory TransferIQ HTTP connection instructions have been superseded by the requested run-isolated demo model. Do not share the owner's API key or personal UiPath credentials.
+The portal and five fictional transfer scenarios are publicly readable at https://transferiq-api.onrender.com/portal. Public browsing does not require the private API key, portal operator code, UiPath credentials, or webhook secrets.
+
+Anonymous isolated demo-run APIs under /api/demo/runs also require no TransferIQ credential. They are allowlisted, quota-bound, TTL-bound, and synthetic. See [API_SURFACES.md](API_SURFACES.md).
+
+## Starting a real workflow
+
+A real portal start requires an owner-supplied operator access code. Approval or rejection occurs only in the real UiPath Action Center Quick Form. Do not share the owner's access code, session secret, webhook configuration, review capability, or UiPath account.
+
+## Reproducing in another tenant
+
+Another tenant must use its own UiPath sign-in, entitlements, folder, HTTP Webhook connection, Agent/Analyze Files availability, and eligible Action Center reviewer. The importer must open Transfer Operations Review in Studio Web and select an assignable single user for that tenant; the saved owner assignment/default reviewer must not be treated as portable.
+
+IXP-in-Flow is unavailable in the Community tenant and is not required. The implemented document route uses the Autonomous Agent's Analyze Files tool with a real file attachment.
+
+All source data and execution records are fictional. A completed workflow does not imply a completed brokerage transfer.

@@ -1,5 +1,8 @@
 # Existing IXP model deployment status
 
+> Historical platform investigation. No IXP model is part of the current Flow
+> execution. See STEP11_AGENT_DOCUMENT_ANALYSIS.md for the implemented route.
+
 ## Requested dedicated folder: created; deployment rejected
 
 On 2026-11-05 (America/New_York), the user requested creation of the top-level, non-personal folder `transferiq-corporateactionextractor` and deployment there. `uip or folders create transferiq-corporateactionextractor --output json` returned `FolderCreated`. Actual folder identifiers are retained in ignored `data/verification/ixp-deployment/folder-create.json`.

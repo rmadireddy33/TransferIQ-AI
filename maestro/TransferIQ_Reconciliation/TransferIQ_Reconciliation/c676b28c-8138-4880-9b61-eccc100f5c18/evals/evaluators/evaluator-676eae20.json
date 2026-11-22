@@ -1,0 +1,13 @@
+{
+  "fileName": "evaluator-676eae20.json",
+  "id": "676eae20-dbde-458e-b872-60eb3919c890",
+  "name": "Submission Output Quality",
+  "description": "Compare the complete structured investigation output with the expected safe result.",
+  "category": 1,
+  "type": 5,
+  "prompt": "You are an evaluation judge. Compare the Expected Output with the Actual Output.\nScore from 0 to 1 based on semantic similarity.\n\nExpected Output:\n{{ExpectedOutput}}\n\nActual Output:\n{{ActualOutput}}\n\nReturn a JSON object with:\n- \"score\": a number between 0 and 1\n- \"reason\": a brief explanation",
+  "model": "same-as-agent",
+  "targetOutputKey": "*",
+  "createdAt": "2026-11-22T21:35:16.437Z",
+  "updatedAt": "2026-11-22T21:35:16.437Z"
+}

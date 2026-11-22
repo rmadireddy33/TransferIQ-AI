@@ -1,6 +1,7 @@
 # TransferIQ AI feature completeness matrix
 
 Audit date: **2026-11-19**  
+Native evaluation update: **2026-11-22**  
 Scope: current source, deployed Render service, active UiPath solution 1.1.1, retained execution evidence, and fresh automated verification.
 
 ## Status model and completion calculation
@@ -13,7 +14,10 @@ Scope: current source, deployed Render service, active UiPath solution 1.1.1, re
 | D | Blocked by UiPath platform/tenant availability; an accepted alternative may exist | Excluded |
 | E | Optional enhancement, not required for the current solution | Excluded |
 
-The required-feature denominator is the 50 numbered rows below. After the Flow-source reproducibility remediation there are **42 A**, **6 B**, and **2 C** rows. Completion is therefore `(42 + 6 x 0.5) / 50 = 90%`.
+The required-feature denominator is the 50 numbered rows below. After Flow-source
+remediation, documentation reconciliation, and the bounded native-evaluation
+run there are **43 A**, **6 B**, and **1 C** rows. Completion is therefore
+`(43 + 6 x 0.5) / 50 = 92%`.
 
 ## Required features
 
@@ -57,8 +61,8 @@ The required-feature denominator is the 50 numbered rows below. After the Flow-s
 | 36 | Reproducible authored Flow source | A | `.flow-sdk` source, pinned package/lockfile, binding template, comparison script, [reproduction procedure](MAESTRO_SOURCE_REPRODUCIBILITY.md) | Clean-directory source check 0 errors/0 warnings; compile 81 nodes/86 edges; pinned CLI 1.205.0 product validation `Valid`; exact node-ID and edge-tuple comparison passed | Target tenants must supply their own ignored bindings; CLI 1.206.0 has a documented dynamic Quick Form validator regression | - |
 | 37 | Complete backend regression suite | A | fresh pytest run | **478 passed**, 0 failed, 0 skipped, 1 warning, 145.37s | None | - |
 | 38 | Frontend tests and production build | A | fresh Vitest/TypeScript/Vite | **18 passed**, 0 failed, 0 skipped; build successful; production dependencies report 0 advisories | None | - |
-| 39 | Native Maestro evaluation runs | C | `evals/` | Dataset has zero data points and no evaluation-run result | Add and run whole-flow and agent/tool-call evaluations | P1 |
-| 40 | Judge reproduction material | B | current docs and solution | Core commands exist, but root docs contradict current state and tenant bindings are not consolidated | Produce one clean submission guide/package and source revision | P0 |
+| 39 | Native Maestro evaluation runs | B | `evals/`, [native evaluation report](MAESTRO_EVALUATION_REPORT.md) | Ten logical cases created; native TRF-1001 Flow run `816ba84e-ebbf-34a0-9342-e8df51d775cd` passed at 1.0; inline-Agent node run failed before agent output because its upstream file expression is unavailable in node scope | Establish a supported isolated Agent/file harness before claiming Agent evaluation completion | P1 |
+| 40 | Judge reproduction material | A | current root docs, API inventory, deployment and judge guides | Current architecture, pinned CLI, bindings, reviewer assignment, and versioned historical evidence are consolidated | A second-tenant rehearsal remains a separate portability limitation | - |
 | 41 | TRF-1001 current CLEAN live control | A | PEX-3a66..., instance ab6e29d9... | 1.1.1 completed CLEAN and skipped document/agent/form nodes | None | - |
 | 42 | TRF-1002 current approval live path | A | PEX-f260..., instance de4d8ce5... | Analyze Files, approval, execution, verification and audit completed | None | - |
 | 43 | TRF-1002 current rejection live path | A | PEX-6cff..., instance 9ce7b7cd... | Analyze Files, rejection, verification and audit completed | None | - |

@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "id": "dfb36f01-2578-44e3-8a1b-fb3f972bbb3e",
+  "name": "Submission Flow Clean Safety",
+  "evaluatorRefs": [
+    "flow-outcome-exact-267c8f58",
+    "clean-routing-trajectory-1bd50eae"
+  ],
+  "evaluations": [
+    {
+      "id": "8bce2932-79c3-4b4a-bd29-f7a494b17307",
+      "name": "TRF-1001 clean routing",
+      "inputs": {
+        "transferId": "TRF-1001",
+        "reviewerReference": "NATIVE_EVAL",
+        "enableIXP": false
+      },
+      "expectedOutput": {
+        "result": {
+          "workflowOutcome": "CLEAN"
+        }
+      },
+      "evaluationCriterias": {
+        "clean-routing-trajectory-1bd50eae": null,
+        "flow-outcome-exact-267c8f58": {
+          "expectedOutput": {
+            "result": {
+              "workflowOutcome": "CLEAN"
+            }
+          }
+        }
+      },
+      "createdAt": "2026-11-22T21:27:58.541Z",
+      "updatedAt": "2026-11-22T21:27:58.541Z"
+    }
+  ],
+  "selectedEntrypoint": "StartTransferInvestigation",
+  "fileName": "evaluation-set-submission-flow-clean-safety-dfb36f01.json",
+  "createdAt": "2026-11-22T21:26:38.923Z",
+  "updatedAt": "2026-11-22T21:27:58.541Z"
+}

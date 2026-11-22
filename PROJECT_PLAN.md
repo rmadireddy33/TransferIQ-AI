@@ -1,70 +1,98 @@
-# TransferIQ AI Project Plan
+# TransferIQ AI project plan and status
 
-Current Step 11 milestone: Phase A manual-file and Phase B automated no-upload paths are live-proven. Active solution 1.1.1 processed real portal TRF-1002 approval and rejection runs through PDF retrieval, genuine Analyze Files spans, deterministic document/API validation, Quick Form outcomes, and verified audit. The post-1.1.1 TRF-1001 CLEAN control bypassed document analysis, plan creation, and human review. SEC-104 remained unresolved at `-20`; corrections and position changes remained zero. Focused tests pass 125/125 and the complete suite passes 478/478. See [STEP11_AGENT_DOCUMENT_ANALYSIS.md](docs/STEP11_AGENT_DOCUMENT_ANALYSIS.md).
+Current release: **UiPath solution 1.1.1**  
+Current assessment: **READY WITH LIMITATIONS**  
+Current canonical Flow: **81 nodes / 86 edges, Valid**
 
-Previous Step 10B milestone: the controlled portal-to-Maestro integration is deployed and enabled. UiPath solution 1.0.1 completed a real portal-triggered TRF-1002 approval through the Autonomous Agent and Quick Form, with `REVIEWED_WITH_OPEN_EXCEPTIONS`, `VERIFIED_DEMO_STATE`, unchanged positions, and SEC-104 still unresolved at -20. See [STEP10B_PORTAL_MAESTRO_INTEGRATION.md](docs/STEP10B_PORTAL_MAESTRO_INTEGRATION.md).
+This plan records implemented milestones and remaining work. Historical Step documents preserve evidence from the version named in each file; they do not override the current status below.
 
-Previous Step 10A milestone: the read-only Operations Portal is implemented with dashboard, transfer, reconciliation, investigation, review/audit, and document views. The SPA uses only public GET contracts and is served by FastAPI at `/portal`. It does not perform human decisions or alter financial state. The user completed the Render deployment; production health, catalog, portal shell, deep link, compiled asset, desktop rendering, and mobile rendering are verified. Browser/unit, build, same-origin hosting, backend regression, and production results are recorded in [STEP10A_OPERATIONS_PORTAL.md](docs/STEP10A_OPERATIONS_PORTAL.md).
+## Completed milestones
 
-Current milestone: manually authored Quick Form preserved; downstream approval/rejection adapters repaired. Real original-flow approval, rejection and CLEAN control verified; 460 local tests passed. See [current Step 9 verification](docs/STEP9_MANUAL_FORM_VERIFICATION.md) for remaining live cases.
+| Milestone | Delivered outcome |
+|---|---|
+| Steps 1-2: core backend | FastAPI/SQLAlchemy/Pydantic/SQLite service, fictional entities, immutable source positions, receiving staging, idempotent transfer creation, private API authentication, and seed data. |
+| Step 3: reconciliation | Decimal comparison, corporate actions, identifier mappings, cost-basis handling, persisted exceptions, five allowlisted scenarios, and historical runs. |
+| Step 4: private documents | Generated/private PDFs, validated uploads, metadata/download APIs, checksums, generated storage keys, pending-write recovery, and migrations. |
+| Step 5: anonymous demo runs | TTL/quota-bound isolated SQLite/PDF runs, credential-free synthetic APIs, Flow HTTP orchestration, CLEAN and investigation routing, and failure terminals. |
+| Step 6: live Maestro proof | Real cloud traces for primary scenarios and bounded error behavior. |
+| Step 7: IXP exploration | File and evidence contracts were explored. IXP-in-Flow was confirmed unavailable in the Community tenant; it is not claimed as implemented. |
+| Step 8: Autonomous Agent | Real TransferInvestigationAgent, structured recommendations, independent output validation, API evidence, and controlled failures. |
+| Step 9: human review | Real Approve/Reject Quick Form, capability-scoped demo plan preview/decision/execution, independent verification, append-only audit, and verified approval/rejection paths. |
+| Step 10A: portal | React/TypeScript/Vite portal, five public fictional scenarios, read-only evidence views, same-origin FastAPI hosting, and responsive UI. |
+| Step 10B: portal trigger | Signed operator session, CSRF/idempotency controls, authenticated HTTP Webhook, durable PEX correlation, and shared Manual/Webhook Flow graph. |
+| Step 10C: status | Accurate lifecycle projection, terminal-aware bounded polling, reload-safe tracking, audit/transfer links, and workflow-vs-transfer completion distinction. |
+| Step 11: document analysis | Automated fictional PDF retrieval, real Agent Analyze Files attachment, deterministic comparison to corporate-action API, API-only fallback, and live 1.1.1 approval/rejection/CLEAN evidence. |
+| Reproducibility remediation | Source check 0/0, clean compile 81/86, product-valid candidate, semantic comparison, binding template, and pinned CLI 1.205.0. |
 
-Earlier milestone notes below are historical; the linked verification supersedes their Quick Form blocker status.
+## Verification baseline
 
-Current follow-up: the November 9 null agent-output contract rejection is fixed and live-verified. The corrected TRF-1002 run reaches plan preview HTTP 200, but Quick Form still fails with HTTP 400 / 170000. Product validation and 50 focused tests pass. The temporary 76-node form candidate has Approve/Reject only. Full-form restoration and human completion remain acceptance work, not completed milestones. See [latest diagnosis](docs/STEP9_NOV9_DATA_DIAGNOSIS.md).
+- Backend: **479 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
+- Frontend: **22 passed**, production build successful.
+- Canonical Flow: product validation **Valid**.
+- Editable source: **0 errors / 0 warnings**; clean compile **81 nodes / 86 edges**.
+- Solution: **1.1.1 Active / Successful**.
+- Real retained 1.1.1 evidence: TRF-1001 CLEAN; TRF-1002 Analyze Files approval and rejection; unchanged positions; verified audit.
 
-Requested **Step 9 — Human-in-the-Loop Exception Review** is locally implemented and product-validated. It adds a real Quick Form and isolated, capability-scoped demo disposition/audit state, with no financial corrections. Live acceptance is **partially verified**: backend redeployment returned 201/200 for review creation/preview, and actual TRF-1001 completed CLEAN. TRF-1002 investigation/preview succeeds but Quick Form creation fails with UiPath HTTP 400 / incident 170000, including one bounded same-user GUID comparison. No human task/completion is claimed. Resolve the task-service rejection before continuing approve/reject, TRF-1004 and TRF-1005 human-review acceptance. See [implementation/deployment](docs/STEP9_HUMAN_APPROVAL.md), [API contracts](docs/STEP9_API_CONTRACTS.md) and [executed tests](docs/STEP9_TEST_RESULTS.md). This requested step is distinct from the original frontend Phase 9. Earlier requested-step descriptions below describe what was added at those steps; private authenticated approval and real financial correction remain deferred.
+These are recorded audit/remediation results, not tests rerun by every documentation update.
 
-Requested **Step 8 ? Autonomous AI Transfer Investigation** is implemented with optional IXP disabled by default, real Autonomous Agent invocation and independent output validation. This requested step number is distinct from the original roadmap's Phase 8 (human approval orchestration), which remains deferred. Actual TRF-1001 CLEAN and TRF-1002 investigation runs are verified, with unchanged positions. Supplemental reference deployment is verified: its GET returns 200 and a new TRF-1002 Maestro run returns INVESTIGATION_COMPLETED without missing supplemental evidence, preserving the unresolved shortage. See [post-deployment evidence](docs/STEP8_DEPLOYED_VERIFICATION.md). See [integration and remaining work](docs/STEP8_AGENT_INTEGRATION.md) and [actual verification](docs/STEP8_AGENT_TEST_CASES.md). No financial corrections, human forms or frontend were added.
+## Current priorities
 
+### P0 - documentation and provenance
 
-Requested Step 7 (IXP within the existing Flow) is **partially implemented**, not an accepted live integration. File input, evidence routing, scoped reference API, taxonomy specification and deterministic validation are prepared. Acceptance still requires creating the model in Studio Web, inspecting its actual output, deploying the new reference GET and running real PDF/negative extraction tests. Reconciliation regressions remain required. See [IXP Step 7 setup](docs/IXP_STEP7_SETUP.md).
+- Keep root, deployment, judge, and environment guidance aligned with release 1.1.1.
+- Treat old incident and milestone documents as historical evidence.
+- Keep tenant bindings and secrets outside source control.
+- Maintain source/package/deployment provenance in the owner's external version-control process; this workspace does not assert it.
 
-Step 1 is complete. Step 2 expands original Phase 2 to include the core models, reference/transfer APIs, immutable positions, receiving staging, synthetic seed, and creation audit/idempotency from original Phase 3. Step 3 now implements the deterministic comparison portion of Phase 5, including five scenarios, safe migration, reference evidence, protected endpoints, and historical runs. Step 4 now implements the private document repository, safe v3 migration, 16 fictional PDFs, protected binary downloads, integrity checks, and restart recovery. Mock ACATS processing, financial corrections, approvals, UI, and IXP extraction remain unimplemented. Executed document checks are recorded in docs/STEP4_VERIFICATION.md. See docs/STEP3_VERIFICATION.md for executed checks. The phase table below is the longer-term roadmap; its verification checkpoints are acceptance criteria. Executed Step 2 verification is recorded in `docs/STEP2_VERIFICATION.md`.
+### P1 - evaluation and portable rehearsal
 
-Step 5 now uses five anonymous HTTP requests: create a synthetic run, retrieve transfer/source/staging context and reconcile. The existing 28-node Flow validates without Flow warnings and has executed in the actual UiPath runtime: TRF-1001 CLEAN, TRF-1002/TRF-1005 INVESTIGATION_REQUIRED. No TransferIQ connection or credential is required. Unknown-ID cloud attempts safely returned FAILED but HTTP 429 masked the expected 422 validator response; that negative-response verification remains open. See [setup](docs/MAESTRO_STEP5_SETUP.md) and [actual cloud evidence](docs/MAESTRO_LIVE_EXECUTION.md). Step 8 adds advisory agent investigation; broader outbox, IXP and human approval work remains incomplete.
+- Populate and run native Maestro whole-flow and agent/tool evaluations.
+- Rehearse import, binding, reviewer assignment, validation, and activation in a second tenant.
+- Retain only bounded additional live evidence when it closes a material scenario gap.
 
-| Phase | Deliverables | Dependencies | Verification checkpoint |
-|---|---|---|---|
-| 1. Foundation | Required folders, README, architecture, development guidelines, environment template, ignore rules. | None | Confirm all six files and eleven directories exist; inspect scope and placeholders; confirm no business code, workflows, dependency installation, or live integration claims. |
-| 2. Backend and persistence bootstrap (implemented, plus requested core APIs) | FastAPI application, Pydantic configuration, SQLAlchemy sessions, initial SQLite v1 schema (now safely upgraded to v3), directory creation, core APIs and synthetic seed. | 1 | Test paths, foreign keys, schema initialization, restart persistence, API validation/authentication, immutability, precision, and idempotency. |
-| 3. Core domain and mock systems | Transfer contracts and lifecycle, authenticated APIs, fictional fixture strategy, immutable custody snapshots, mock delivering/receiving firms, mock ACATS, security master. | 2 | Test valid/invalid transitions, forbidden custody update/delete, ownership checks, exact decimal round trips, deterministic mock outcomes, idempotent mutations, and atomic audit writes. |
-| 4. Secure document repository (implemented) | Upload/download APIs, transfer-document relationships, immutable versions, hashes, access controls, interrupted-upload recovery. | 3 | Test authorized access, cross-transfer denial, traversal and oversized/type-invalid files, duplicate upload behavior, version history, interruption recovery, and persistence of metadata plus bytes after restart. |
-| 5. Reconciliation and correction policy | Deterministic engine for all six exception categories, versioned proposals, adjustment ledger, approval persistence and enforcement. Specify allowlists/tolerances first. | 3, 4 | Cover clean match and each exception class; test fractional quantities, rounding, effective dates, unknown cost basis, ambiguous identifiers, stale evidence, rejected/expired/replayed approvals, concurrent apply, rerun reconciliation, and unchanged original custody. |
-| 6. IXP evidence integration | Verify real tenant capabilities and credentials, extraction schema, adapter, evidence mapping and durable job tracking. | 4 | Run an actual extraction on fictional documents and retain sanitized job evidence; test low confidence, missing fields, wrong document correlation, provider failures, timeouts, duplicate results, and unavailable configuration. Mark live checks blocked if credentials are missing. |
-| 7. Autonomous Agent investigation | Verify real agent resource and contract, scoped evidence tools, structured recommendations and backend validation. | 5, 6 | Run actual evidence-backed investigation; test unsupported recommendations, fabricated/missing evidence references, prompt injection, contradictory evidence, uncertainty, and denial of direct correction privileges. |
-| 8. Maestro and human decision orchestration | Flow canvas orchestration, outbox dispatcher, real UiPath invocation, Human Quick Form approval verification, retry/recovery paths. Optional RPA only if retrieval requires it. | 5, 6, 7 | Verify an actual correlated end-to-end run; approve and reject paths; test unauthorized reviewer, self-approval, stale task, duplicate callback, ambiguous dispatch timeout, restart recovery, and no correction before verified authorization. Verify optional RPA separately if added. |
-| 9. Operations frontend | React/TypeScript/Vite/Tailwind transfer views, document submission, exception evidence, status and audit views, secure operator/reviewer sessions. | 3, 4, 5; integrated status requires 8 | Test browser flows against real backend contracts, loading/error/empty states, access isolation, keyboard navigation, session/CSRF controls, and absence of service secrets in frontend assets. |
-| 10. Railway deployment and demonstration | Build frontend for FastAPI, one service/worker/replica, one /data volume, runtime secrets, backup/restore procedure, fictional demo scenarios and operating guide. | 2-9 | Test fresh deployment, upgrade, restart and redeploy persistence, writable mounted storage, SQLite concurrency/WAL behavior, document retention, backup restore consistency, live UiPath callback reachability/authentication, and full success/rejection/failure demos. |
+### Completed - demo clarity
 
-## Dependency sequence
+- The active transfer and PEX views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable using sanitized persisted state.
+- The unused legacy progress component and active-source encoding artifacts were removed.
+- The active timeline renders six backend-derived stages and separates workflow completion from unresolved brokerage exceptions.
 
-Requested backend-only deployment preparation is complete independently of frontend/IXP/agent work: root Railpack configuration, persistent-volume startup checks, runtime-only migrations, missing-only demo seeding, production key enforcement and readiness. Verification: 243 local tests passed, including isolated real HTTP restarts and migration failure exit behavior. The [Railway operating guide](docs/RAILWAY_DEPLOYMENT.md) records exact configuration. This does not mark Phase 10 complete: actual Railway build/deploy, public HTTPS, mounted-volume redeployment persistence and backup restoration remain acceptance gates. No new UiPath nodes or UI were implemented.
+### P2 - optional scope
 
-```text
-1 -> 2 -> 3 -> 4 -> 5
-               4 -> 6
-          (5, 6) -> 7
-       (5, 6, 7) -> 8
-       (3, 4, 5) -> 9; integrate orchestration views after 8
-           (2-9) -> 10
-```
+- Add Request Evidence/Escalate outcomes only if explicitly added to scope and live-verified.
+- Optionally expose a non-secret build identifier and document coordinated SQLite/PDF backup restoration.
 
-No phase may claim completion solely from a mocked external response. Unit tests may use clearly labeled test doubles; actual UiPath verification is a separate gate. Record commands, observed results, failed checks, and blocked checks honestly. Each implementation phase must update documentation to match delivered behavior before advancing.
+## Acceptance invariants
 
-## Specialist routing for later work
+Future changes must preserve:
 
-Use UiPath platform guidance before making UiPath API calls, IXP guidance for extraction configuration, agent guidance for the Autonomous Agent, Maestro Flow guidance for Automate orchestration, and human-in-the-loop guidance for Quick Form authoring. Use RPA guidance only if retrieval automation is required. Product availability and resource contracts must be verified in the actual tenant; no tenant discovery or deployment is part of Phase 1.
+- fictional data only;
+- SQLite and private generated document storage under DATA_DIR;
+- immutable source custody and receiving staging quantities;
+- Decimal/scaled deterministic financial calculations;
+- unknown cost basis never fabricated as zero;
+- no correction authorized from AI extraction alone;
+- scoped/idempotent writes and append-only audit;
+- secrets and tenant identifiers outside source;
+- explicit unavailable/failure states instead of simulated integrations;
+- enableIXP=false unless a supported, verified tenant capability is deliberately introduced;
+- workflow completion distinct from brokerage transfer completion.
 
-## Immediate next implementation step
+## Out of scope
 
-Anonymous run-isolated execution is deployed and verified for valid scenarios through actual Maestro traces. Private APIs remain protected. Remaining negative check: capture the unknown-ID 422 response without public rate-limit interference. No public workflow trigger exists; judges start the Flow within their own UiPath environment. Reproduction and remaining dependencies are documented in [JUDGING_ACCESS.md](docs/JUDGING_ACCESS.md).
+- real clients, holdings, ACATS, trading, settlement, or custody mutation;
+- production identity/authorization for financial approval;
+- public arbitrary uploads, corrections, resets, or approval controls;
+- PostgreSQL, MySQL, MongoDB, Redis, or another database service;
+- claims that IXP-in-Flow ran in the Community tenant;
+- deployment merely to validate documentation.
 
-The backend is hosted on Render and the user-deployed Step 8 supplemental-reference route is now verified by real HTTP and Maestro runs. Follow [RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md) for future deployment and disk settings; this verification does not add a new redeployment-persistence test. The earlier Railway preparation remains an alternative. The Step 8 supplemental-reference GET is now deployed and the TRF-1002 agent scenario has been rerun successfully; preserve that evidence when advancing. IXP extraction and approval enforcement remain separate later work.
+## Authoritative references
 
-
-
-November 9 isolated Quick Form test: five-node Flow validates and creates Pending task 100292180. Human completion/result capture pending; original Quick Form failure remains unresolved. See docs/STEP9_QUICK_FORM_SMOKE_TEST.md.
-
-Working-form port remains blocked on original AppTasks task creation. Standalone approval completed and the exact real summary creates a task independently. See docs/STEP9_WORKING_FORM_PORT.md; do not mark original human-review acceptance complete.
-
-Saved comments-field editor mismatch corrected locally; product validation Valid and8focused tests passed. Live AppTasks task-creation acceptance remains separate and unverified by this edit.
+- [Final project audit](docs/FINAL_PROJECT_AUDIT.md)
+- [Feature completeness matrix](docs/FEATURE_COMPLETENESS_MATRIX.md)
+- [Submission gap list](docs/SUBMISSION_GAP_LIST.md)
+- [Judge reproduction guide](docs/JUDGE_REPRODUCTION_GUIDE.md)
+- [Render deployment](docs/RENDER_DEPLOYMENT.md)
+- [Flow source reproducibility](docs/MAESTRO_SOURCE_REPRODUCIBILITY.md)
+- [Portal status](docs/STEP10C_PORTAL_STATUS.md)
+- [Agent document analysis](docs/STEP11_AGENT_DOCUMENT_ANALYSIS.md)

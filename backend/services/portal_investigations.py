@@ -34,6 +34,7 @@ investigations = Table(
     Column("review_status", String(32), nullable=False),
     Column("workflow_outcome", String(64), nullable=True),
     Column("verification_status", String(64), nullable=True),
+    Column("document_evidence_status", String(64), nullable=True),
     Column("error_summary", String(512), nullable=True),
     Column("audit_reference", String(64), nullable=True),
     Column("run_id", String(64), nullable=True, unique=True),
@@ -75,17 +76,21 @@ class PortalInvestigations:
             tables = set(inspect(connection).get_table_names())
             if version == 0 and not tables:
                 metadata.create_all(connection)
-                connection.exec_driver_sql("PRAGMA user_version=2")
-            elif version == 1 and tables == {"portal_investigations"}:
-                # Step 10C adds only a nullable projection field. Preserve every
+                connection.exec_driver_sql("PRAGMA user_version=3")
+            elif version in {1, 2} and tables == {"portal_investigations"}:
+                # Presentation projections are nullable and preserve every
                 # existing tracking row while upgrading the isolated registry.
                 columns = {item["name"] for item in inspect(connection).get_columns("portal_investigations")}
                 if "verification_status" not in columns:
                     connection.exec_driver_sql(
                         "ALTER TABLE portal_investigations ADD COLUMN verification_status VARCHAR(64)"
                     )
-                connection.exec_driver_sql("PRAGMA user_version=2")
-            elif version != 2 or tables != {"portal_investigations"}:
+                if "document_evidence_status" not in columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE portal_investigations ADD COLUMN document_evidence_status VARCHAR(64)"
+                    )
+                connection.exec_driver_sql("PRAGMA user_version=3")
+            elif version != 3 or tables != {"portal_investigations"}:
                 raise RuntimeError("Unsupported portal investigation registry schema; no reset performed")
 
     @contextmanager
@@ -142,6 +147,7 @@ class PortalInvestigations:
                 "review_status": "NOT_STARTED",
                 "workflow_outcome": None,
                 "verification_status": None,
+                "document_evidence_status": None,
                 "error_summary": None,
                 "audit_reference": None,
                 "run_id": None,
@@ -212,6 +218,7 @@ class PortalInvestigations:
             "reviewStatus": row["review_status"],
             "workflowOutcome": row["workflow_outcome"],
             "verificationStatus": row["verification_status"],
+            "documentEvidenceStatus": row["document_evidence_status"],
             "startedAt": _iso(row["created_at"]),
             "lastUpdated": _iso(row["updated_at"]),
             "deadlineAt": _iso(row["deadline_at"]),
