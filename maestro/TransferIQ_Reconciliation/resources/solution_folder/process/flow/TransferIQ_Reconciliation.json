@@ -54,8 +54,28 @@
         "folderKey": "33177cc5-ad70-4e48-bc87-238e431b4048"
       },
       {
+        "bindingType": "process",
+        "bindingKey": "solution_folder.TransferIQ_Document_Retrieval",
+        "bindingValues": {
+          "folderPath": {
+            "defaultValue": "solution_folder",
+            "isExpression": false
+          },
+          "name": {
+            "defaultValue": "TransferIQ_Document_Retrieval",
+            "isExpression": false
+          }
+        },
+        "bindingMetadata": {
+          "activityName": "RetrieveCorporateActionDocument",
+          "bindingsVersion": "2.2",
+          "solutionsSupport": "true"
+        },
+        "resourceKind": "Process"
+      },
+      {
         "bindingType": "EventTrigger",
-        "bindingKey": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e_f03ff64a-0103-400f-8000-f13ce0120103",
+        "bindingKey": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e_PortalWebhook",
         "bindingValues": {
           "connectionId": {
             "defaultValue": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
@@ -79,12 +99,12 @@
       },
       {
         "bindingType": "Property",
-        "bindingKey": "GENERIC_f03ff64a-0103-400f-8000-f13ce0120103",
+        "bindingKey": "GENERIC",
         "bindingValues": {},
         "bindingMetadata": {
           "activityName": "HTTP Webhook",
           "bindingsVersion": "2.2",
-          "parentResourceKey": "EventTrigger.f6f0ad2a-4998-43d7-aa24-24f6b2fc852e_f03ff64a-0103-400f-8000-f13ce0120103",
+          "parentResourceKey": "EventTrigger.f6f0ad2a-4998-43d7-aa24-24f6b2fc852e_PortalWebhook",
           "objectName": "HTTP_WEBHOOK",
           "triggerCreateParameters": "",
           "overwritable": true

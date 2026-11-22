@@ -1,6 +1,6 @@
 # Step 11 — Autonomous Agent document evidence analysis
 
-Status: **Phase A is live-verified with a genuine UiPath Analyze Files invocation. Phase B automated retrieval is implemented, locally tested, and product-validated, but is not deployed or live-verified.**
+Status: **Phase A and Phase B are live-verified. Active solution 1.1.1 completed real no-upload portal-triggered TRF-1002 approval and rejection runs, plus a TRF-1001 CLEAN control. The rejection run used automated PDF retrieval, a genuine Analyze Files tool call, deterministic document/API validation, a real Quick Form rejection, independent verification, and append-only audit. SEC-104 remained unresolved at -20, positions were unchanged, and IXP was not invoked.**
 
 The existing Manual Trigger, `PortalWebhook`, Autonomous Agent, Quick Form, review ledger, audit path, deterministic reconciliation, and financial immutability rules are preserved. IXP remains disabled by default and was not invoked.
 
@@ -121,13 +121,34 @@ The Manual Trigger, webhook trigger, Quick Form, decision branches, audit calls,
 
 Phase A is proven by the real instance above. The job logs demonstrate actual Analyze Files activity and PDF retrieval. No mocked extraction is being presented as live evidence.
 
-The Phase B API Workflow has not been executed in UiPath, and no portal-triggered Phase B run has been launched. The production Render deployment therefore does not yet prove automated retrieval.
+The Phase B API Workflow is installed and active in UiPath solution version 1.1.0. Portal request `PEX-13e348fd5f1a4e87884e4abfa866d21b` executed it successfully and therefore also production-verified the matching Render metadata/content endpoints. The Flow stopped at agent startup before Analyze Files because of the attachment metadata type mismatch documented below, so automated analysis is not yet accepted end to end.
+
+### First portal Phase B run — bounded failure
+
+| Item | Actual result |
+|---|---|
+| PEX | `PEX-13e348fd5f1a4e87884e4abfa866d21b` |
+| Flow instance | `7864b5c0-f881-4bd1-91fa-197a0f800733`, package 1.1.0 |
+| API Workflow | `TransferIQ_Document_Retrieval@1.1.0` — completed |
+| Document | `DOC-be94ea38-bd83-4d14-b03b-af83c8322348`, `CORPORATE_ACTION_NOTICE`, PDF |
+| Retrieval | `AVAILABLE`; metadata, content, checksum, base64 conversion, and attachment return completed |
+| Agent | Failed at startup with `AGENT_STARTUP.INPUT_VALIDATION_ERROR` |
+| Downstream | Analyze Files, plan preview, Quick Form, decision, disposition, and final audit did not run |
+
+The API Workflow returned a genuine job attachment whose metadata contained `Size: 2627` as an integer. The deployed agent input schema defined `Metadata.additionalProperties` as strings, so startup rejected `agentDocument.Metadata.Size` before the LLM or Analyze Files tool could run. This is the Agents input-schema-validation playbook's Variant B: the caller payload and declared input schema disagree on a field type.
+
+The deterministic reconciliation completed safely before that failure. SEC-103 remained explained by `CA-2026-081`; SEC-104 remained unresolved at expected 120 versus staged 100, difference `-20`. No plan or decision was created, `correctionsApplied=0`, `transferCompleted=false`, and positions remained unchanged.
+
+The correction is limited to the API Workflow response boundary. `TransferIQ_Document_Retrieval` now returns the same real `JobAttachment` ID, filename, MIME type, and bytes while converting each metadata value to its canonical string representation. For example, the provider-generated integer `Size: 2627` becomes `Size: "2627"`. The canonical agent `JobAttachment` schema remains unchanged, and the Flow still binds the API Workflow file output directly to the existing agent input. Retrieval logic, prompt, evidence validation, reconciliation, Quick Form, webhook, and financial rules are unchanged.
 
 ### Local and product verification
 
 - `uip api-workflow validate ...` — Valid.
 - `uip api-workflow build ...` — Success.
 - Canonical `uip maestro flow validate ... --output json` — Valid.
+- Inline `TransferInvestigationAgent` validation — Valid; Analyze Files resource present.
+- Post-fix focused Step 11/demo/Maestro suite — **125 passed**, zero failures/errors/skips, 30.496 seconds.
+- Post-fix complete suite — **478 passed**, zero failures/errors/skips, 152.554 seconds, with the existing Starlette/httpx deprecation warning.
 - Backend document endpoint tests — 13 passed.
 - Focused Step 11/demo/graph tests — 22 passed.
 - Step 8/9/11 rerun after fallback correction — 65 passed.
@@ -138,21 +159,92 @@ An earlier complete run produced 477 passed and one failed security-inventory as
 
 The local runner uses an explicit test double for the API Workflow and defaults it to `UNAVAILABLE`; it does not fabricate file-analysis success.
 
-## Deployment and bounded acceptance
+The Flow SDK source checker still reports pre-existing brownfield reconstruction diagnostics around the manually authored Quick Form. The installed canonical Flow itself product-validates as `Valid` with no warnings. A candidate Flow-side metadata conversion was rejected because product validation warned that the expression was not a file, so it was not installed. The canonical Flow artifact was left unchanged.
 
-Phase B requires both Render and UiPath deployment. Deploy in this order:
+## UiPath deployment — 2026-11-13 UTC
 
-1. Deploy the current backend to Render so the new run-scoped content endpoint exists.
-2. Verify `/health`, `/openapi.json`, and one bounded content request against an isolated demo run. Do not expose document content in logs.
-3. Pack and publish a new solution version; do not overwrite deployed 1.0.1 without a version bump.
-4. Deploy/upgrade the solution and confirm both `TransferIQ_Document_Retrieval` and `TransferIQ_Reconciliation` are active with their real solution resources.
-5. Run one portal-triggered TRF-1002 investigation.
-6. Inspect the API Workflow job, the Analyze Files tool invocation/output, the Quick Form, plan, verification, and audit for that same PEX correlation.
-7. Confirm SEC-103 is independently verified, SEC-104 remains `-20`, positions are unchanged, and the portal reports the persisted final state.
-8. Run the rejection and CLEAN controls once each only after the first automated retrieval succeeds.
+The solution was refreshed, packed, published, and upgraded in place using the UiPath Solution CLI.
 
-Do not repeatedly retry an identical failure. `PORTAL_INVESTIGATION_ENABLED`, webhook configuration, IXP defaults, and financial reconciliation rules require no Step 11 change.
+- Local manifest projects: `TransferIQ_Reconciliation` (`Flow`) and `TransferIQ_Document_Retrieval` (`Api`).
+- Resource refresh: Success; three existing resources retained. The known `Connection ImplicitConnection not found in Resource Catalog` advisory remained unchanged.
+- Packed artifact: `TransferIQ-AI_1.1.0.zip`, 136,987 bytes.
+- Package SHA-256: `44A6D17404E0C0E74C032255010D242B61F4666C1EB665C8F100208A9F9EF396`.
+- Package contents include both project NuGet packages, both process resources, and the existing HTTP Webhook connection resource.
+- Publish: Success; package version key `66fc990e-979e-4864-8156-72d1709e3666`.
+- In-place upgrade: `VersionChange` from 1.0.1 to 1.1.0.
+- Pipeline deployment: `dc11e7df-4f68-490a-b3c3-08df40c858d6`.
+- Current deployment key: `6fbd4477-dbce-4713-88c6-e39f780ca6c5`.
+- Stable install deployment key: `f65f12c0-511a-4a7e-b8d8-a21a6e9568e3`.
+- Deployment status: `SuccessfulActivate`; activation status: `Active` in `DemoFolder`.
+- Package status after verification: version 1.1.0 `Active`, with no upgradeable deployment remaining.
+
+No business Flow execution was launched during deployment. Application tests were not rerun after this packaging-only operation; the latest complete application result remains 478 passed as recorded above.
+
+### Metadata fix deployment — solution 1.1.1
+
+- Changed project: `TransferIQ_Document_Retrieval/Workflow.json`; the response keeps the real attachment and string-normalizes only `Metadata` values.
+- Contract test updated: `tests/test_step11_agent_documents.py` verifies the packaged workflow contains the normalization.
+- Resource refresh: Success; zero created/imported, three retained, zero pruned. The existing `ImplicitConnection` catalog advisory is unchanged.
+- Packed artifact: `TransferIQ-AI_1.1.1.zip`, 136,935 bytes.
+- Package SHA-256: `99A43BDD7314400DC644EE5F9A79C40B712771E76AA793134964F24ECAACDBDA`.
+- Package inspection confirmed both `TransferIQ_Document_Retrieval` and `TransferIQ_Reconciliation`, plus both process resources and the existing webhook connection resource.
+- Nested API package inspection confirmed the deployed `Workflow.json` contains both the metadata mapping and `String(value)` conversion.
+- Publish: Success; package version key `82c69f87-4bba-4d33-ac75-f0ae1460e5e0`.
+- In-place upgrade: `VersionChange` from 1.1.0 to 1.1.1.
+- Pipeline deployment: `20dae121-1fb8-4adc-b3c8-08df40c858d6`.
+- Current deployment key: `75f527d5-a4d3-47f8-bc17-b404d0a1c982`.
+- Stable install deployment key: `f65f12c0-511a-4a7e-b8d8-a21a6e9568e3`.
+- Upgrade result: `DeploymentSucceeded / SuccessfulActivate`.
+- Post-upgrade inventory: package/current version `1.1.1 / 1.1.1`, operation `Successful`, activation `Active`.
+
+### Post-fix no-upload portal acceptance — 2026-11-13
+
+Portal request `PEX-f260efcbaaf04b52ab97bb693da1f922` executed the active 1.1.1 deployment without a manual file upload.
+
+| Item | Actual result |
+|---|---|
+| Flow instance | `de4d8ce5-076f-4ee0-90b0-3058514257d0`, package 1.1.1, Completed, no incidents |
+| Demo run | `DEMO-2c8c963b60b047efbbf993fbbb4d6a4f` |
+| API Workflow document | `DOC-dd25eb90-af4b-47e8-9895-38dc14260644`, `CORPORATE_ACTION_NOTICE`, `application/pdf`, `AVAILABLE` |
+| Attachment contract | `Metadata.Size="2627"`, `Metadata.Encoding="byte-array"`; agent startup accepted the file |
+| Agent job | `2b79ee78-c174-4311-92ba-826348a6291c`, Serverless, Successful |
+| Analyze Files | Real `Tool call - Analyze_Files` and `Analyze_Files` spans completed successfully; attachment metadata and PDF download requests returned HTTP 200 |
+| Quick Form | Task `100314822`, completed with Approve and comment `approved` |
+| Resolution plan | `PLAN-e8981354-39c2-42c8-af60-6586852fda8f`, `EXECUTED` |
+| Final result | `REVIEWED_WITH_OPEN_EXCEPTIONS` / `VERIFIED_DEMO_STATE` |
+
+Analyze Files extracted `SEC-103`, `STOCK_SPLIT`, ratio `2:1`, effective date `2026-08-10`, notice date `2026-08-15`, and evidence reference `CA-2026-081`. The agent correctly labelled its own extraction `NOT_VALIDATED`. The deterministic Flow validator independently compared those fields with the corporate-action API and promoted the structured document evidence to `VERIFIED`, with empty discrepancies and missing fields.
+
+The validated investigation had no missing evidence. SEC-103 was proposed and recorded as `ACCEPT_VERIFIED_EXPLANATION / ACKNOWLEDGED`. SEC-104 was proposed and recorded as `ESCALATE_TO_TRANSFER_OPERATIONS / OPEN_ESCALATED`; expected quantity remained 120, receiving quantity 100, difference `-20`, and resolution status `UNRESOLVED`.
+
+Bounded production reads returned HTTP 200 for the executed plan, audit, and reconciliation. The audit contains exactly `PLAN_PREVIEWED`, `DEMO_REVIEW_RECORDED`, and `DEMO_DISPOSITION_EXECUTED`; the execution event records `positionsChanged=false`. Final verification reports `positionsUnchanged=true`, `transferCompleted=false`, and `correctionsApplied=0`.
+
+Runtime variables and logs were sanitized locally: review capabilities and signed attachment URLs were redacted, and trace payload attributes were removed while retaining correlated span names, statuses, timestamps, and job identifiers.
+
+## Post-fix rejection and CLEAN controls — 2026-11-13 UTC
+
+Both remaining controls were executed once against active solution 1.1.1 and independently inspected through UiPath runtime state and bounded production reads.
+
+### Portal rejection
+
+Portal request `PEX-6cff39d5bba245f386157c2c76263229` correlated to Flow instance `9ce7b7cd-1086-4db4-9590-a9fee5a04ca3`, package 1.1.1. The instance completed with zero incidents. Demo run `DEMO-ac0ef880d3d0475fb3e56f0dcfe9ed97` retrieved the corporate-action PDF and ran agent job `175a2785-d544-44de-972c-68330c445b9f`. Correlated traces contain successful `Tool call - Analyze_Files` and `Analyze_Files` spans.
+
+The agent extracted `SEC-103`, `STOCK_SPLIT`, ratio `2:1`, effective date `2026-08-10`, notice date `2026-08-15`, and evidence reference `CA-2026-081` from document `DOC-6375ddb6-c00c-4c42-b06f-b673c6b8f4d0`. It labelled that extraction `NOT_VALIDATED`; deterministic `ValidateInvestigation` independently promoted it to `VERIFIED`, with no missing evidence or discrepancies.
+
+Quick Form task `100315016` completed with **Reject** and comment `Rejected for Step 11 validation`. Plan `PLAN-e6251613-02d9-487e-a0f8-4cfcc30a1e75` reached `REJECTED`. Bounded production GETs returned HTTP 200 for the plan, audit, verification, and reconciliation.
+
+The audit contains exactly `PLAN_PREVIEWED`, `DEMO_REVIEW_RECORDED`, and `DEMO_DISPOSITION_REJECTED`. Final verification returned `REVIEW_REJECTED / VERIFIED_DEMO_STATE`, `humanReviewOutcome=REJECT`, `positionsUnchanged=true`, and `transferCompleted=false`. SEC-104 remained `UNRESOLVED` at expected 120 versus receiving 100, difference `-20`. No financial correction or position change was applied.
+
+### CLEAN control
+
+Portal request `PEX-3a66c61996514c55bafbae3517f8ef56` correlated to Flow instance `ab6e29d9-1be6-40f2-a236-108c2b721d41`, package 1.1.1, and demo run `DEMO-5680a0a5bbff49f7895b35794ee0db43`. The instance completed with zero incidents and `workflowOutcome=CLEAN`.
+
+The executed-node inventory confirms that document retrieval, `TransferInvestigationAgent`, resolution-plan preview, and Quick Form did not run. The production reconciliation GET returned HTTP 200 with `RECONCILED / COMPLETED`, seven directly matched positions, zero exceptions, and zero differences. This confirms the CLEAN branch avoids unnecessary document analysis and human review.
+
+Runtime variable exports for both controls were sanitized locally: webhook headers, review capabilities, and URLs were redacted before retention.
 
 ## Remaining blocker
 
-There is no remaining Phase A blocker. Phase B acceptance is blocked only by deployment and one bounded real UiPath execution of the new API Workflow path. Until that occurs, automated retrieval must be described as locally implemented and validated, not live-proven.
+There is no Step 11 Phase A, Phase B, approval, rejection, CLEAN-control, backend retrieval, metadata-contract, packaging, activation, or solution-resource blocker. The earlier portal behavior that can retain a failed request as active until its configured server timeout is a separate portal recovery hardening item; it did not affect these completed controls.
+
+No application code changed during this final runtime verification, so no new local pytest run was performed. The latest executed local results remain 125 focused tests passed and 478 complete-suite tests passed, as recorded above.

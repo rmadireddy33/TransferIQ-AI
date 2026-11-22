@@ -8,17 +8,11 @@
     "maxIterations": 3,
     "mode": "standard"
   },
-  "projectId": "c676b28c-8138-4880-9b61-eccc100f5c18",
-  "id": "c676b28c-8138-4880-9b61-eccc100f5c18",
-  "name": "TransferInvestigationAgent",
   "inputSchema": {
     "type": "object",
     "properties": {
       "SerializeInvestigationContext__output": {
         "type": "string"
-      },
-      "ValidateInput__output__corporateActionPdf": {
-        "$ref": "#/definitions/job-attachment"
       },
       "agentDocument": {
         "$ref": "#/definitions/job-attachment"
@@ -27,27 +21,31 @@
     "definitions": {
       "job-attachment": {
         "type": "object",
+        "required": [
+          "ID"
+        ],
+        "x-uipath-resource-kind": "JobAttachment",
         "properties": {
           "ID": {
-            "type": "string"
+            "type": "string",
+            "description": "Orchestrator attachment key"
           },
           "FullName": {
-            "type": "string"
+            "type": "string",
+            "description": "File name"
           },
           "MimeType": {
-            "type": "string"
+            "type": "string",
+            "description": "The MIME type of the content, such as \"application/json\" or \"image/png\""
           },
           "Metadata": {
             "type": "object",
+            "description": "Dictionary of metadata",
             "additionalProperties": {
               "type": "string"
             }
           }
-        },
-        "required": [
-          "ID"
-        ],
-        "x-uipath-resource-kind": "JobAttachment"
+        }
       }
     }
   },
@@ -140,5 +138,8 @@
         }
       ]
     }
-  ]
+  ],
+  "projectId": "c676b28c-8138-4880-9b61-eccc100f5c18",
+  "id": "c676b28c-8138-4880-9b61-eccc100f5c18",
+  "name": "TransferInvestigationAgent"
 }

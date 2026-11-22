@@ -1,0 +1,14 @@
+{
+  "name": "transferiq-reconciliation-flow-source",
+  "private": true,
+  "type": "module",
+  "version": "1.1.1-source",
+  "description": "Pinned local tooling for reproducible TransferIQ Maestro Flow source checks and builds.",
+  "scripts": {
+    "check": "flow-sdk flow check TransferIQ_Reconciliation.flow.ts --source --bindings bindings.json --json"
+  },
+  "devDependencies": {
+    "@uipath/cli": "1.205.0",
+    "@uipath/maestro-builder-sdk": "6.66.5"
+  }
+}

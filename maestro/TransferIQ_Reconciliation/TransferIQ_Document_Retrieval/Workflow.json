@@ -174,7 +174,7 @@
                                   },
                                   {
                                     "Response_Available": {
-                                      "response": "${{ status: 'AVAILABLE', reason: null, documentId: $context.outputs.ValidateContent.documentId, documentType: $context.outputs.ValidateContent.documentType, contentChecksumSha256: $context.outputs.ValidateContent.checksumSha256, file: $context.outputs.Base64ToFile_1.output }}",
+                                      "response": "${{ status: 'AVAILABLE', reason: null, documentId: $context.outputs.ValidateContent.documentId, documentType: $context.outputs.ValidateContent.documentType, contentChecksumSha256: $context.outputs.ValidateContent.checksumSha256, file: { ...$context.outputs.Base64ToFile_1.output, Metadata: Object.fromEntries(Object.entries($context.outputs.Base64ToFile_1.output.Metadata || {}).map(([key, value]) => [key, value == null ? '' : String(value)])) } }}",
                                       "markJobAsFailed": false, "then": "end",
                                       "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_Available\": $output } }" },
                                       "metadata": { "activityType": "Response", "displayName": "Return document attachment", "fullName": "Response" }

@@ -75,6 +75,8 @@ def test_phase_b_uses_real_api_workflow_file_conversion_and_fail_closed_fallback
     serialized = json.dumps(sequence)
     assert serialized.count('"call": "UiPath.Http"') == 2
     assert "$helpers.file.base64ToFile" in serialized
+    assert "Object.entries($context.outputs.Base64ToFile_1.output.Metadata || {})" in serialized
+    assert "String(value)" in serialized
     assert "corporate-action-notice.pdf" in serialized
     assert "contentBase64" in serialized
     assert "UIPATH_WEBHOOK" not in serialized and "API_KEY" not in serialized

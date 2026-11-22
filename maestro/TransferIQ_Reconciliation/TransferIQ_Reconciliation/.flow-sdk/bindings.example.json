@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1",
+  "bindings": [
+    {
+      "id": "<portal-http-webhook-connection-id>",
+      "name": "portalHttpWebhook",
+      "resource": "Connection",
+      "resourceKey": "<portal-http-webhook-connection-id>",
+      "default": "<portal-http-webhook-connection-id>",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "<orchestrator-folder-key>",
+      "name": "shared",
+      "resource": "Connection",
+      "resourceKey": "<orchestrator-folder-key>",
+      "default": "<orchestrator-folder-key>",
+      "propertyAttribute": "FolderKey"
+    }
+  ]
+}
