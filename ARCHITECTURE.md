@@ -41,7 +41,7 @@ The backend uses FastAPI, SQLAlchemy, Pydantic, and SQLite.
 - Core/private APIs manage fictional clients, firms, accounts, securities, transfers, immutable source positions, receiving staging, reconciliation, and private documents. X-API-Key is required, including for GETs.
 - The packaged demo catalog exposes five precomputed fictional scenarios and never queries private live storage.
 - Demo-run APIs create bounded, TTL-governed, run-isolated state. They expose only the selected allowlisted scenario and issue a capability for constrained review writes.
-- Portal APIs authenticate an operator with a short-lived signed HttpOnly cookie, require CSRF and idempotency for starts, and persist sanitized workflow state by executionRequestId.
+- Portal APIs authenticate an operator with a short-lived signed HttpOnly cookie, require CSRF and idempotency for starts, persist sanitized workflow state by executionRequestId, and expose operator-scoped paginated history without exposing registry internals.
 - Resolution services bind plans to transfer, reconciliation, evidence versions, hashes, capabilities, expiry, and decisions. Demo execution records dispositions; it never mutates custody or staging quantities.
 - Audit events are append-only and final verification independently rereads plan, decision, disposition, reconciliation, and audit state.
 
@@ -56,7 +56,7 @@ See [API_SURFACES.md](docs/API_SURFACES.md) for exact routes.
 5. Investigation cases obtain API references and optionally a real PDF attachment, invoke the agent, and independently validate the structured result.
 6. Plan preview persists AWAITING_HUMAN_REVIEW. A real Quick Form captures Approve or Reject in Action Center.
 7. The Flow records the decision, applies only the allowed demo disposition, rereads state, verifies the audit, and persists COMPLETED or FAILED.
-8. The portal reads the same PEX record with bounded polling. Reloading does not start another run.
+8. The portal reads the same PEX record with bounded polling. Reloading does not start another run. The authenticated history route lists existing PEX records newest-first and links back to the same persisted six-stage detail view.
 
 Portal statuses are PENDING, TRIGGERED, INVESTIGATING, AWAITING_HUMAN_REVIEW, COMPLETED, FAILED, and TIMED_OUT. Browser polling expiration never changes server state.
 

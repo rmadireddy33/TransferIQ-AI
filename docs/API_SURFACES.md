@@ -51,10 +51,11 @@ Review-run creation issues a scoped capability. Preview, decision, and execution
 
 - GET /api/portal/session
 - POST /api/portal/session
+- GET /api/portal/investigations?limit={1..50}&offset={0..}
 - POST /api/portal/investigations
 - GET /api/portal/investigations/{executionRequestId}
 
-Starting an investigation requires the signed operator session, CSRF token, and Idempotency-Key. Tracking reads require the session cookie and return sanitized persisted PEX state.
+Starting an investigation requires the signed operator session, CSRF token, and Idempotency-Key. Both history and detail reads require the signed session cookie and return only sanitized persisted PEX state. History is scoped to the authenticated operator, ordered newest-first, and never starts or retries a workflow.
 
 ## Private business and document APIs
 

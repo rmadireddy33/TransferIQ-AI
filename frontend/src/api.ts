@@ -63,6 +63,12 @@ const investigationSchema = z.object({
   proposedActions: z.array(z.record(z.string(), z.unknown())), unresolvedExceptions: z.array(z.record(z.string(), z.unknown())),
   positionsUnchanged: z.boolean().nullable(), transferCompleted: z.boolean().nullable(),
 })
+const investigationHistorySchema = z.object({
+  items: z.array(investigationSchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+})
 
 export type Catalog = z.infer<typeof catalogSchema>
 export type DemoTransfer = z.infer<typeof transferSchema>
@@ -74,6 +80,7 @@ export type RunBundle = {
 export type ReviewBundle = { plan: z.infer<typeof planSchema>; verification: z.infer<typeof verificationSchema>; audit: z.infer<typeof auditSchema> }
 export type PortalSession = z.infer<typeof portalSessionSchema>
 export type InvestigationStatus = z.infer<typeof investigationSchema>
+export type InvestigationHistoryPage = z.infer<typeof investigationHistorySchema>
 export type DocumentEvidenceStatus = InvestigationStatus['documentEvidenceStatus']
 
 export class ApiError extends Error {
@@ -150,6 +157,9 @@ export const api = {
     }),
   investigation: (executionRequestId: string, signal?: AbortSignal) => request(
     `/api/portal/investigations/${encodeURIComponent(executionRequestId)}`, investigationSchema, signal),
+  investigationHistory: (limit = 10, offset = 0, signal?: AbortSignal) => request(
+    `/api/portal/investigations?${new URLSearchParams({ limit: String(limit), offset: String(offset) })}`,
+    investigationHistorySchema, signal),
 }
 
 export function errorMessage(error: unknown) {

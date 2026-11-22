@@ -6,11 +6,12 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 
 from backend.api import portal as portal_api
 from backend.core.config import Settings
 from backend.main import create_app
-from backend.services.portal_investigations import PortalInvestigations
+from backend.services.portal_investigations import PortalInvestigations, investigations
 
 FLOW_SOURCE = Path(__file__).parents[1] / "maestro/TransferIQ_Reconciliation/TransferIQ_Reconciliation/.flow-sdk/TransferIQ_Reconciliation.flow.ts"
 
@@ -101,6 +102,77 @@ def test_authorized_start_is_persisted_idempotent_and_secret_free(tmp_path, monk
         tracked = client.get("/api/portal/investigations/" + body["executionRequestId"])
         assert tracked.status_code == 200
         assert tracked.json()["transferId"] == "TRF-1002"
+
+
+def test_investigation_history_requires_session_and_has_empty_state(tmp_path):
+    settings = configured_settings(tmp_path)
+    with TestClient(create_app(settings)) as client:
+        unauthorized = client.get("/api/portal/investigations")
+        assert unauthorized.status_code == 401
+        assert unauthorized.json()["detail"]["code"] == "portal_authentication_required"
+
+        login(client)
+        history = client.get("/api/portal/investigations?limit=10&offset=0")
+        assert history.status_code == 200
+        assert history.headers["cache-control"] == "no-store"
+        assert history.json() == {"items": [], "total": 0, "limit": 10, "offset": 0}
+        assert client.get("/api/portal/investigations?limit=0&offset=0").status_code == 422
+
+
+def test_investigation_history_is_operator_scoped_newest_first_and_paginated(tmp_path):
+    settings = configured_settings(tmp_path).model_copy(update={
+        "portal_starts_per_minute": 20,
+        "portal_user_max_active": 20,
+        "portal_global_max_active": 20,
+    })
+    settings.data_dir.mkdir(parents=True)
+    registry = PortalInvestigations(settings)
+    own_rows = [
+        registry.create("demo-operator", f"TRF-100{i + 1}", f"history-own-{i}")[0]
+        for i in range(3)
+    ]
+    other = registry.create("different-operator", "TRF-1005", "history-other")[0]
+    with registry.engine.begin() as connection:
+        for index, row in enumerate(own_rows):
+            values = {
+                "created_at": 1_000.0 + index,
+                "updated_at": 1_100.0 + index,
+                "investigation_status": "COMPLETED",
+                "review_status": "NOT_REQUIRED" if index == 0 else "APPROVED",
+                "workflow_outcome": None if index == 0 else "REVIEWED_WITH_OPEN_EXCEPTIONS",
+                "verification_status": None if index == 0 else "VERIFIED_DEMO_STATE",
+                "transfer_completed": None if index == 0 else "false",
+            }
+            connection.execute(update(investigations).where(
+                investigations.c.execution_request_id == row["execution_request_id"]
+            ).values(**values))
+        connection.execute(update(investigations).where(
+            investigations.c.execution_request_id == other["execution_request_id"]
+        ).values(investigation_status="COMPLETED", created_at=2_000.0))
+    registry.engine.dispose()
+
+    with TestClient(create_app(settings)) as client:
+        login(client)
+        first = client.get("/api/portal/investigations?limit=2&offset=0")
+        assert first.status_code == 200
+        first_body = first.json()
+        assert first_body["total"] == 3
+        assert first_body["limit"] == 2 and first_body["offset"] == 0
+        assert [item["executionRequestId"] for item in first_body["items"]] == [
+            own_rows[2]["execution_request_id"], own_rows[1]["execution_request_id"],
+        ]
+        assert all(item["transferId"] != "TRF-1005" for item in first_body["items"])
+        assert first_body["items"][0]["verificationStatus"] == "VERIFIED_DEMO_STATE"
+
+        second = client.get("/api/portal/investigations?limit=2&offset=2")
+        assert second.status_code == 200
+        second_body = second.json()
+        assert second_body["total"] == 3 and len(second_body["items"]) == 1
+        historical = second_body["items"][0]
+        assert historical["executionRequestId"] == own_rows[0]["execution_request_id"]
+        assert historical["workflowOutcome"] is None
+        assert historical["verificationStatus"] is None
+        assert historical["transferCompleted"] is None
 
 
 def test_webhook_failure_is_recorded_without_retry(tmp_path, monkeypatch):

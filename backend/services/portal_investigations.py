@@ -208,6 +208,32 @@ class PortalInvestigations:
                 fail(404, "not_found", "Investigation was not found")
             return self.public(dict(row))
 
+    def list_for_operator(self, operator_id: str, limit: int, offset: int):
+        """Return one operator's persisted investigations without exposing registry internals."""
+        now = time.time()
+        with self.locked(), self.engine.begin() as connection:
+            self._expire(connection, now)
+            scope = investigations.c.operator_id == operator_id
+            total = connection.scalar(
+                select(func.count()).select_from(investigations).where(scope)
+            )
+            rows = connection.execute(
+                select(investigations)
+                .where(scope)
+                .order_by(
+                    investigations.c.created_at.desc(),
+                    investigations.c.execution_request_id.desc(),
+                )
+                .limit(limit)
+                .offset(offset)
+            ).mappings().all()
+            return {
+                "items": [self.public(dict(row)) for row in rows],
+                "total": int(total or 0),
+                "limit": limit,
+                "offset": offset,
+            }
+
     @staticmethod
     def public(row: dict):
         return {

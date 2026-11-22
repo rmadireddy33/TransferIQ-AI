@@ -31,6 +31,8 @@ The response now also includes:
 - `verificationStatus`, written from the existing Step 9 verification result;
 - `auditUrl`, derived only when a correlated run, plan, and audit reference exist.
 
+`GET /api/portal/investigations?limit=10&offset=0` provides paginated, read-only history over the same registry. It requires the signed operator cookie, scopes rows to that operator, orders them by persisted start time newest-first, and returns `items`, `total`, `limit`, and `offset`. It never dispatches a webhook, creates a run, changes financial data, or returns operator IDs, idempotency hashes, webhook event IDs, credentials, or capabilities.
+
 Portal registry schema v2 adds only nullable `verification_status`. Startup migrates schema v1 with `ALTER TABLE`, preserves every PEX row, and rejects unsupported schemas instead of resetting them.
 
 The 2026-11-22 presentation cleanup advances the isolated portal registry to schema v3 by adding only nullable `document_evidence_status`. Startup migrates either v1 or v2 in place and preserves every PEX row. The resolution-plan preview copies the existing `documentEvidenceStatus` into this sanitized projection; it does not store document bytes, capabilities, signed URLs, or credentials.
@@ -49,7 +51,7 @@ Completion semantics are unchanged and explicit:
 
 ## Portal experience
 
-The investigation URL remains `/portal/investigations/PEX-...`. Reloading it performs an authorized read of the same persisted record and never starts another webhook execution.
+The navigation now includes `/portal/investigations`, an authorized Investigation History view over existing PEX rows. Selecting a PEX opens `/portal/investigations/PEX-...`; reloading either route performs authorized reads and never starts another webhook execution.
 
 The view now shows:
 
@@ -58,7 +60,7 @@ The view now shows:
 - started and last-updated timestamps;
 - human-review status, final workflow outcome, and verification status;
 - positions-unchanged and brokerage-transfer-completed results;
-- a five-stage timeline without an invented percentage;
+- a six-stage timeline without an invented percentage;
 - final investigation summary, evidence references, and unresolved exceptions;
 - sanitized failures and timeout information;
 - `View Audit Report` and `View Transfer Details` actions when applicable.
@@ -66,6 +68,8 @@ The view now shows:
 Active records poll at five-second intervals for at most 60 requests. Terminal records stop immediately. When the active window is exhausted, the UI states that only client polling paused and offers `Refresh status`; that action starts a new bounded read window. API unavailability retains the last successful persisted view when one exists and also offers an explicit refresh.
 
 No approval control exists in the portal. Reviewer action remains in UiPath Action Center.
+
+The history table displays PEX ID, transfer ID, start time, workflow status, human-review status, final business outcome, verification status, and brokerage-transfer completion. Historical nullable fields render as `Not recorded`; the portal does not infer a verification result. `COMPLETED / REVIEWED_WITH_OPEN_EXCEPTIONS` is paired with `OPEN EXCEPTIONS`, keeping Maestro completion distinct from brokerage-transfer completion. Pagination uses bounded `limit`/`offset` reads and the empty state does not fabricate sample history.
 
 ## Files changed
 
@@ -75,6 +79,8 @@ No approval control exists in the portal. Reviewer action remains in UiPath Acti
 - `frontend/src/App.tsx` — terminal-aware progress view, timeline, bounded-polling pause, refresh, and final navigation.
 - `frontend/src/index.css` — responsive timeline and result-state presentation.
 - `tests/test_step10b_portal.py` and `frontend/src/App.test.tsx` — persistence, lifecycle, audit, reload, failure, timeout, and polling regression coverage.
+
+The Investigation History increment additionally changes `backend/api/portal.py`, `backend/services/portal_investigations.py`, `frontend/src/api.ts`, `frontend/src/App.tsx`, and `frontend/src/index.css`, with backend/frontend coverage for authentication, operator isolation, preserved nullable historical fields, empty state, pagination, and PEX navigation. It does not change the registry schema or reset existing rows.
 
 ## Verification
 
@@ -124,7 +130,7 @@ Observed: **470 passed**, one existing Starlette/httpx deprecation warning, **15
 
 The original Step 10C backend and frontend were deployed through the existing Render-connected source. The 2026-11-22 presentation cleanup documented above is local and intentionally not deployed by this task. It requires no new environment variable. On the next Render deployment, startup migrates `/data/portal/transferiq.db` from registry v1 or v2 to v3 without resetting rows. `PORTAL_INVESTIGATION_ENABLED` and the existing webhook settings remain unchanged.
 
-Presentation-cleanup verification: full backend **479 passed** with the existing Starlette/httpx warning; frontend **22 passed**; production build succeeded with 2,162 modules transformed. Static UTF-8 and asset checks passed. These are local automated results, not a new Maestro execution or Render deployment.
+Latest portal verification, including Investigation History: focused portal backend **12 passed**; full backend **481 passed** with the existing Starlette/httpx warning; frontend **26 passed**; production build succeeded with 2,162 modules transformed. Static UTF-8 and asset checks passed. These are local automated results, not a new Maestro execution or Render deployment.
 
 For authenticated lifecycle acceptance, use bounded reads before any new workflow:
 

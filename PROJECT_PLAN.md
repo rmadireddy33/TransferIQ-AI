@@ -20,14 +20,14 @@ This plan records implemented milestones and remaining work. Historical Step doc
 | Step 9: human review | Real Approve/Reject Quick Form, capability-scoped demo plan preview/decision/execution, independent verification, append-only audit, and verified approval/rejection paths. |
 | Step 10A: portal | React/TypeScript/Vite portal, five public fictional scenarios, read-only evidence views, same-origin FastAPI hosting, and responsive UI. |
 | Step 10B: portal trigger | Signed operator session, CSRF/idempotency controls, authenticated HTTP Webhook, durable PEX correlation, and shared Manual/Webhook Flow graph. |
-| Step 10C: status | Accurate lifecycle projection, terminal-aware bounded polling, reload-safe tracking, audit/transfer links, and workflow-vs-transfer completion distinction. |
+| Step 10C: status | Accurate lifecycle projection, terminal-aware bounded polling, reload-safe tracking, paginated operator-scoped investigation history, audit/transfer links, and workflow-vs-transfer completion distinction. |
 | Step 11: document analysis | Automated fictional PDF retrieval, real Agent Analyze Files attachment, deterministic comparison to corporate-action API, API-only fallback, and live 1.1.1 approval/rejection/CLEAN evidence. |
 | Reproducibility remediation | Source check 0/0, clean compile 81/86, product-valid candidate, semantic comparison, binding template, and pinned CLI 1.205.0. |
 
 ## Verification baseline
 
-- Backend: **479 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
-- Frontend: **22 passed**, production build successful.
+- Backend: **481 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
+- Frontend: **26 passed**, production build successful.
 - Canonical Flow: product validation **Valid**.
 - Editable source: **0 errors / 0 warnings**; clean compile **81 nodes / 86 edges**.
 - Solution: **1.1.1 Active / Successful**.
@@ -55,6 +55,8 @@ These are recorded audit/remediation results, not tests rerun by every documenta
 - The active transfer and PEX views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable using sanitized persisted state.
 - The unused legacy progress component and active-source encoding artifacts were removed.
 - The active timeline renders six backend-derived stages and separates workflow completion from unresolved brokerage exceptions.
+- Authorized operators can browse paginated persisted PEX history and reopen the existing timeline without creating another execution; historical null verification fields remain explicitly unrecorded.
+- Authorized operators can browse preserved PEX history without starting a workflow; historical null outcome and verification fields remain explicitly unrecorded.
 
 ### P2 - optional scope
 

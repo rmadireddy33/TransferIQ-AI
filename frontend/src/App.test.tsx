@@ -13,7 +13,7 @@ vi.mock('./api', async importOriginal => {
     api: {
       ...actual.api,
       catalog: vi.fn(), scenario: vi.fn(), run: vi.fn(), review: vi.fn(), portalSession: vi.fn(),
-      login: vi.fn(), startInvestigation: vi.fn(), investigation: vi.fn(), plan: vi.fn(),
+      login: vi.fn(), startInvestigation: vi.fn(), investigation: vi.fn(), investigationHistory: vi.fn(), plan: vi.fn(),
     },
   }
 })
@@ -36,6 +36,7 @@ describe('Operations portal', () => {
     mockedApi.scenario.mockImplementation(async id => transfer(Number(id.slice(-4)), id === 'TRF-1002' ? 'INVESTIGATION_REQUIRED' : 'CLEAN'))
     mockedApi.portalSession.mockResolvedValue({enabled:false,authorized:false,operatorId:null})
     mockedApi.investigation.mockResolvedValue(tracked())
+    mockedApi.investigationHistory.mockResolvedValue({items:[],total:0,limit:10,offset:0})
     mockedApi.plan.mockResolvedValue({planId:'PLAN-plan',status:'PREVIEWED',investigationSummary:'Plan summary',
       proposedActions:[],evidenceReferences:[],documentEvidenceStatus:'AGENT_ANALYZE_FILES'})
   })
@@ -52,6 +53,64 @@ describe('Operations portal', () => {
     await user.type(screen.getByPlaceholderText('Search transfer ID'), '1002')
     expect(screen.getByRole('link', { name: 'TRF-1002' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'TRF-1001' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Investigation History' })).toHaveAttribute('href','/investigations')
+  })
+
+  it('protects investigation history behind the existing operator session', async () => {
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:false,operatorId:null})
+    render(<MemoryRouter initialEntries={['/investigations']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Authorized operator access required')).toBeInTheDocument()
+    expect(screen.getByLabelText('Authorized demo operator access code')).toBeInTheDocument()
+    expect(mockedApi.investigationHistory).not.toHaveBeenCalled()
+  })
+
+  it('renders an authorized empty investigation history', async () => {
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:true,operatorId:'demo-operator'})
+    render(<MemoryRouter initialEntries={['/investigations']}><App /></MemoryRouter>)
+    expect(await screen.findByText('No investigations yet')).toBeInTheDocument()
+    expect(screen.getByText('No persisted Maestro executions are available for this operator.')).toBeInTheDocument()
+    expect(mockedApi.investigationHistory).toHaveBeenCalledWith(10,0,expect.any(AbortSignal))
+  })
+
+  it('shows historical results honestly and opens the existing PEX timeline', async () => {
+    const user=userEvent.setup()
+    const historical=tracked({
+      executionRequestId:'PEX-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', investigationStatus:'COMPLETED', reviewStatus:'NOT_REQUIRED',
+      workflowOutcome:null, verificationStatus:null, transferCompleted:null,
+    })
+    const reviewed=tracked({
+      executionRequestId:'PEX-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', investigationStatus:'COMPLETED', reviewStatus:'APPROVED',
+      workflowOutcome:'REVIEWED_WITH_OPEN_EXCEPTIONS', verificationStatus:'VERIFIED_DEMO_STATE', transferCompleted:false,
+      unresolvedExceptions:[{securityId:'SEC-104',difference:'-20',resolutionStatus:'UNRESOLVED'}],
+    })
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:true,operatorId:'demo-operator'})
+    mockedApi.investigationHistory.mockResolvedValueOnce({items:[reviewed,historical],total:2,limit:10,offset:0})
+    mockedApi.investigation.mockResolvedValueOnce(reviewed)
+    render(<MemoryRouter initialEntries={['/investigations']}><App /></MemoryRouter>)
+    expect(await screen.findByText('REVIEWED WITH OPEN EXCEPTIONS')).toBeInTheDocument()
+    expect(screen.getByText('OPEN EXCEPTIONS')).toBeInTheDocument()
+    expect(screen.getAllByText('Not recorded')).toHaveLength(2)
+    const link=screen.getByRole('link',{name:'PEX-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'})
+    expect(link).toHaveAttribute('href','/investigations/PEX-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+    await user.click(link)
+    expect(await screen.findByText('Investigation progress')).toBeInTheDocument()
+    expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
+  })
+
+  it('paginates persisted investigation history without starting workflows', async () => {
+    const user=userEvent.setup()
+    const firstItems=Array.from({length:10},(_,index)=>tracked({executionRequestId:`PEX-${String(index).padStart(32,'0')}`}))
+    const last=tracked({executionRequestId:'PEX-ffffffffffffffffffffffffffffffff'})
+    mockedApi.portalSession.mockResolvedValueOnce({enabled:true,authorized:true,operatorId:'demo-operator'})
+    mockedApi.investigationHistory
+      .mockResolvedValueOnce({items:firstItems,total:11,limit:10,offset:0})
+      .mockResolvedValueOnce({items:[last],total:11,limit:10,offset:10})
+    render(<MemoryRouter initialEntries={['/investigations']}><App /></MemoryRouter>)
+    expect(await screen.findByText('Showing 1–10 of 11')).toBeInTheDocument()
+    await user.click(screen.getByRole('button',{name:'Next'}))
+    expect(await screen.findByText('Showing 11–11 of 11')).toBeInTheDocument()
+    expect(mockedApi.investigationHistory).toHaveBeenLastCalledWith(10,10,expect.any(AbortSignal))
+    expect(mockedApi.startInvestigation).not.toHaveBeenCalled()
   })
 
   it('shows the precomputed TRF-1002 shortage without creating a run', async () => {

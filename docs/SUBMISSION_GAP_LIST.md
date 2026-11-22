@@ -67,7 +67,7 @@ Audit date: **2026-11-19**. Documentation-reconciliation update:
 - **Resolution:** The sanitized PEX projection now persists the plan's document-evidence method. Both active investigation views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable; the legacy component and active-source encoding artifacts are removed; and a concise evidence-method panel explains the deterministic API validation boundary without exposing capabilities or file URLs.
 - **Safety:** The portal remains read-only for decisions. No Flow, prompt, Quick Form, webhook, financial rule, or position was changed.
 - **Complexity:** Medium; 0.5-1 day plus tests.
-- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view remains backend-derived; 22 frontend tests and the production build pass; all 479 backend tests pass. Render deployment and a new production asset hash remain owner handoff steps.
+- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and operator-scoped history remain backend-derived; 26 frontend tests and the production build pass; all 481 backend tests pass. Render deployment and a new production asset hash remain owner handoff steps.
 
 ### P1-4 - Rehearse tenant dependencies and portable assignment
 
@@ -107,7 +107,7 @@ Audit date: **2026-11-19**. Documentation-reconciliation update:
 1. Native CLEAN evaluation passes, but native inline-Agent evaluation is blocked before agent output.
 2. Source-to-deployment provenance is maintained externally and is not independently verified here.
 3. Current live evidence does not cover every requested scenario/failure/replay case.
-4. Portal presentation cleanup is complete locally; deployment and a new production asset-parity check remain.
+4. Portal presentation cleanup and Investigation History are complete locally; deployment and a new production asset-parity check remain.
 5. A second-tenant import and resource-binding rehearsal has not been performed.
 
 ## Release interpretation

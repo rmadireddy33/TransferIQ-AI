@@ -54,7 +54,7 @@ run there are **43 A**, **6 B**, and **1 C** rows. Completion is therefore
 | 29 | Append-only review audit | A | resolution service, SQL protections, live audit | Approval audit returns 3 events; immutability tests pass | None | - |
 | 30 | Independent final verification | A | `/verify`, Flow verification node | Approval and rejection both return `VERIFIED_DEMO_STATE` | None | - |
 | 31 | Portal session and CSRF security | A | `backend/api/portal.py`, tests | Signed HttpOnly/SameSite cookie and CSRF validation pass | None | - |
-| 32 | Persisted portal lifecycle and bounded polling | A | portal registry, React tests | Status persistence, refresh, timeout and 60-poll bound pass | None | - |
+| 32 | Persisted portal lifecycle, history and bounded polling | A | portal registry, FastAPI/React tests | Operator-scoped pagination, nullable historical fields, PEX reopen, status persistence, refresh, timeout and 60-poll bound pass | Deploy latest portal candidate and recheck asset parity | P1 |
 | 33 | Workflow-complete vs transfer-complete distinction | A | portal UI and live verify response | UI explicitly says workflow completed while shortage remains unresolved | None | - |
 | 34 | Render source/API parity | A | fresh OpenAPI and asset comparison | 51/51 paths match; JS name, length and SHA-256 match local build | None | - |
 | 35 | Active UiPath solution deployment | A | tenant package/deployment reads | `TransferIQ-AI` 1.1.1 is Active/Successful | None | - |

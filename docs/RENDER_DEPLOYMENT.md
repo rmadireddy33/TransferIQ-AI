@@ -106,10 +106,12 @@ Before any live workflow start:
 
 1. GET /api/portal/session and confirm enabled=true.
 2. Authenticate through the portal with the owner-supplied access code.
-3. Start one allowlisted scenario once and record its PEX ID.
-4. Confirm webhook acceptance yields TRIGGERED, not COMPLETED.
-5. Follow the persisted tracking page through agent/human/verification state.
-6. Confirm final audit and unchanged-position results.
+3. Open **Investigation History** and confirm existing PEX records are retained before considering a new run.
+4. Open an existing record and confirm its six-stage detail route survives refresh without starting a workflow.
+5. Only if a new business-path check is necessary, start one allowlisted scenario once and record its PEX ID.
+6. Confirm webhook acceptance yields TRIGGERED, not COMPLETED.
+7. Follow the persisted tracking page through agent/human/verification state.
+8. Confirm final audit and unchanged-position results.
 
 Do not repeatedly retry an uncertain webhook delivery. The backend intentionally makes one bounded attempt.
 
@@ -120,7 +122,7 @@ Do not repeatedly retry an uncertain webhook delivery. The backend intentionally
     npm test --prefix frontend -- --run
     npm run build --prefix frontend
 
-The latest audited results are 479 backend tests and 22 frontend tests passed. The frontend production build also succeeded. These results include the portal presentation cleanup and registry v2-to-v3 migration coverage.
+The latest audited results are 481 backend tests and 26 frontend tests passed. The frontend production build also succeeded. These results include the portal presentation cleanup, operator-scoped Investigation History, pagination/access-control coverage, and registry v2-to-v3 migration coverage.
 
 ## Troubleshooting
 
@@ -134,6 +136,7 @@ The latest audited results are 479 backend tests and 22 frontend tests passed. T
 | 401 on private API | Supply the configured X-API-Key. |
 | 401/403 from webhook | Verify the Integration Service header name/value match Render secrets. |
 | Active investigation blocks another | Read the existing PEX state or wait for the configured server deadline; browser refresh does not create a new run. |
+| Investigation History returns 401 | Authenticate through the controlled portal; history is intentionally not part of the public catalog. |
 | Database locked | Keep one instance and one worker; avoid concurrent maintenance. |
 
 Railway configuration remains an undeployed alternative described in [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md). It is not the current production platform.

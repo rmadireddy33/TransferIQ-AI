@@ -10,7 +10,7 @@ import time
 from typing import Annotated, Literal
 
 import httpx
-from fastapi import APIRouter, Cookie, Header, Request, Response, Security
+from fastapi import APIRouter, Cookie, Header, Query, Request, Response, Security
 from fastapi.security import APIKeyCookie
 from pydantic import Field
 
@@ -161,6 +161,19 @@ def start_investigation(
     response.status_code = 201 if created else 200
     response.headers["Cache-Control"] = "no-store"
     return manager.read(row["execution_request_id"], claims["sub"])
+
+
+@router.get("/investigations")
+def list_investigations(
+    request: Request,
+    response: Response,
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    token: Annotated[str | None, Security(portal_cookie)] = None,
+):
+    claims = _read_session(request, token)
+    response.headers["Cache-Control"] = "no-store"
+    return _manager(request).list_for_operator(claims["sub"], limit, offset)
 
 
 @router.get("/investigations/{executionRequestId}")
