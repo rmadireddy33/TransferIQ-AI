@@ -1,6 +1,6 @@
 # Maestro Flow source reproducibility
 
-Status: **remediated and locally verified on 2026-11-19**. This procedure rebuilds a product-valid candidate without replacing the working canonical Flow or changing deployed UiPath solution 1.1.1.
+Status: **source remediated on 2026-11-19; checked-in canonical artifact repaired and independently validated on 2026-11-22**. This procedure rebuilds a product-valid candidate and validates the checked-in canonical Flow without changing deployed UiPath solution 1.1.1.
 
 ## What was repaired
 
@@ -16,6 +16,35 @@ The audited source check originally reported three errors and three warnings:
 | `NO_RETURN` | Raw port-list topology prevented the checker from proving every review path terminated. | Typed Approve and Reject arms converge on the unchanged review, execute, verify, audit and return chain. |
 
 The repair also restores the actual agent file binding (`agentDocument: v("agentDocument")`) used by automated document retrieval. It does not bind Analyze Files to the Manual Trigger field alone.
+
+## Canonical artifact binding repair
+
+The pre-repair canonical artifact contained 81 nodes and 86 edges, but UiPath
+CLI 1.205.0 reported one error and two warnings at
+`RetrieveCorporateActionDocument`: `<bindings.name>` and
+`<bindings.folderPath>` were unresolved, and the API Workflow definition's
+existing resource key was absent from `workflow.bindings[]`.
+
+The supported `uip maestro flow bindings create` command added exactly two
+process rows. No node, edge, definition, expression, layout, Agent contract or
+Quick Form field/outcome changed:
+
+| Name/property | Resource | Resource key | Default | Subtype |
+|---|---|---|---|---|
+| `name` | `process` | `b41e40a5-172f-465d-8aee-01d75ea8e906` | `TransferIQ_Document_Retrieval` | `Api` |
+| `folderPath` | `process` | `b41e40a5-172f-465d-8aee-01d75ea8e906` | `solution_folder` | `Api` |
+
+The resource key was not invented: it is the existing key embedded in the
+canonical node type and definition and is the exact key named by the validator.
+The source-built candidate serializes the same logical in-solution resource as
+`solution_folder.TransferIQ_Document_Retrieval`; this compiler-level resource
+key representation differs, while the API Workflow name, folder, node type and
+inputs are semantically equivalent.
+
+The pre-repair backup is outside the solution project at
+`maestro/verification-backups/TransferIQ_Reconciliation.flow.pre-binding-repair-20261122.bak`.
+Checksums are recorded in
+[`maestro/verification-backups/SHA256SUMS.md`](../maestro/verification-backups/SHA256SUMS.md).
 
 ## Pinned development tools
 
@@ -68,6 +97,10 @@ node .\finalize-agent-contract.mjs $candidate
 node .\compare-flow-structure.mjs `
   ..\TransferIQ_Reconciliation.flow `
   $candidate
+
+.\node_modules\.bin\uip.cmd maestro flow validate `
+  ..\TransferIQ_Reconciliation.flow `
+  --output json
 ```
 
 Compile outside the Flow project so a candidate cannot replace the working canonical artifact. `finalize-agent-contract.mjs` is required: the SDK's primitive `returns` syntax cannot express the full required output schema, and the installed agent node requires resolved runtime expressions while source checking requires `{{input.*}}` references.
@@ -79,23 +112,27 @@ The clean-directory verification performed for this remediation produced:
 - source check: **0 errors, 0 warnings**;
 - compile: **81 nodes, 86 edges**;
 - product validation with pinned UiPath CLI 1.205.0: **Success / Valid**;
+- checked-in canonical validation with the same CLI: **Success / Valid**;
 - node ID comparison: no missing or extra IDs;
 - edge comparison: no missing or extra source/target/port tuples;
 - critical node types: unchanged;
 - Quick Form fields, outcomes, recipient configuration and version: semantically equivalent;
 - agent input variables: semantically equivalent, including the file-capable `agentDocument` binding.
+- document-retrieval inputs remain `$vars.ValidateDemoRun.output.runId` and `$vars.ValidateInput.output.transferId` in both artifacts;
+- parsed pre/post canonical difference: exactly two appended `workflow.bindings[]` rows.
 
 Byte-for-byte equality is not expected because compilation regenerates schema IDs, UI metadata and serialization order. The comparison script deliberately checks business-critical graph semantics instead.
 
 ## Regression results
 
-- Focused Maestro/portal/agent contract checks: **116 passed**, one existing Starlette/httpx deprecation warning.
+- Focused Maestro/portal/agent/document contract checks after canonical repair: **171 passed**, one existing Starlette/httpx deprecation warning, 74.08 seconds.
+- Complete post-repair backend regression: **485 passed**, the same known warning, 349.05 seconds.
 - First full backend rerun: **476 passed, 2 failed**. Both failures detected that a diagnostic compile had emitted the primitive SDK agent schema into the working sidecar. The required schema was restored and build output was isolated outside the project; this failed run is not counted as success.
 - Final full backend rerun: **478 passed**, one existing Starlette/httpx deprecation warning, **172.64 seconds**.
 - Frontend unit suite: **18 passed**.
 - Frontend production build: **successful**.
 
-No live UiPath, Action Center or Render test was executed for this source-only remediation.
+No live UiPath, Action Center or Render test was executed for this artifact-only remediation.
 
 ## Remaining limitations
 

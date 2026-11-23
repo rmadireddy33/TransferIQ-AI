@@ -130,7 +130,7 @@ Do not repeatedly retry an uncertain webhook delivery. The backend intentionally
     npm test --prefix frontend -- --run
     npm run build --prefix frontend
 
-The latest local remediation results are 484 passing backend tests and 26
+The latest local remediation results are 485 passing backend tests and 26
 passing frontend tests, plus a successful production build. Coverage includes
 valid, missing, incorrect, expired, and unauthenticated CSRF/session cases;
 zero-side-effect rejection; idempotent single dispatch; global and

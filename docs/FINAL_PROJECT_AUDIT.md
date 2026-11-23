@@ -6,6 +6,7 @@ Native evaluation update: **2026-11-22**
 Portal presentation cleanup: **2026-11-22**  
 Final release verification: **2026-11-22**  
 Portal CSRF remediation: **2026-11-22**  
+Canonical Flow binding remediation: **2026-11-22**  
 Audit role: independent solution architecture, QA, security, and submission-readiness review  
 Overall feature completion: **92%**  
 Release recommendation: **PASS WITH LIMITATIONS**  
@@ -22,11 +23,12 @@ source: the TypeScript passes strict source checking, a clean-directory build
 with documented tenant-local bindings produces a product-valid 81-node/86-edge
 candidate, and semantic comparison finds no missing node IDs or edge tuples.
 The final release audit found a separate artifact discrepancy: the checked-in
-canonical `.flow` has the same 81/86 graph but now fails standalone validation
-because its in-solution document-retrieval binding rows are absent. The rebuilt
-candidate includes those rows and validates, and the solution dry-run remains
-Valid. The checked-in canonical must not be described as independently
-product-valid until that binding is repaired and rechecked.
+canonical `.flow` lacked two in-solution document-retrieval binding rows. That
+finding is now closed. A checksum-recorded backup was created, supported CLI
+binding commands added only those two rows, and both canonical and source-built
+artifacts independently validate with pinned CLI 1.205.0 at 81 nodes/86 edges.
+Semantic comparison found no node, edge, Quick Form, Agent-input, or business
+routing difference.
 The documentation blocker is also closed: root, API, deployment, judge,
 tenant-binding, reviewer-assignment, and evidence guidance now agree with
 release 1.1.1, while older milestones are explicitly historical. The solution
@@ -39,8 +41,8 @@ The audit also proved that a portal start accepted an omitted CSRF header when a
 valid signed session and idempotency key were present. The targeted local
 remediation now requires a non-empty matching token and proves that rejection
 happens before persistence or webhook dispatch. Render was not deployed in this
-task, so production enforcement remains pending. The separate canonical binding
-and retained portability/evaluation limitations keep the final recommendation
+task, so production enforcement remains pending. The retained portability and
+evaluation limitations keep the final recommendation
 at **PASS WITH LIMITATIONS**.
 
 ## Executive status summary
@@ -49,9 +51,9 @@ at **PASS WITH LIMITATIONS**.
 
 - Production FastAPI service, public portal, five synthetic transfer fixtures, and 51-path API contract. Exact deployed/local frontend parity was verified for the current presentation cleanup and Investigation History build.
 - Deterministic reconciliation, immutable custody positions, isolated receiving staging, corporate actions, identifier mapping, cost basis, idempotency, and append-only audit controls.
-- Working deployed 81-node/86-edge Maestro orchestration, Manual Trigger, authenticated Portal Webhook, multi-step API orchestration, real Autonomous Agent, Analyze Files, document retrieval API Workflow, Approve/Reject Quick Form, independent verification, and audit continuation. The checked-in canonical artifact has the same graph but the standalone binding-validation discrepancy documented below.
+- Working deployed and independently valid checked-in 81-node/86-edge Maestro orchestration, Manual Trigger, authenticated Portal Webhook, multi-step API orchestration, real Autonomous Agent, Analyze Files, document retrieval API Workflow, Approve/Reject Quick Form, independent verification, and audit continuation.
 - Current real 1.1.1 evidence for `TRF-1001` CLEAN and `TRF-1002` approval and rejection, including unchanged positions and the unresolved SEC-104 shortage.
-- Fresh automated verification: 481 backend tests and 30 frontend tests passed, the production frontend build succeeded, npm and OSV dependency scans found no known vulnerabilities in the queried sets, the source-built Flow candidate validated, and the solution dry run was Valid.
+- Fresh automated verification: 485 backend tests and 26 frontend tests passed, the production frontend build succeeded, npm and OSV dependency scans found no known vulnerabilities in the queried sets, and both canonical and source-built Flow artifacts validated with pinned CLI 1.205.0.
 
 ### B. Implemented but not live-verified
 
@@ -89,8 +91,8 @@ Calculated completion is `(43 x 1 + 6 x 0.5 + 1 x 0) / 50 = 92%`.
 
 `PASS WITH LIMITATIONS` means the deployed demonstration is usable,
 financially safe, locally reproducible, and consistently documented. It must
-not be described as canonical-standalone-valid, production-CSRF-remediated until
-the local correction is deployed, Agent-evaluation-complete,
+not be described as production-CSRF-remediated until the local correction is
+deployed, Agent-evaluation-complete,
 source-to-deployment provenance-verified, or second-tenant rehearsed. This is
 not a recommendation to change the financial
 engine, webhook integration, Manual Trigger, Agent, Quick Form, or IXP setting.
@@ -155,10 +157,8 @@ existing operator/session controls.
 
 ### UiPath Maestro orchestration
 
-The deployed Flow and rebuilt source candidate are product-valid and contain 81
-nodes and 86 edges. The checked-in canonical artifact contains that same graph,
-but its fresh standalone validation now reports the missing in-solution API
-Workflow binding described below. Manual Trigger and authenticated Portal
+The deployed Flow, checked-in canonical artifact, and rebuilt source candidate
+are product-valid and contain 81 nodes and 86 edges. Manual Trigger and authenticated Portal
 Webhook still enter the same reconciliation graph rather than duplicating
 business logic.
 
@@ -177,7 +177,7 @@ The Flow provides controlled routing for CLEAN, investigation, review, execution
 The canonical artifact remains protected, and the editable TypeScript source now reproduces its business-critical graph semantics:
 
 - checked-in canonical graph: **81 nodes / 86 edges**, semantically equivalent to the candidate;
-- checked-in canonical standalone validation: **Failure**, with one error and two warning diagnostics caused by absent `TransferIQ_Document_Retrieval` workflow-level binding rows;
+- checked-in canonical standalone validation: **Success / Valid** with pinned CLI 1.205.0 after adding only the two missing process binding rows;
 - pinned clean-directory compile: **81 nodes, 86 edges**;
 - strict source check: **0 errors and 0 warnings**;
 - product validation with pinned UiPath CLI 1.205.0: **Success / Valid**;
@@ -249,8 +249,9 @@ Command:
 & .\.venv\Scripts\python.exe -m pytest -q --tb=short
 ```
 
-Final post-remediation result: **484 passed, 0 failed, 0 skipped, 1 warning in
-262.15 seconds**. The focused portal suite passed **15 tests** in 10.25 seconds.
+Final post-canonical-remediation result: **485 passed, 0 failed, 0 skipped, 1 warning in
+349.05 seconds**. The focused Flow/Agent/document suite passed **171 tests** in
+74.08 seconds; the earlier focused portal suite passed **15 tests** in 10.25 seconds.
 The warning is the existing Starlette/httpx `TestClient` deprecation warning.
 
 Additional checks:
@@ -322,15 +323,15 @@ uip api-workflow validate `
 uip solution pack maestro\TransferIQ_Reconciliation --dry-run --output json
 ```
 
-- checked-in canonical `.flow`: **standalone validation failed** with one error
-  and two warnings because the in-solution document-retrieval `name` and
-  `folderPath` binding rows are absent;
+- checked-in canonical `.flow`: **Success / Valid**, with the same 81 nodes and
+  86 edges as before the two-row binding repair;
 - API workflow: **Valid and buildable**;
 - solution pack dry-run: **Success / Valid**;
 - remediated source check with restored bindings: **passed**, zero errors and zero warnings;
 - clean-directory source compile: **successful**, 81 nodes and 86 edges;
 - remediated candidate product validation with pinned UiPath CLI 1.205.0: **Success / Valid**;
 - semantic comparison: no missing/extra node IDs or edge tuples; Quick Form and agent input contracts equivalent;
+- canonical pre/post parsed difference: exactly two appended process binding rows; document-retrieval input expressions unchanged;
 - known solution warning: pre-existing `ImplicitConnection` resource-catalog advisory;
 - active tenant package: **1.1.1**;
 - retained approval Flow instance: **Completed**, no incidents;
@@ -341,7 +342,7 @@ uip solution pack maestro\TransferIQ_Reconciliation --dry-run --output json
 - owner-observed production history retains seven rows: one for TRF-1001 and
   six for TRF-1002, including approval, rejection, timeout, CLEAN, and
   open-exception presentation;
-- post-history regression: **481 backend tests passed**, **30 frontend tests passed**, frontend production build successful; the earlier focused Flow/agent contract run remains **116 passed**.
+- historical post-history regression: **481 backend tests passed**, **30 frontend tests passed**, frontend production build successful; current post-canonical results are **485 backend tests passed** and **171 focused Flow/Agent/document tests passed**.
 
 The source check failure described in the original audit is closed. UiPath CLI 1.206.0 currently rejects the same dynamic Quick Form outcome handles in both the unchanged canonical artifact and equivalent candidate; the lockfile therefore pins the product-validating 1.205.0 toolchain until that registry-validator regression is resolved.
 
@@ -398,11 +399,11 @@ Additional requested readiness factors map into that rubric as follows:
 
 ## Top five remaining gaps
 
-1. **Reconcile the checked-in canonical binding rows.** Preserve the 81/86 graph, add the in-solution document-retrieval workflow binding rows, and repeat standalone validation and semantic comparison.
-2. **Deploy and verify the CSRF remediation.** Release the reviewed local source, then confirm one missing-header request returns 403 with no PEX or UiPath side effect.
-3. **Complete native Agent evaluation.** Ten logical cases and a passed native CLEAN Flow run now exist, but inline-Agent node evaluation stops before agent output because node scope cannot resolve the upstream file expression.
-4. **Improve submission traceability and portability.** Correlate the external submitted revision, Render build, and UiPath package, and rehearse tenant-owned bindings in a second tenant.
-5. **Close only material remaining live gaps.** Use bounded runs for secondary scenarios or replay behavior only when they add judging value.
+1. **Deploy and verify the CSRF remediation.** Release the reviewed local source, then confirm one missing-header request returns 403 with no PEX or UiPath side effect.
+2. **Complete native Agent evaluation.** Ten logical cases and a passed native CLEAN Flow run now exist, but inline-Agent node evaluation stops before agent output because node scope cannot resolve the upstream file expression.
+3. **Improve submission traceability and portability.** Correlate the external submitted revision, Render build, and UiPath package, and rehearse tenant-owned bindings in a second tenant.
+4. **Close only material remaining live gaps.** Use bounded runs for secondary scenarios or replay behavior only when they add judging value.
+5. **Improve optional history accessibility.** Make the horizontal-scroll region explicitly focusable and labelled if competition polish time permits.
 
 Detailed ownership, priority, acceptance criteria, and evidence requirements are in [SUBMISSION_GAP_LIST.md](SUBMISSION_GAP_LIST.md).
 
@@ -411,17 +412,18 @@ Detailed ownership, priority, acceptance criteria, and evidence requirements are
 Final competition recommendation: **PASS WITH LIMITATIONS**. The project may
 be demonstrated in its current state: production is operational, the portal is
 asset-identical to the tested build, regressions are green, and editable Flow
-source produces a valid semantically equivalent 81/86 candidate. It should not
-be described as an unqualified release until the checked-in canonical binding
-is repaired and the local CSRF remediation is deployed and reverified.
+source and the checked-in canonical both validate at a semantically equivalent
+81/86. It should not be described as an unqualified release until the local
+CSRF remediation is deployed and reverified and retained limitations are
+accurately disclosed.
 
 Recommended order before final submission:
 
-1. obtain approval for a narrow canonical binding repair and revalidate it;
-2. deploy the reviewed CSRF remediation and run one bounded negative check;
-3. establish a supported isolated Agent-evaluation harness without changing business behavior;
-4. establish source/deployment traceability and rehearse target-tenant resource binding/import;
-5. capture a final bounded acceptance record only if a material runtime artifact changes.
+1. deploy the reviewed CSRF remediation and run one bounded negative check;
+2. establish a supported isolated Agent-evaluation harness without changing business behavior;
+3. establish source/deployment traceability and rehearse target-tenant resource binding/import;
+4. capture a final bounded acceptance record only if a material runtime artifact changes;
+5. optionally improve history-scroll keyboard accessibility.
 
 No change to the financial reconciliation rules, IXP default, existing webhook integration, Manual Trigger, Autonomous Agent, Quick Form, or audit model is recommended for these readiness tasks.
 

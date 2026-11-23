@@ -32,7 +32,7 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 
 ## P1 - important for scoring
 
-### P1-0 - Reconcile the checked-in canonical resource binding — OPEN 2026-11-22
+### P1-0 - Reconcile the checked-in canonical resource binding — CLOSED 2026-11-22
 
 - **Evidence:** The pinned 1.205.0 source check is clean, source compilation
   produces 81 nodes/86 edges, the candidate validates `Success / Valid`, and
@@ -45,11 +45,16 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
   `Valid`, so this is not an observed production outage. It does invalidate the
   unqualified documentation claim that the checked-in canonical `.flow`
   validates standalone and can surprise a judge following that command.
-- **Required fix:** With explicit approval, regenerate or narrowly repair only
-  the canonical binding rows from the valid source-built candidate. Preserve
-  every node ID, edge tuple, trigger, Agent input, Quick Form outcome, and
-  resource reference. Repeat standalone validation, semantic comparison, API
-  Workflow validation, and solution dry-run. Do not deploy as part of the fix.
+- **Implemented fix:** A checksum-matched backup was recorded outside the
+  solution project. UiPath CLI 1.205.0 added only the two missing `name` and
+  `folderPath` process binding rows using the canonical definition's existing
+  resource key and the source candidate's proven defaults.
+- **Verification:** Standalone canonical and source-candidate validation both
+  return `Success / Valid`; both remain 81 nodes/86 edges; semantic comparison
+  reports no node, edge, critical-type, Quick Form, or Agent-input difference;
+  parsed pre/post canonical comparison contains exactly the two new rows; 171
+  focused regressions and 485 complete backend regressions pass. Nothing was
+  deployed or executed.
 
 ### P1-0A - Enforce the documented CSRF header requirement — SOURCE CLOSED / DEPLOYMENT PENDING 2026-11-22
 
@@ -110,7 +115,7 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 - **Resolution:** The sanitized PEX projection now persists the plan's document-evidence method. Both active investigation views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable; the legacy component and active-source encoding artifacts are removed; and a concise evidence-method panel explains the deterministic API validation boundary without exposing capabilities or file URLs.
 - **Safety:** The portal remains read-only for decisions. No Flow, prompt, Quick Form, webhook, financial rule, or position was changed.
 - **Complexity:** Medium; 0.5-1 day plus tests.
-- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and global/transfer-specific operator history remain backend-derived; 30 frontend tests and the production build pass; all 481 backend tests pass. Fresh SHA-256 checks show the deployed JavaScript and CSS are byte-identical to the local build. The owner visually reviewed seven persisted production investigations: one for TRF-1001 and six for TRF-1002.
+- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and global/transfer-specific operator history remain backend-derived; 26 current frontend tests and the production build pass; all 485 current backend tests pass. Fresh SHA-256 checks show the deployed JavaScript and CSS are byte-identical to the local build. The owner visually reviewed seven persisted production investigations: one for TRF-1001 and six for TRF-1002.
 
 ### P1-4 - Rehearse tenant dependencies and portable assignment
 
@@ -147,20 +152,21 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 
 ## Top five competitiveness gaps
 
-1. The checked-in canonical graph is 81/86-equivalent but lacks the two binding rows required for standalone validation.
-2. The local CSRF correction is regression-green but has not yet been deployed and verified on Render.
-3. Native CLEAN evaluation passes, but native inline-Agent evaluation is blocked before agent output.
-4. Source-to-deployment provenance is maintained externally and a second-tenant binding rehearsal is not retained.
-5. Current live evidence does not cover every requested secondary scenario/failure/replay case.
+1. The local CSRF correction is regression-green but has not yet been deployed and verified on Render.
+2. Native CLEAN evaluation passes, but native inline-Agent evaluation is blocked before agent output.
+3. Source-to-deployment provenance is maintained externally and a second-tenant binding rehearsal is not retained.
+4. Current live evidence does not cover every requested secondary scenario/failure/replay case.
+5. The history table's horizontal scroll region is not explicitly keyboard-focusable or labelled.
 
 ## Release interpretation
 
 The deployed demo is functional, financially safe, regression green, and has
 exact frontend asset parity, so the final competition recommendation is
 **PASS WITH LIMITATIONS**. Both original P0 remediation items remain closed.
-The canonical binding issue and pending production rollout of the locally fixed
-CSRF check block an unqualified PASS but do not demonstrate a production outage
-or financial-state failure. Agent-evaluation completion, external provenance, secondary live
+The canonical binding issue is closed. Pending production rollout of the locally
+fixed CSRF check and retained evaluation/portability limitations block an
+unqualified PASS but do not demonstrate a production outage or financial-state
+failure. Agent-evaluation completion, external provenance, secondary live
 coverage, a second-tenant rehearsal, and optional history-scroll accessibility
 polish also remain. None justifies changing deterministic reconciliation or
 custody data.

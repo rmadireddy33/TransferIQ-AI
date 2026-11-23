@@ -82,6 +82,29 @@ def test_phase_b_uses_real_api_workflow_file_conversion_and_fail_closed_fallback
     assert "UIPATH_WEBHOOK" not in serialized and "API_KEY" not in serialized
 
 
+def test_canonical_document_retrieval_bindings_are_complete_and_in_solution():
+    flow = json.loads(FLOW.read_text())
+    assert len(flow["nodes"]) == 81
+    assert len(flow["edges"]) == 86
+
+    retrieval = next(node for node in flow["nodes"]
+                     if node["id"] == "RetrieveCorporateActionDocument")
+    definition = next(item for item in flow["definitions"]
+                      if item["nodeType"] == retrieval["type"])
+    binding_key = definition["model"]["bindings"]["resourceKey"]
+    assert binding_key == "b41e40a5-172f-465d-8aee-01d75ea8e906"
+
+    rows = {
+        (row["name"], row["propertyAttribute"]): row
+        for row in flow["bindings"]
+        if row.get("resource") == "process" and row.get("resourceKey") == binding_key
+    }
+    assert set(rows) == {("name", "name"), ("folderPath", "folderPath")}
+    assert rows[("name", "name")]["default"] == "TransferIQ_Document_Retrieval"
+    assert rows[("folderPath", "folderPath")]["default"] == "solution_folder"
+    assert all(row["resourceSubType"] == "Api" for row in rows.values())
+
+
 def test_analyze_files_test_double_is_independently_validated(trf1002):
     result = run_graph("TRF-1002", trf1002, localTransport=True,
         corporateActionPdf={"ID": "EXPLICIT_TEST_FILE"},

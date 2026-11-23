@@ -23,10 +23,11 @@ This plan records implemented milestones and remaining work. Historical Step doc
 | Step 10C: status | Accurate lifecycle projection, terminal-aware bounded polling, reload-safe tracking, paginated operator-scoped investigation history, audit/transfer links, and workflow-vs-transfer completion distinction. |
 | Step 11: document analysis | Automated fictional PDF retrieval, real Agent Analyze Files attachment, deterministic comparison to corporate-action API, API-only fallback, and live 1.1.1 approval/rejection/CLEAN evidence. |
 | Reproducibility remediation | Source check 0/0, clean compile 81/86, product-valid candidate, semantic comparison, binding template, and pinned CLI 1.205.0. |
+| Canonical binding remediation | Added only the two missing in-solution API Workflow binding rows through supported CLI tooling; standalone canonical validation is Valid and the 81/86 graph is unchanged. |
 
 ## Verification baseline
 
-- Backend: **484 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
+- Backend: **485 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
 - Frontend: **26 passed**, production build successful.
 - Canonical Flow: product validation **Valid**.
 - Editable source: **0 errors / 0 warnings**; clean compile **81 nodes / 86 edges**.

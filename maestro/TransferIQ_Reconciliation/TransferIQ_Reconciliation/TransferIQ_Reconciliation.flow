@@ -12147,6 +12147,26 @@
       "resourceKey": "f6f0ad2a-4998-43d7-aa24-24f6b2fc852e",
       "default": "33177cc5-ad70-4e48-bc87-238e431b4048",
       "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "bD093n1We",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "b41e40a5-172f-465d-8aee-01d75ea8e906",
+      "default": "TransferIQ_Document_Retrieval",
+      "propertyAttribute": "name",
+      "resourceSubType": "Api"
+    },
+    {
+      "id": "b1wxzzlut",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "b41e40a5-172f-465d-8aee-01d75ea8e906",
+      "default": "solution_folder",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Api"
     }
   ],
   "layout": {

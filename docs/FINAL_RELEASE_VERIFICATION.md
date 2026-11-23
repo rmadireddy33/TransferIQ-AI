@@ -12,20 +12,18 @@ regression suites pass. The editable Maestro source also passes strict checking,
 compiles to 81 nodes and 86 edges with UiPath CLI 1.205.0, validates as `Valid`,
 and is semantically equivalent to the checked-in canonical graph.
 
-An unqualified PASS is not supported because:
+The canonical reproducibility finding is closed: the checked-in artifact now
+contains only the two missing API Workflow process-binding rows, independently
+validates with CLI 1.205.0, and remains semantically equivalent at 81 nodes and
+86 edges. An unqualified PASS is still not supported because:
 
-1. The checked-in canonical `.flow` has 81 nodes and 86 edges but fails a fresh
-   standalone product validation because its `RetrieveCorporateActionDocument`
-   node lacks the two workflow-level binding rows for the in-solution
-   `TransferIQ_Document_Retrieval` resource. The source-built candidate contains
-   those rows and validates. The solution dry-run still reports `Valid`, and the
-   deployed 1.1.1 path is proven operational, so this is a repository artifact
-   and reproduction discrepancy rather than evidence of a production outage.
-2. The original audit proved that an omitted `X-CSRF-Token` was accepted. The
+1. The original audit proved that an omitted `X-CSRF-Token` was accepted. The
    local source now rejects missing and incorrect tokens before PEX persistence
    or webhook access, and the complete regressions pass. This correction has
    not been deployed to Render in this task, so production enforcement must not
    be claimed until the reviewed source is released and checked.
+2. Native inline-Agent evaluation, second-tenant rehearsal, and external
+   source-to-deployment provenance remain documented limitations.
 
 The remediation changed only the portal session validator, security tests, and
 documentation. No Flow, Agent prompt, Quick Form, financial rule, database
@@ -35,7 +33,7 @@ record, deployment, production credential, or production workflow was changed.
 
 | Area | Command or evidence | Observed result |
 |---|---|---|
-| Backend regression | `.\.venv\Scripts\python.exe -m pytest -q --tb=short` | **484 passed**, 0 failed, 0 skipped, 1 known Starlette/httpx deprecation warning, 262.15 seconds |
+| Backend regression | `.\.venv\Scripts\python.exe -m pytest -q --tb=short` | **485 passed**, 0 failed, 0 skipped, 1 known Starlette/httpx deprecation warning, 349.05 seconds |
 | Focused portal regression | `.\.venv\Scripts\python.exe -m pytest tests/test_step10b_portal.py -q --tb=short` | **15 passed**, 1 known warning, 10.25 seconds |
 | Python integrity | `compileall` and `pip check` | Compile succeeded; **No broken requirements found** |
 | Frontend tests | `npm test -- --run` | **26 passed** in 2 files, 0 failed, 8.69 seconds |
@@ -47,10 +45,12 @@ record, deployment, production credential, or production workflow was changed.
 | Source compile | `flow-sdk flow compile` with ignored tenant bindings | **81 nodes / 86 edges** |
 | Candidate validation | `uip maestro flow validate` | **Success / Valid** |
 | Semantic comparison | `compare-flow-structure.mjs` | `valid: true`; no missing or extra node IDs or edge tuples; Quick Form and Agent input contracts equivalent |
-| Checked-in canonical validation | `uip maestro flow validate` | **Failure**: 1 error and 2 warning diagnostics, all caused by missing in-solution API Workflow binding rows |
+| Checked-in canonical validation | pinned `uip maestro flow validate` | **Success / Valid**, 81 nodes / 86 edges after adding only two process binding rows |
+| Canonical checksum backup | `maestro/verification-backups/SHA256SUMS.md` | Pre-repair SHA-256 `3c7f...f88f`; repaired SHA-256 `3b48...c1e9`; backup re-hashed before installation |
+| Focused Flow/Agent/document regression | targeted pytest selection | **171 passed**, 1 known warning, 74.08 seconds |
 | Document retrieval workflow | `uip api-workflow validate` | **Success / Valid** |
 | Solution dry-run | `uip solution pack ... --dry-run` | **Success / Valid**; known `ImplicitConnection` catalog advisory remains |
-| Markdown links | read-only link checker | 55 Markdown files, 89 local links, **0 missing targets** |
+| Markdown links | read-only link checker | 56 Markdown files, 91 local links, **0 missing targets** |
 | Encoding | UTF-8/mojibake scan of `frontend/src` and `frontend/dist` | 11 files scanned, **0 issues** |
 
 The first sandboxed backend invocation could not start the Windows Store-backed
@@ -225,7 +225,7 @@ system, or historical source-control revisions. No remote SBOM is exposed.
 
 ## Documentation review
 
-All 89 local Markdown links resolve. Current API route names match the 51-path
+All 91 local Markdown links resolve. Current API route names match the 51-path
 local and production OpenAPI documents. The Render guide correctly requires a
 single worker, `/data`, startup migrations, and no `DATABASE_URL`. The judge
 guide correctly separates public review, authorized execution, and tenant-owned
@@ -233,9 +233,9 @@ bindings/reviewer assignment.
 
 The following statements must not remain unqualified after this audit:
 
-- `README.md`, `PROJECT_PLAN.md`, the judge guide, and the earlier audit call the
-  checked-in canonical `.flow` product-valid. Fresh standalone validation
-  contradicts that statement; only the source-built candidate validated.
+- The earlier audit correctly recorded the pre-repair canonical failure. That
+  finding is now historical: both checked-in canonical and source-built
+  candidate independently validate with pinned CLI 1.205.0.
 - Earlier audit/gap text said the portal presentation and Investigation History
   deployment was pending. The exact production/local asset hash match now
   closes that deployment gap.
@@ -244,16 +244,13 @@ The following statements must not remain unqualified after this audit:
   deployment and bounded negative check.
 
 This report and the updated audit/gap list record the current evidence. The
-canonical binding discrepancy remains separate from this remediation.
+canonical binding discrepancy is closed without a deployment or Flow execution.
 
 ## Remaining release limitations
 
 ### High priority before an unqualified PASS
 
-1. Rebuild or narrowly repair the checked-in canonical Flow so the two
-   in-solution document-retrieval binding rows are present, then repeat
-   standalone validation, semantic comparison, and solution dry-run.
-2. Deploy the reviewed CSRF correction to Render without changing secrets or
+1. Deploy the reviewed CSRF correction to Render without changing secrets or
    persistent data, then perform one bounded missing-header check that confirms
    HTTP 403 and no PEX/UiPath side effect.
 
@@ -275,7 +272,8 @@ canonical binding discrepancy remains separate from this remediation.
 
 The competition demonstration is operational, financially safe, regression
 green, deployed with exact portal asset parity, and reproducible from editable
-source to a valid 81-node/86-edge candidate. It should not be described as an
-unqualified release until the checked-in canonical binding discrepancy is
-repaired and the local CSRF correction is deployed and reverified.
+source to a valid canonical and source-built 81-node/86-edge artifact. It
+should not be described as an unqualified release until the local CSRF
+correction is deployed and reverified and the retained evaluation/portability
+limitations are accurately disclosed.
 

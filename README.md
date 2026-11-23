@@ -5,10 +5,10 @@ TransferIQ AI is a fictional brokerage-transfer reconciliation demonstration. It
 ## Current verified release
 
 - UiPath solution: **TransferIQ-AI 1.1.1**, active.
-- Canonical Maestro Flow: **81 nodes / 86 edges**, product-valid.
+- Canonical Maestro Flow: **81 nodes / 86 edges**, independently product-valid with UiPath CLI 1.205.0; the pre-repair checksum backup is recorded under `maestro/verification-backups/`.
 - Editable Flow SDK source: reproducible, with **0 source errors / 0 warnings**.
 - Flow toolchain: UiPath CLI **1.205.0** pinned in the Flow SDK lockfile. CLI 1.206.0 has a documented dynamic Quick Form validation regression.
-- Backend regression: **484 passed**.
+- Backend regression: **485 passed**.
 - Frontend regression: **26 passed**, production build successful.
 - Hosting: one Render Python service with a persistent /data disk; FastAPI serves the React build at /portal.
 - Real runtime evidence: portal-triggered CLEAN, approval, rejection, Autonomous Agent Analyze Files, Quick Form completion, independent verification, and audit.

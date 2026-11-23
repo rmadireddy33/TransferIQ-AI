@@ -135,9 +135,16 @@ uip solution pack maestro\TransferIQ_Reconciliation --dry-run --output json
 
 Expected results for the audited checkout:
 
-- canonical Maestro Flow: `Valid`, 81 nodes and 86 edges;
+- canonical Maestro Flow: `Valid`, 81 nodes and 86 edges. Its only repair was
+  the two process binding rows required by `RetrieveCorporateActionDocument`;
 - document-retrieval API workflow: `Valid` and buildable;
 - solution dry-run: `Success / Valid`, with the known pre-existing `ImplicitConnection` catalog advisory.
+
+The source-built candidate and canonical intentionally need not be byte-identical.
+The semantic comparison must report no missing/extra node IDs or edge tuples,
+equivalent Quick Form outcomes, and equivalent Agent inputs. The canonical's
+pre-repair and repaired SHA-256 values are recorded in
+[`maestro/verification-backups/SHA256SUMS.md`](../maestro/verification-backups/SHA256SUMS.md).
 
 ## 5. Import into a judge-owned UiPath tenant
 
