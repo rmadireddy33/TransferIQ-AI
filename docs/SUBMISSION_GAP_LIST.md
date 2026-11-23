@@ -1,7 +1,10 @@
 # TransferIQ AI submission gap list
 
 Audit date: **2026-11-19**. Documentation-reconciliation update:
-**2026-11-22**.
+**2026-11-22**. Final release gate: **2026-11-22**.
+
+Current recommendation: **PASS WITH LIMITATIONS**. Full details and exact
+commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 
 ## Closed during targeted remediation
 
@@ -28,6 +31,40 @@ Audit date: **2026-11-19**. Documentation-reconciliation update:
   in another folder and was not changed or asserted by this documentation task.
 
 ## P1 - important for scoring
+
+### P1-0 - Reconcile the checked-in canonical resource binding — OPEN 2026-11-22
+
+- **Evidence:** The pinned 1.205.0 source check is clean, source compilation
+  produces 81 nodes/86 edges, the candidate validates `Success / Valid`, and
+  semantic comparison reports no missing/extra node IDs or edge tuples. The
+  checked-in canonical artifact has the same graph but standalone validation
+  reports one error and two warnings because the
+  `TransferIQ_Document_Retrieval` workflow-level `name` and `folderPath`
+  binding rows are absent.
+- **Impact:** Production 1.1.1 is operational and the solution dry-run is
+  `Valid`, so this is not an observed production outage. It does invalidate the
+  unqualified documentation claim that the checked-in canonical `.flow`
+  validates standalone and can surprise a judge following that command.
+- **Required fix:** With explicit approval, regenerate or narrowly repair only
+  the canonical binding rows from the valid source-built candidate. Preserve
+  every node ID, edge tuple, trigger, Agent input, Quick Form outcome, and
+  resource reference. Repeat standalone validation, semantic comparison, API
+  Workflow validation, and solution dry-run. Do not deploy as part of the fix.
+
+### P1-0A - Enforce the documented CSRF header requirement — OPEN 2026-11-22
+
+- **Evidence:** An isolated local TestClient probe used a signed session cookie,
+  valid idempotency key, and webhook test double but omitted
+  `X-CSRF-Token`; the start returned HTTP 201. The route header is optional and
+  `_read_session` compares it only when supplied.
+- **Mitigation already present:** Production cookies are `Secure`, `HttpOnly`,
+  and `SameSite=Strict`; the endpoint is allowlisted, rate-limited,
+  idempotency-protected, and active-run-capped. This materially reduces ordinary
+  cross-site browser risk for the fictional demo but does not enforce the
+  documented header contract.
+- **Required fix:** With explicit approval, reject missing and incorrect CSRF
+  headers before persistence or dispatch and add focused negative tests. Do not
+  change session, webhook, financial, Agent, or Flow behavior.
 
 ### P1-1 - Complete native Agent evaluations — PARTIALLY CLOSED 2026-11-22
 
@@ -62,12 +99,12 @@ Audit date: **2026-11-19**. Documentation-reconciliation update:
 - **Complexity:** Low to medium; several bounded tests plus evidence capture.
 - **Verification:** Record PEX/instance/task IDs, package 1.1.1 or later, terminal business outcome, audit, unchanged positions and incident count. Do not retry identical failing configurations.
 
-### CLOSED LOCALLY - P1-3 - Improve demo clarity without changing business logic
+### CLOSED AND DEPLOYED - P1-3 - Improve demo clarity without changing business logic
 
 - **Resolution:** The sanitized PEX projection now persists the plan's document-evidence method. Both active investigation views distinguish `AGENT_ANALYZE_FILES`, `API_ONLY`, and document evidence unavailable; the legacy component and active-source encoding artifacts are removed; and a concise evidence-method panel explains the deterministic API validation boundary without exposing capabilities or file URLs.
 - **Safety:** The portal remains read-only for decisions. No Flow, prompt, Quick Form, webhook, financial rule, or position was changed.
 - **Complexity:** Medium; 0.5-1 day plus tests.
-- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and global/transfer-specific operator history remain backend-derived; 30 frontend tests and the production build pass; all 481 backend tests pass. Render deployment and a new production asset hash remain owner handoff steps.
+- **Verification:** Analyze Files, API-only, unavailable, and pre-migration plan-fallback fixtures render accurate labels; the six-stage status view and global/transfer-specific operator history remain backend-derived; 30 frontend tests and the production build pass; all 481 backend tests pass. Fresh SHA-256 checks show the deployed JavaScript and CSS are byte-identical to the local build. The owner visually reviewed seven persisted production investigations: one for TRF-1001 and six for TRF-1002.
 
 ### P1-4 - Rehearse tenant dependencies and portable assignment
 
@@ -104,17 +141,21 @@ Audit date: **2026-11-19**. Documentation-reconciliation update:
 
 ## Top five competitiveness gaps
 
-1. Native CLEAN evaluation passes, but native inline-Agent evaluation is blocked before agent output.
-2. Source-to-deployment provenance is maintained externally and is not independently verified here.
-3. Current live evidence does not cover every requested scenario/failure/replay case.
-4. Portal presentation cleanup and Investigation History are complete locally; deployment and a new production asset-parity check remain.
-5. A second-tenant import and resource-binding rehearsal has not been performed.
+1. The checked-in canonical graph is 81/86-equivalent but lacks the two binding rows required for standalone validation.
+2. The portal start accepts a missing CSRF header despite the documented requirement.
+3. Native CLEAN evaluation passes, but native inline-Agent evaluation is blocked before agent output.
+4. Source-to-deployment provenance is maintained externally and a second-tenant binding rehearsal is not retained.
+5. Current live evidence does not cover every requested secondary scenario/failure/replay case.
 
 ## Release interpretation
 
-The deployed demo is functional, financially safe, reproducible, and
-consistently documented, so the project is **READY WITH LIMITATIONS**. Both P0
-items are closed. Agent-evaluation completion, external provenance, portal polish,
-secondary live coverage, and a second-tenant rehearsal remain. None justifies
-changing deterministic reconciliation or custody data.
+The deployed demo is functional, financially safe, regression green, and has
+exact frontend asset parity, so the final competition recommendation is
+**PASS WITH LIMITATIONS**. Both original P0 remediation items remain closed.
+The newly found canonical binding and missing-CSRF-header issues block an
+unqualified PASS but do not demonstrate a production outage or financial-state
+failure. Agent-evaluation completion, external provenance, secondary live
+coverage, a second-tenant rehearsal, and optional history-scroll accessibility
+polish also remain. None justifies changing deterministic reconciliation or
+custody data.
 
