@@ -55,7 +55,24 @@ Review-run creation issues a scoped capability. Preview, decision, and execution
 - POST /api/portal/investigations
 - GET /api/portal/investigations/{executionRequestId}
 
-Starting an investigation requires the signed operator session, CSRF token, and Idempotency-Key. Both history and detail reads require the signed session cookie and return only sanitized persisted PEX state. History is scoped to the authenticated operator, ordered newest-first, optionally filtered by TRF-1001 through TRF-1005, and never starts or retries a workflow.
+`POST /api/portal/session` is the credential-authenticated session bootstrap: it
+issues a signed HttpOnly cookie and returns the session-bound CSRF token. It does
+not require a pre-existing session or CSRF token. `POST
+/api/portal/investigations` is the only cookie-authenticated portal mutation. It
+requires the signed cookie, a non-empty matching `X-CSRF-Token`, and an
+`Idempotency-Key`. Missing or incorrect CSRF is rejected with HTTP 403 before a
+PEX row is created or the webhook is called.
+
+History and detail GETs require the signed session cookie but intentionally do
+not require CSRF because they are read-only. They return only sanitized
+persisted PEX state. History is scoped to the authenticated operator, ordered
+newest-first, optionally filtered by TRF-1001 through TRF-1005, and never starts
+or retries a workflow.
+
+The `/api/demo/runs...` review callbacks are independently authenticated
+machine-to-machine operations. They use run isolation, idempotency, and scoped
+review capabilities rather than the portal session cookie, so the portal CSRF
+header does not apply to them.
 
 ## Private business and document APIs
 

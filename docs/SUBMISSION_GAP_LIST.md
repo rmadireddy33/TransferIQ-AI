@@ -51,20 +51,26 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
   resource reference. Repeat standalone validation, semantic comparison, API
   Workflow validation, and solution dry-run. Do not deploy as part of the fix.
 
-### P1-0A - Enforce the documented CSRF header requirement — OPEN 2026-11-22
+### P1-0A - Enforce the documented CSRF header requirement — SOURCE CLOSED / DEPLOYMENT PENDING 2026-11-22
 
 - **Evidence:** An isolated local TestClient probe used a signed session cookie,
   valid idempotency key, and webhook test double but omitted
   `X-CSRF-Token`; the start returned HTTP 201. The route header is optional and
   `_read_session` compares it only when supplied.
-- **Mitigation already present:** Production cookies are `Secure`, `HttpOnly`,
-  and `SameSite=Strict`; the endpoint is allowlisted, rate-limited,
-  idempotency-protected, and active-run-capped. This materially reduces ordinary
-  cross-site browser risk for the fictional demo but does not enforce the
-  documented header contract.
-- **Required fix:** With explicit approval, reject missing and incorrect CSRF
-  headers before persistence or dispatch and add focused negative tests. Do not
-  change session, webhook, financial, Agent, or Flow behavior.
+- **Root cause:** `_read_session` compared the session claim only when the
+  optional request header was supplied, so omission selected no CSRF check.
+- **Local correction:** Investigation start now invokes the existing session
+  reader with `require_csrf=True`. Missing/incorrect headers return 403 before
+  manager access, PEX persistence, or webhook dispatch. Read-only GETs and
+  independently capability-authenticated machine callbacks remain exempt.
+- **Verification:** Focused portal tests pass 15/15; complete backend tests pass
+  484/484; frontend tests pass 26/26; production build succeeds. Negative tests
+  assert zero database rows and zero webhook calls. Valid start and idempotent
+  replay retain one webhook call.
+- **Remaining action:** Deploy the reviewed source to Render without changing
+  secrets or persistent data, then run one bounded missing-header check. Do not
+  claim production enforcement until that returns 403 with no PEX/UiPath side
+  effect.
 
 ### P1-1 - Complete native Agent evaluations — PARTIALLY CLOSED 2026-11-22
 
@@ -142,7 +148,7 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 ## Top five competitiveness gaps
 
 1. The checked-in canonical graph is 81/86-equivalent but lacks the two binding rows required for standalone validation.
-2. The portal start accepts a missing CSRF header despite the documented requirement.
+2. The local CSRF correction is regression-green but has not yet been deployed and verified on Render.
 3. Native CLEAN evaluation passes, but native inline-Agent evaluation is blocked before agent output.
 4. Source-to-deployment provenance is maintained externally and a second-tenant binding rehearsal is not retained.
 5. Current live evidence does not cover every requested secondary scenario/failure/replay case.
@@ -152,9 +158,9 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 The deployed demo is functional, financially safe, regression green, and has
 exact frontend asset parity, so the final competition recommendation is
 **PASS WITH LIMITATIONS**. Both original P0 remediation items remain closed.
-The newly found canonical binding and missing-CSRF-header issues block an
-unqualified PASS but do not demonstrate a production outage or financial-state
-failure. Agent-evaluation completion, external provenance, secondary live
+The canonical binding issue and pending production rollout of the locally fixed
+CSRF check block an unqualified PASS but do not demonstrate a production outage
+or financial-state failure. Agent-evaluation completion, external provenance, secondary live
 coverage, a second-tenant rehearsal, and optional history-scroll accessibility
 polish also remain. None justifies changing deterministic reconciliation or
 custody data.

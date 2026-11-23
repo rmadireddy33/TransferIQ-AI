@@ -8,8 +8,8 @@ TransferIQ AI is a fictional brokerage-transfer reconciliation demonstration. It
 - Canonical Maestro Flow: **81 nodes / 86 edges**, product-valid.
 - Editable Flow SDK source: reproducible, with **0 source errors / 0 warnings**.
 - Flow toolchain: UiPath CLI **1.205.0** pinned in the Flow SDK lockfile. CLI 1.206.0 has a documented dynamic Quick Form validation regression.
-- Backend regression: **481 passed**.
-- Frontend regression: **30 passed**, production build successful.
+- Backend regression: **484 passed**.
+- Frontend regression: **26 passed**, production build successful.
 - Hosting: one Render Python service with a persistent /data disk; FastAPI serves the React build at /portal.
 - Real runtime evidence: portal-triggered CLEAN, approval, rejection, Autonomous Agent Analyze Files, Quick Form completion, independent verification, and audit.
 
@@ -82,7 +82,7 @@ The OpenAPI document at /openapi.json is the route authority. Current groups are
 - public health and documentation: /health, /docs, /redoc, /openapi.json;
 - precomputed public catalog: GET /api/demo/transfers and GET /api/demo/transfers/{transferId};
 - anonymous isolated demo runs: /api/demo/runs..., including reconciliation, references, documents, corporate actions, plan review, verification, and audit;
-- controlled portal operations: `/api/portal/session`, paginated `GET /api/portal/investigations`, explicit `POST /api/portal/investigations`, and PEX detail reads;
+- controlled portal operations: `/api/portal/session`, paginated `GET /api/portal/investigations`, CSRF- and idempotency-protected `POST /api/portal/investigations`, and PEX detail reads;
 - private business/document routes under /api/..., protected by X-API-Key;
 - protected resolution placeholders under /api/resolution-plans..., which fail closed because production-grade reviewer identity is not configured.
 

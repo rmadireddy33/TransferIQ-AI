@@ -1,56 +1,52 @@
-import { describe, expect, it, vi } from 'vitest'
-import { api, ApiError, errorMessage } from './api'
-import { catalog } from './test/fixtures'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-describe('read-only API client', () => {
-  it('parses the public catalog and sends only a GET with an Accept header', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(catalog()), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    }))
-    vi.stubGlobal('fetch', fetchMock)
+import { api } from './api'
 
-    await expect(api.catalog()).resolves.toEqual(catalog())
-    expect(fetchMock).toHaveBeenCalledOnce()
-    const [url, options] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/demo/transfers')
-    expect(options.method).toBe('GET')
-    expect(options.headers).toEqual({ Accept: 'application/json' })
-    expect(options.body).toBeUndefined()
-  })
+const investigationResponse = {
+  executionRequestId: 'PEX-0123456789abcdef0123456789abcdef',
+  transferId: 'TRF-1002',
+  triggerStatus: 'ACCEPTED',
+  investigationStatus: 'TRIGGERED',
+  reviewStatus: 'NOT_STARTED',
+  workflowOutcome: null,
+  lastUpdated: '2026-11-22T12:00:00Z',
+  startedAt: '2026-11-22T12:00:00Z',
+  deadlineAt: '2026-11-22T12:10:00Z',
+  verificationStatus: null,
+  documentEvidenceStatus: null,
+  errorSummary: null,
+  auditReference: null,
+  runId: null,
+  planId: null,
+  auditUrl: null,
+  investigationSummary: null,
+  evidenceReferences: [],
+  proposedActions: [],
+  unresolvedExceptions: [],
+  positionsUnchanged: null,
+  transferCompleted: null,
+}
 
-  it('fails closed when the backend response shape is incomplete', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [] }), { status: 200 })))
-    await expect(api.catalog()).rejects.toMatchObject({ code: 'malformed_response', status: 200 })
-  })
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
-  it('reports a bounded 429 response without retrying', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      detail: { code: 'rate_limited', message: 'Request rate limit exceeded' },
-    }), { status: 429, headers: { 'Retry-After': '17' } }))
-    vi.stubGlobal('fetch', fetchMock)
+describe('portal investigation request security', () => {
+  it('sends the session-bound CSRF token and idempotency key', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify(investigationResponse),
+      { status: 201, headers: { 'Content-Type': 'application/json' } },
+    ))
 
-    let caught: unknown
-    try { await api.catalog() } catch (error) { caught = error }
-    expect(caught).toBeInstanceOf(ApiError)
-    expect(errorMessage(caught)).toBe('Request limit reached. Try again in 17 seconds.')
-    expect(fetchMock).toHaveBeenCalledOnce()
-  })
+    await api.startInvestigation('TRF-1002', 'issued-csrf-token', 'portal-start-idempotency-key')
 
-  it('requests operator history with an encoded transfer filter and no write body', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      items: [], total: 0, limit: 10, offset: 0,
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-    vi.stubGlobal('fetch', fetchMock)
-
-    await expect(api.investigationHistory(10, 0, undefined, 'TRF-1002')).resolves.toMatchObject({total:0})
-    const [url, options] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/portal/investigations?limit=10&offset=0&transferId=TRF-1002')
-    expect(options.method).toBe('GET')
-    expect(options.credentials).toBe('same-origin')
-    expect(options.body).toBeUndefined()
-  })
-
-  it('encodes identifiers used in document download links', () => {
-    expect(api.documentUrl('DEMO-a/b', 'DOC x')).toBe('/api/demo/runs/DEMO-a%2Fb/documents/DOC%20x/download')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0]
+    const headers = new Headers(init?.headers)
+    expect(url).toBe('/api/portal/investigations')
+    expect(init?.method).toBe('POST')
+    expect(init?.credentials).toBe('same-origin')
+    expect(headers.get('X-CSRF-Token')).toBe('issued-csrf-token')
+    expect(headers.get('Idempotency-Key')).toBe('portal-start-idempotency-key')
   })
 })

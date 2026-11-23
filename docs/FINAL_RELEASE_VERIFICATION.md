@@ -1,7 +1,7 @@
 # TransferIQ AI final release verification
 
 Verification date: **2026-11-22**  
-Scope: final competition release audit  
+Scope: final competition release audit plus targeted CSRF remediation  
 Recommendation: **PASS WITH LIMITATIONS**
 
 ## Executive result
@@ -12,7 +12,7 @@ regression suites pass. The editable Maestro source also passes strict checking,
 compiles to 81 nodes and 86 edges with UiPath CLI 1.205.0, validates as `Valid`,
 and is semantically equivalent to the checked-in canonical graph.
 
-An unqualified PASS is not supported for two reasons:
+An unqualified PASS is not supported because:
 
 1. The checked-in canonical `.flow` has 81 nodes and 86 edges but fails a fresh
    standalone product validation because its `RetrieveCorporateActionDocument`
@@ -21,25 +21,25 @@ An unqualified PASS is not supported for two reasons:
    those rows and validates. The solution dry-run still reports `Valid`, and the
    deployed 1.1.1 path is proven operational, so this is a repository artifact
    and reproduction discrepancy rather than evidence of a production outage.
-2. The portal start route documents CSRF as mandatory, but an isolated local
-   probe with a webhook test double received HTTP 201 when the signed session
-   cookie and idempotency key were present but `X-CSRF-Token` was omitted. The
-   cookie is `Secure`, `HttpOnly`, and `SameSite=Strict` in production, which
-   mitigates ordinary cross-site browser requests, but the server-side contract
-   is not enforced as documented.
+2. The original audit proved that an omitted `X-CSRF-Token` was accepted. The
+   local source now rejects missing and incorrect tokens before PEX persistence
+   or webhook access, and the complete regressions pass. This correction has
+   not been deployed to Render in this task, so production enforcement must not
+   be claimed until the reviewed source is released and checked.
 
-No application code, Flow, Agent prompt, Quick Form, financial rule, database
-record, deployment, or production workflow was changed during this audit.
+The remediation changed only the portal session validator, security tests, and
+documentation. No Flow, Agent prompt, Quick Form, financial rule, database
+record, deployment, production credential, or production workflow was changed.
 
 ## Verification matrix
 
 | Area | Command or evidence | Observed result |
 |---|---|---|
-| Backend regression | `.\.venv\Scripts\python.exe -m pytest -q --tb=short` | **481 passed**, 0 failed, 0 skipped, 1 known Starlette/httpx deprecation warning, 153.40 seconds |
-| Focused portal regression | `.\.venv\Scripts\python.exe -m pytest tests/test_step10b_portal.py -q --tb=short` | **12 passed**, 1 known warning, 6.30 seconds |
+| Backend regression | `.\.venv\Scripts\python.exe -m pytest -q --tb=short` | **484 passed**, 0 failed, 0 skipped, 1 known Starlette/httpx deprecation warning, 262.15 seconds |
+| Focused portal regression | `.\.venv\Scripts\python.exe -m pytest tests/test_step10b_portal.py -q --tb=short` | **15 passed**, 1 known warning, 10.25 seconds |
 | Python integrity | `compileall` and `pip check` | Compile succeeded; **No broken requirements found** |
-| Frontend tests | `npm test -- --run` | **30 passed** in 2 files, 0 failed, 6.16 seconds |
-| Frontend build | `npm run build` | Success; 2,162 modules, 1.39 seconds |
+| Frontend tests | `npm test -- --run` | **26 passed** in 2 files, 0 failed, 8.69 seconds |
+| Frontend build | `npm run build` | Success; 2,162 modules, 3.33 seconds |
 | npm production audit | `npm audit --omit=dev --json` | **0 vulnerabilities**; 9 production dependencies, 189 total dependency records |
 | Python vulnerability lookup | OSV query of the installed environment | 32 installed PyPI packages queried; **0 vulnerability references** |
 | Flow source check | `npm run check` in `.flow-sdk` | **0 errors / 0 warnings** |
@@ -50,7 +50,7 @@ record, deployment, or production workflow was changed during this audit.
 | Checked-in canonical validation | `uip maestro flow validate` | **Failure**: 1 error and 2 warning diagnostics, all caused by missing in-solution API Workflow binding rows |
 | Document retrieval workflow | `uip api-workflow validate` | **Success / Valid** |
 | Solution dry-run | `uip solution pack ... --dry-run` | **Success / Valid**; known `ImplicitConnection` catalog advisory remains |
-| Markdown links | read-only link checker | 44 Markdown files, 87 local links, **0 missing targets** |
+| Markdown links | read-only link checker | 55 Markdown files, 89 local links, **0 missing targets** |
 | Encoding | UTF-8/mojibake scan of `frontend/src` and `frontend/dist` | 11 files scanned, **0 issues** |
 
 The first sandboxed backend invocation could not start the Windows Store-backed
@@ -168,6 +168,8 @@ keyboard access. No CSS or component change was made in this audit.
   key is not configured.
 - Portal sessions are HMAC-signed, expire, bind to the configured operator, and
   use `Secure`, `HttpOnly`, `SameSite=Strict` cookies in production.
+- Cookie-authenticated portal mutations require a non-empty session-bound CSRF
+  header. Missing or incorrect values fail before registry or webhook access.
 - Portal starts are allowlisted, body-bounded, rate-limited, active-run-capped,
   and protected by a 16-to-128-character idempotency key.
 - Idempotency intent is persisted before the one bounded webhook attempt.
@@ -183,12 +185,14 @@ keyboard access. No CSS or component change was made in this audit.
 
 ### Findings
 
-1. **CSRF header omission is accepted.** `X-CSRF-Token` is optional in the
-   route signature, and `_read_session` compares it only when a value is
-   supplied. An isolated local request with a signed session and no CSRF header
-   returned HTTP 201. Require the header or explicitly fail when it is absent,
-   and add a negative regression test. SameSite=Strict is meaningful mitigation
-   but does not satisfy the documented double-submit/header check.
+1. **CSRF omission finding is closed in local source, pending deployment.** The
+   root cause was conditional validation only when the optional header was
+   present. `_read_session(..., require_csrf=True)` now requires a non-empty
+   matching session claim for investigation starts. Focused tests cover valid,
+   missing, incorrect, expired, unauthenticated, GET-without-CSRF, idempotent
+   replay, and M2M callback behavior. Rejected cases create zero PEX rows and
+   make zero webhook calls. The React request test confirms the issued token is
+   sent through the existing authenticated client path.
 2. **Login throttling shares the general public budget.** The access-code
    endpoint receives the public per-client/global request limits, while starts
    also receive stricter operator and capacity limits. This is adequate for the
@@ -221,7 +225,7 @@ system, or historical source-control revisions. No remote SBOM is exposed.
 
 ## Documentation review
 
-All 87 local Markdown links resolve. Current API route names match the 51-path
+All 89 local Markdown links resolve. Current API route names match the 51-path
 local and production OpenAPI documents. The Render guide correctly requires a
 single worker, `/data`, startup migrations, and no `DATABASE_URL`. The judge
 guide correctly separates public review, authorized execution, and tenant-owned
@@ -235,13 +239,12 @@ The following statements must not remain unqualified after this audit:
 - Earlier audit/gap text said the portal presentation and Investigation History
   deployment was pending. The exact production/local asset hash match now
   closes that deployment gap.
-- The CSRF requirement must be described as intended but not fully enforced
-  until the missing-header case is rejected.
+- The local source enforces the CSRF requirement. The deployed Render service
+  remains on the pre-remediation release until the owner performs the documented
+  deployment and bounded negative check.
 
 This report and the updated audit/gap list record the current evidence. The
-other guides should be reconciled when the canonical binding and CSRF defects
-are approved for repair, so their final instructions describe the repaired
-state rather than a temporary exception.
+canonical binding discrepancy remains separate from this remediation.
 
 ## Remaining release limitations
 
@@ -250,8 +253,9 @@ state rather than a temporary exception.
 1. Rebuild or narrowly repair the checked-in canonical Flow so the two
    in-solution document-retrieval binding rows are present, then repeat
    standalone validation, semantic comparison, and solution dry-run.
-2. Enforce a non-empty matching `X-CSRF-Token` on portal starts and add a
-   negative test for missing and incorrect headers.
+2. Deploy the reviewed CSRF correction to Render without changing secrets or
+   persistent data, then perform one bounded missing-header check that confirms
+   HTTP 403 and no PEX/UiPath side effect.
 
 ### Retained limitations
 
@@ -272,6 +276,6 @@ state rather than a temporary exception.
 The competition demonstration is operational, financially safe, regression
 green, deployed with exact portal asset parity, and reproducible from editable
 source to a valid 81-node/86-edge candidate. It should not be described as an
-unqualified release until the checked-in canonical binding discrepancy and
-missing-CSRF-header acceptance are repaired and reverified.
+unqualified release until the checked-in canonical binding discrepancy is
+repaired and the local CSRF correction is deployed and reverified.
 

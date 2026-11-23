@@ -26,8 +26,8 @@ This plan records implemented milestones and remaining work. Historical Step doc
 
 ## Verification baseline
 
-- Backend: **481 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
-- Frontend: **30 passed**, production build successful.
+- Backend: **484 passed**, no failures or skips; one known Starlette/httpx deprecation warning.
+- Frontend: **26 passed**, production build successful.
 - Canonical Flow: product validation **Valid**.
 - Editable source: **0 errors / 0 warnings**; clean compile **81 nodes / 86 edges**.
 - Solution: **1.1.1 Active / Successful**.

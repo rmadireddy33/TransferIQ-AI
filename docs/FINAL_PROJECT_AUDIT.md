@@ -5,6 +5,7 @@ Documentation reconciliation: **2026-11-22**
 Native evaluation update: **2026-11-22**  
 Portal presentation cleanup: **2026-11-22**  
 Final release verification: **2026-11-22**  
+Portal CSRF remediation: **2026-11-22**  
 Audit role: independent solution architecture, QA, security, and submission-readiness review  
 Overall feature completion: **92%**  
 Release recommendation: **PASS WITH LIMITATIONS**  
@@ -34,11 +35,13 @@ bounded `TRF-1001` Flow evaluation passed at 1.0, but inline-Agent node
 evaluation is blocked before agent execution by an upstream file-input
 expression that node scope cannot populate. Provenance is owner-managed outside
 this workspace, and a second-tenant import rehearsal has not been performed.
-The audit also proved that a portal start accepts an omitted CSRF header when a
-valid signed session and idempotency key are present. `SameSite=Strict` is a
-meaningful production mitigation, but it does not satisfy the documented
-server-side CSRF contract. These findings keep the final recommendation at
-**PASS WITH LIMITATIONS**.
+The audit also proved that a portal start accepted an omitted CSRF header when a
+valid signed session and idempotency key were present. The targeted local
+remediation now requires a non-empty matching token and proves that rejection
+happens before persistence or webhook dispatch. Render was not deployed in this
+task, so production enforcement remains pending. The separate canonical binding
+and retained portability/evaluation limitations keep the final recommendation
+at **PASS WITH LIMITATIONS**.
 
 ## Executive status summary
 
@@ -86,9 +89,10 @@ Calculated completion is `(43 x 1 + 6 x 0.5 + 1 x 0) / 50 = 92%`.
 
 `PASS WITH LIMITATIONS` means the deployed demonstration is usable,
 financially safe, locally reproducible, and consistently documented. It must
-not be described as canonical-standalone-valid, CSRF-header-enforced,
-Agent-evaluation-complete, source-to-deployment provenance-verified, or
-second-tenant rehearsed. This is not a recommendation to change the financial
+not be described as canonical-standalone-valid, production-CSRF-remediated until
+the local correction is deployed, Agent-evaluation-complete,
+source-to-deployment provenance-verified, or second-tenant rehearsed. This is
+not a recommendation to change the financial
 engine, webhook integration, Manual Trigger, Agent, Quick Form, or IXP setting.
 
 ## Scope and evidence policy
@@ -115,7 +119,7 @@ Strong controls observed:
 - private business APIs require `X-API-Key`;
 - public health and documentation remain accessible;
 - demo run routes are allowlisted, quota-bound, idempotent, and isolated;
-- portal starts require an authenticated short-lived session and idempotency key; the frontend sends a CSRF token, but the final audit found the missing-header server check described below;
+- portal starts require an authenticated short-lived session, a non-empty matching session-bound CSRF header, and an idempotency key before persistence or dispatch; read-only GETs remain CSRF-exempt;
 - webhook dispatch is bounded and does not retry an uncertain outcome automatically;
 - webhook acceptance produces `TRIGGERED`, not false completion;
 - original positions are protected by application and database controls;
@@ -245,8 +249,8 @@ Command:
 & .\.venv\Scripts\python.exe -m pytest -q --tb=short
 ```
 
-Final release result: **481 passed, 0 failed, 0 skipped, 1 warning in
-153.40 seconds**. The focused portal suite passed **12 tests** in 6.30 seconds.
+Final post-remediation result: **484 passed, 0 failed, 0 skipped, 1 warning in
+262.15 seconds**. The focused portal suite passed **15 tests** in 10.25 seconds.
 The warning is the existing Starlette/httpx `TestClient` deprecation warning.
 
 Additional checks:
@@ -271,8 +275,8 @@ npm audit --omit=dev --json
 
 Observed results:
 
-- unit tests: **30 passed, 0 failed, 0 skipped** across two files in 6.16 seconds;
-- production build: **successful**, 2,162 modules transformed in 1.39 seconds;
+- unit tests: **26 passed, 0 failed, 0 skipped** across two files in 8.69 seconds;
+- production build: **successful**, 2,162 modules transformed in 3.33 seconds;
 - built JavaScript: 412.19 kB, 122.29 kB gzip; built CSS: 22.42 kB, 5.92 kB gzip;
 - `npm audit --omit=dev` was rerun and reported **0 vulnerabilities**;
 - a read-only OSV batch query reported **0 vulnerability references** across
@@ -354,15 +358,16 @@ deployed to Render. Documentation does not prescribe or perform Git operations.
 
 The frontend does not contain UiPath webhook secrets, portal access codes, session signing keys, authentication headers, or privileged approval capabilities. The backend returns sanitized tracking and error information. Retained evidence in the repository is sanitized; raw runtime capabilities and credentials should remain excluded.
 
-The final release audit found one security-contract defect. A portal start with
-a valid signed session and idempotency key but no `X-CSRF-Token` returned HTTP
-201 in an isolated local TestClient probe with a webhook test double. The route
-declares the header as optional and compares it only when present. Production's
-`Secure`, `HttpOnly`, `SameSite=Strict` cookie mitigates ordinary cross-site
-browser requests, but the documented server-side CSRF requirement is not fully
-enforced. The smallest fix is to require a non-empty header and add missing and
-incorrect-header negative tests. No production request was made and no code was
-changed during this audit.
+The final release audit found that a portal start with a valid signed session
+and idempotency key but no `X-CSRF-Token` returned HTTP 201. Root cause was the
+session reader comparing CSRF only when the optional header was supplied. The
+local remediation adds an explicit `require_csrf` mode and applies it to the
+only session-authenticated portal mutation. Missing/incorrect tokens return 403;
+expired/absent sessions return 401; all fail before PEX creation or webhook
+access. A valid request and same-key replay retain 201/200 single-dispatch
+behavior. GETs and capability-authenticated machine callbacks remain documented
+exemptions. No production request, deployment, credential, or database record
+was changed, so Render still requires rollout verification.
 
 Read-only dependency checks found zero npm production vulnerabilities and zero
 OSV vulnerability references across 32 installed PyPI packages. `pip check`
@@ -394,7 +399,7 @@ Additional requested readiness factors map into that rubric as follows:
 ## Top five remaining gaps
 
 1. **Reconcile the checked-in canonical binding rows.** Preserve the 81/86 graph, add the in-solution document-retrieval workflow binding rows, and repeat standalone validation and semantic comparison.
-2. **Enforce missing-CSRF rejection.** Require a non-empty matching `X-CSRF-Token` before creating a PEX row or dispatching a webhook.
+2. **Deploy and verify the CSRF remediation.** Release the reviewed local source, then confirm one missing-header request returns 403 with no PEX or UiPath side effect.
 3. **Complete native Agent evaluation.** Ten logical cases and a passed native CLEAN Flow run now exist, but inline-Agent node evaluation stops before agent output because node scope cannot resolve the upstream file expression.
 4. **Improve submission traceability and portability.** Correlate the external submitted revision, Render build, and UiPath package, and rehearse tenant-owned bindings in a second tenant.
 5. **Close only material remaining live gaps.** Use bounded runs for secondary scenarios or replay behavior only when they add judging value.
@@ -408,12 +413,12 @@ be demonstrated in its current state: production is operational, the portal is
 asset-identical to the tested build, regressions are green, and editable Flow
 source produces a valid semantically equivalent 81/86 candidate. It should not
 be described as an unqualified release until the checked-in canonical binding
-and missing-CSRF-header findings are repaired and reverified.
+is repaired and the local CSRF remediation is deployed and reverified.
 
 Recommended order before final submission:
 
 1. obtain approval for a narrow canonical binding repair and revalidate it;
-2. obtain approval for missing-CSRF rejection and its negative tests;
+2. deploy the reviewed CSRF remediation and run one bounded negative check;
 3. establish a supported isolated Agent-evaluation harness without changing business behavior;
 4. establish source/deployment traceability and rehearse target-tenant resource binding/import;
 5. capture a final bounded acceptance record only if a material runtime artifact changes.

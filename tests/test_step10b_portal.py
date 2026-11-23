@@ -41,6 +41,11 @@ def start(client, csrf, transfer_id="TRF-1002", key=None):
     })
 
 
+def portal_row_count(client):
+    with client.app.state.portal_investigations.engine.connect() as connection:
+        return connection.exec_driver_sql("SELECT COUNT(*) FROM portal_investigations").scalar_one()
+
+
 def test_public_portal_stays_available_while_trigger_is_disabled(settings):
     with TestClient(create_app(settings)) as client:
         assert client.get("/api/demo/transfers").status_code == 200
@@ -102,6 +107,78 @@ def test_authorized_start_is_persisted_idempotent_and_secret_free(tmp_path, monk
         tracked = client.get("/api/portal/investigations/" + body["executionRequestId"])
         assert tracked.status_code == 200
         assert tracked.json()["transferId"] == "TRF-1002"
+
+
+def test_portal_start_requires_valid_csrf_before_any_side_effect(tmp_path, monkeypatch):
+    settings = configured_settings(tmp_path)
+    calls = []
+
+    def accepted(_settings, payload):
+        calls.append(payload)
+        return True, "event-csrf-test", None
+
+    monkeypatch.setattr(portal_api, "send_webhook", accepted)
+    with TestClient(create_app(settings)) as client:
+        csrf = login(client)
+        key = uuid4().hex
+
+        missing = client.post("/api/portal/investigations", json={"transferId": "TRF-1002"}, headers={
+            "Idempotency-Key": key,
+        })
+        assert missing.status_code == 403
+        assert missing.json()["detail"]["code"] == "csrf_validation_failed"
+        assert portal_row_count(client) == 0
+        assert calls == []
+
+        incorrect = client.post("/api/portal/investigations", json={"transferId": "TRF-1002"}, headers={
+            "X-CSRF-Token": "incorrect-csrf-token", "Idempotency-Key": key,
+        })
+        assert incorrect.status_code == 403
+        assert incorrect.json()["detail"]["code"] == "csrf_validation_failed"
+        assert portal_row_count(client) == 0
+        assert calls == []
+
+        valid = start(client, csrf, key=key)
+        assert valid.status_code == 201
+        assert portal_row_count(client) == 1
+        assert len(calls) == 1
+
+        replay = start(client, csrf, key=key)
+        assert replay.status_code == 200
+        assert replay.json()["executionRequestId"] == valid.json()["executionRequestId"]
+        assert portal_row_count(client) == 1
+        assert len(calls) == 1
+
+
+def test_portal_start_rejects_expired_session_before_any_side_effect(tmp_path, monkeypatch):
+    settings = configured_settings(tmp_path)
+    calls = []
+    monkeypatch.setattr(portal_api, "send_webhook", lambda _settings, payload: calls.append(payload))
+    with TestClient(create_app(settings)) as client:
+        csrf = "expired-session-csrf-token"
+        real_time = portal_api.time.time
+        current_time = real_time()
+        monkeypatch.setattr(portal_api.time, "time", lambda: current_time - 3_601)
+        expired_token = portal_api._session_token(settings, settings.portal_operator_id, csrf)
+        monkeypatch.setattr(portal_api.time, "time", real_time)
+        client.cookies.set(portal_api.COOKIE, expired_token, path="/api/portal")
+        response = start(client, csrf)
+        assert response.status_code == 401
+        assert response.json()["detail"]["code"] == "portal_session_invalid"
+        assert portal_row_count(client) == 0
+        assert calls == []
+
+
+def test_portal_start_rejects_unauthenticated_before_any_side_effect(tmp_path, monkeypatch):
+    settings = configured_settings(tmp_path)
+    calls = []
+    monkeypatch.setattr(portal_api, "send_webhook", lambda _settings, payload: calls.append(payload))
+    with TestClient(create_app(settings)) as client:
+        response = start(client, "unbound-csrf-token")
+        assert response.status_code == 401
+        assert response.json()["detail"]["code"] == "portal_authentication_required"
+        assert portal_row_count(client) == 0
+        assert calls == []
 
 
 def test_investigation_history_requires_session_and_has_empty_state(tmp_path):
@@ -216,7 +293,7 @@ def test_webhook_failure_is_recorded_without_retry(tmp_path, monkeypatch):
 ])
 def test_portal_correlation_reaches_real_isolated_backend_and_final_audit(
         tmp_path, monkeypatch, outcome, expected, review_status):
-    """Backend lifecycle is real; webhook/agent/human values are explicit test doubles."""
+    """M2M callbacks intentionally use capability/idempotency auth, not portal-cookie CSRF."""
     settings = configured_settings(tmp_path)
     monkeypatch.setattr(portal_api, "send_webhook", lambda _s, _p: (True, "event-test-2", None))
     with TestClient(create_app(settings)) as client:

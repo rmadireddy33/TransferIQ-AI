@@ -41,7 +41,7 @@ The backend uses FastAPI, SQLAlchemy, Pydantic, and SQLite.
 - Core/private APIs manage fictional clients, firms, accounts, securities, transfers, immutable source positions, receiving staging, reconciliation, and private documents. X-API-Key is required, including for GETs.
 - The packaged demo catalog exposes five precomputed fictional scenarios and never queries private live storage.
 - Demo-run APIs create bounded, TTL-governed, run-isolated state. They expose only the selected allowlisted scenario and issue a capability for constrained review writes.
-- Portal APIs authenticate an operator with a short-lived signed HttpOnly cookie, require CSRF and idempotency for starts, persist sanitized workflow state by executionRequestId, and expose operator-scoped paginated history without exposing registry internals.
+- Portal APIs authenticate an operator with a short-lived signed HttpOnly cookie. The only cookie-authenticated mutation, investigation start, requires a non-empty session-bound CSRF header and an idempotency key before persistence or dispatch. Read-only GETs remain CSRF-exempt. Portal APIs persist sanitized workflow state by executionRequestId and expose operator-scoped paginated history without exposing registry internals.
 - Resolution services bind plans to transfer, reconciliation, evidence versions, hashes, capabilities, expiry, and decisions. Demo execution records dispositions; it never mutates custody or staging quantities.
 - Audit events are append-only and final verification independently rereads plan, decision, disposition, reconciliation, and audit state.
 
@@ -49,7 +49,7 @@ See [API_SURFACES.md](docs/API_SURFACES.md) for exact routes.
 
 ## Portal-to-audit lifecycle
 
-1. The operator authenticates to the portal. A start request requires the signed session, CSRF token, and an Idempotency-Key.
+1. The operator authenticates to the portal. A start request requires the signed session, its matching `X-CSRF-Token`, and an `Idempotency-Key`; authentication and CSRF validation happen before PEX persistence or webhook dispatch.
 2. The backend persists PENDING before dispatch, sends one bounded webhook POST, and records TRIGGERED on acceptance. HTTP 200 is not workflow completion.
 3. The Flow creates and binds an isolated review run, reconciles it, and advances the PEX record to INVESTIGATING.
 4. CLEAN cases persist COMPLETED/CLEAN without document retrieval, an agent, or a human task.

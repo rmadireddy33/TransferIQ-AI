@@ -65,6 +65,14 @@ The code default for PORTAL_INVESTIGATION_ENABLED is 0 and startup fails closed 
 
 Never expose the webhook URL/header value, operator access code, session secret, private API key, review capability, or signed attachment URL in the frontend, logs, screenshots, or documentation.
 
+The portal login response supplies a session-bound CSRF token to the existing
+React authenticated-request path. Every cookie-authenticated investigation
+start must send that token in `X-CSRF-Token`; missing or incorrect values return
+HTTP 403 before registry creation or webhook dispatch. Clients that retain only
+the HttpOnly cookie but lose the in-browser token must sign in again. Do not
+weaken this check for legacy clients. Read-only portal GETs and independently
+capability-authenticated `/api/demo/runs...` callbacks are intentionally exempt.
+
 ## Durable storage
 
     /data/transferiq.db                  private application SQLite, schema v4
@@ -122,7 +130,21 @@ Do not repeatedly retry an uncertain webhook delivery. The backend intentionally
     npm test --prefix frontend -- --run
     npm run build --prefix frontend
 
-The latest audited results are 481 passing backend tests and 30 passing frontend tests, plus a successful production build. Coverage includes global and transfer-specific operator-scoped history, filtering, pagination, access controls, and registry v2-to-v3 migration.
+The latest local remediation results are 484 passing backend tests and 26
+passing frontend tests, plus a successful production build. Coverage includes
+valid, missing, incorrect, expired, and unauthenticated CSRF/session cases;
+zero-side-effect rejection; idempotent single dispatch; global and
+transfer-specific operator-scoped history; filtering; pagination; access
+controls; and registry v2-to-v3 migration.
+
+To release the CSRF correction, deploy the reviewed backend/frontend source
+through the existing Render service without changing environment values or the
+persistent disk. After `/health` is green, authenticate once and issue one
+bounded start request without `X-CSRF-Token`; expect HTTP 403
+`csrf_validation_failed` and confirm no PEX row or UiPath execution was created.
+Then verify the normal portal client still includes the token. Do not start a
+real investigation merely to test deployment unless a separate business-path
+acceptance run is explicitly authorized.
 
 ## Troubleshooting
 

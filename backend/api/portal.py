@@ -53,7 +53,13 @@ def _session_token(settings, operator_id: str, csrf: str) -> str:
     return payload + "." + _b64(signature)
 
 
-def _read_session(request: Request, token: str | None, csrf: str | None = None):
+def _read_session(
+    request: Request,
+    token: str | None,
+    csrf: str | None = None,
+    *,
+    require_csrf: bool = False,
+):
     settings = request.app.state.settings
     if not settings.portal_investigation_enabled:
         fail(503, "portal_investigation_disabled", "Controlled portal investigation is not configured")
@@ -68,8 +74,10 @@ def _read_session(request: Request, token: str | None, csrf: str | None = None):
         claims = json.loads(_unb64(payload))
         if claims.get("sub") != settings.portal_operator_id or int(claims.get("exp", 0)) <= int(time.time()):
             raise ValueError
-        if csrf is not None and not secrets.compare_digest(str(claims.get("csrf", "")), csrf):
-            fail(403, "csrf_validation_failed", "Portal session verification failed")
+        if require_csrf:
+            expected_csrf = str(claims.get("csrf", ""))
+            if not csrf or not expected_csrf or not secrets.compare_digest(expected_csrf, csrf):
+                fail(403, "csrf_validation_failed", "Portal session verification failed")
         return claims
     except Exception as exc:
         if getattr(exc, "status_code", None):
@@ -148,7 +156,9 @@ def start_investigation(
     token: Annotated[str | None, Security(portal_cookie)] = None,
     csrf: Annotated[str | None, Header(alias="X-CSRF-Token")] = None,
 ):
-    claims = _read_session(request, token, csrf)
+    # This cookie-authenticated mutation must fail before registry or webhook access
+    # when the session-bound CSRF header is absent or invalid.
+    claims = _read_session(request, token, csrf, require_csrf=True)
     manager = _manager(request)
     row, created = manager.create(claims["sub"], data.transfer_id, idempotency_key)
     if created:
