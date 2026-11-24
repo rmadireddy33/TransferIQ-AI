@@ -1,6 +1,7 @@
 # TransferIQ AI final release verification
 
 Verification date: **2026-11-22**  
+UiPath release update: **2026-11-24**  
 Scope: final competition release audit plus targeted CSRF remediation  
 Recommendation: **PASS WITH LIMITATIONS**
 
@@ -29,6 +30,22 @@ The remediation changed only the portal session validator, security tests, and
 documentation. No Flow, Agent prompt, Quick Form, financial rule, database
 record, deployment, production credential, or production workflow was changed.
 
+On 2026-11-24, the separately validated canonical binding repair was packaged
+as `TransferIQ-AI` 1.1.2, uploaded to the existing Studio Web solution with a
+pre-overwrite snapshot, published to the tenant feed, and applied through an
+in-place deployment upgrade. UiPath returned `VersionChange`,
+`DeploymentSucceeded`, `SuccessfulActivate`, and `Active`. Both deployed
+projects report 1.1.2/latest and the existing HTTP Webhook connection remains
+Enabled. This release operation did not start a Maestro execution; retained
+functional execution evidence below remains from 1.1.1.
+
+Release evidence: package SHA-256
+`0D55E96F8F6EAB8534DE2645062C4757879CDC75F5692D1F64CC036CBF2D0C76`;
+package version key `363f100b-4079-4619-847f-31c1fc108e77`;
+upgrade pipeline `fd6dbeae-b8c1-4468-2b8e-08df495f702d`; current deployment
+key `48e20ec6-1b3a-4b78-8330-f2b2dc5bdd61`. These identifiers contain no
+credentials or webhook URL.
+
 ## Verification matrix
 
 | Area | Command or evidence | Observed result |
@@ -50,7 +67,8 @@ record, deployment, production credential, or production workflow was changed.
 | Focused Flow/Agent/document regression | targeted pytest selection | **171 passed**, 1 known warning, 74.08 seconds |
 | Document retrieval workflow | `uip api-workflow validate` | **Success / Valid** |
 | Solution dry-run | `uip solution pack ... --dry-run` | **Success / Valid**; known `ImplicitConnection` catalog advisory remains |
-| Markdown links | read-only link checker | 56 Markdown files, 91 local links, **0 missing targets** |
+| Checked-in Studio Web export | `TransferIQ_Reconciliation.uis` inspection, project validation, and dry-run pack | SHA-256 `5589B77E038CB31F4D2385DE9BD075807D311456258B9B539B1334B46C349F19`; 579,055 bytes; contains the Flow and document-retrieval API Workflow; **Success / Valid** |
+| Markdown links | read-only link checker after adding the `.uis` run guide | 57 Markdown files, 109 local links, **0 missing targets** |
 | Encoding | UTF-8/mojibake scan of `frontend/src` and `frontend/dist` | 11 files scanned, **0 issues** |
 
 The first sandboxed backend invocation could not start the Windows Store-backed
@@ -92,7 +110,7 @@ production state:
 - TRF-1001 shows one investigation and TRF-1002 shows six;
 - approval, rejection, timeout, CLEAN, and open-exception outcomes are visible;
 - the PEX detail view and six-stage timeline were visually reviewed;
-- UiPath solution 1.1.1 remains deployed.
+- At the 2026-11-22 audit, UiPath solution 1.1.1 remained deployed. It was subsequently upgraded in place to active solution 1.1.2 on 2026-11-24 without launching a workflow.
 
 These observations are accepted as owner-provided production evidence, not
 relabelled as independently authenticated API reads.
@@ -225,11 +243,14 @@ system, or historical source-control revisions. No remote SBOM is exposed.
 
 ## Documentation review
 
-All 91 local Markdown links resolve. Current API route names match the 51-path
+All 109 local Markdown links resolve. Current API route names match the 51-path
 local and production OpenAPI documents. The Render guide correctly requires a
 single worker, `/data`, startup migrations, and no `DATABASE_URL`. The judge
 guide correctly separates public review, authorized execution, and tenant-owned
-bindings/reviewer assignment.
+bindings/reviewer assignment. The root [`.uis` run guide](../TRANSFERIQ_UIS_RUN_GUIDE.md)
+adds checksum verification, safe import behavior, target-tenant setup, sample
+Manual Trigger inputs, and the public-callback topology required for a
+judge-owned local portal.
 
 The following statements must not remain unqualified after this audit:
 
@@ -244,7 +265,9 @@ The following statements must not remain unqualified after this audit:
   deployment and bounded negative check.
 
 This report and the updated audit/gap list record the current evidence. The
-canonical binding discrepancy is closed without a deployment or Flow execution.
+canonical binding remediation itself did not execute a Flow; it was later
+published and activated as UiPath solution 1.1.2, also without starting a new
+Maestro instance.
 
 ## Remaining release limitations
 

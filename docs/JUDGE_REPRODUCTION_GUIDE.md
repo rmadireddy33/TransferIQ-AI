@@ -2,6 +2,8 @@
 
 This guide provides three bounded ways to inspect TransferIQ AI. The public path is read-only and requires no credentials. Starting a real portal investigation requires an access code supplied privately by the project owner. Reproducing the UiPath solution in another tenant requires that tenant's own UiPath resources and permissions.
 
+For the checked-in Studio Web archive, use the root-level [TransferIQ `.uis` import, deployment, and run guide](../TRANSFERIQ_UIS_RUN_GUIDE.md). It contains the exact archive checksum, target-tenant rebinding steps, sample Manual Trigger inputs, expected results, and the additional requirements for a judge-owned local portal run. This document remains the broader public/owner/source reproduction guide.
+
 ## 1. Fastest public review — no credentials
 
 Open the deployed portal:
@@ -150,13 +152,19 @@ pre-repair and repaired SHA-256 values are recorded in
 
 This is not a zero-configuration path. It uses the judge's own tenant, licenses, identity, connection, and reviewer assignment. Do not reuse the project owner's identifiers or secrets.
 
+The preferred import artifact is [`TransferIQ_Reconciliation.uis`](../TransferIQ_Reconciliation.uis). Follow the [root `.uis` run guide](../TRANSFERIQ_UIS_RUN_GUIDE.md) for the complete procedure. The source-directory command below remains useful for developers rebuilding from editable source.
+
 1. Confirm entitlement to Maestro, Agents, Integration Service, Action Center, and the model/tool capabilities used by Analyze Files.
 2. Authenticate the UiPath CLI to the intended organization, tenant, and folder.
-3. Upload the solution project:
+3. Upload either the checked-in `.uis` or the source solution project:
 
    ```powershell
+   uip solution upload .\TransferIQ_Reconciliation.uis --output json
+   # Source-developer alternative:
    uip solution upload .\maestro\TransferIQ_Reconciliation --output json
    ```
+
+   In a separate judge tenant, the expected `.uis` action is `Imported`. If the response says `Overwritten`, confirm that replacing the existing Studio Web solution is intentional before continuing.
 
 4. In the solution configuration, resolve every imported resource with resources owned by that tenant.
 5. Open Transfer Operations Review in the Flow designer. In Assignment criteria,
@@ -173,8 +181,8 @@ This is not a zero-configuration path. It uses the judge's own tenant, licenses,
    ```
 
 7. Configure the deployed backend with the new webhook URL and matching authentication header through secret environment settings. Never put them in Flow source or frontend variables.
-8. Validate, publish, deploy, and activate in the chosen folder. The audited
-   owner deployment is version 1.1.1; a judge-owned import may receive a different
+8. Validate, publish, deploy, and activate in the chosen folder. The owner
+   deployment is version 1.1.2; retained end-to-end runtime evidence is from 1.1.1. A judge-owned import may receive a different
    tenant-local package version and must be reported as a separate deployment.
 9. For an initial proof, use the Manual Trigger shown by the imported Flow designer and supply its required values. Keep `enableIXP=false`; the document path uses the Autonomous Agent's Analyze Files tool, not IXP-in-Flow.
 10. Run one test, inspect the actual agent tool invocation, complete the Action Center task, and verify the final plan and audit endpoints.

@@ -1,6 +1,6 @@
 # TransferIQ AI architecture
 
-This document describes the implemented 1.1.1 architecture. Older Step documents are historical evidence, not current-state specifications.
+This document describes the implemented 1.1.2 architecture. Older Step documents are historical evidence, not current-state specifications.
 
 ## System context
 
@@ -104,13 +104,15 @@ IXP-in-Flow is unavailable in the Community tenant and is not part of this path.
 
 ## Deployment and portability
 
-Production uses Render with DATA_DIR=/data, one instance/worker, build-time frontend compilation, and runtime-only database initialization. UiPath solution 1.1.1 contains the Flow, document-retrieval API Workflow, HTTP Webhook connection resource, Autonomous Agent configuration, and Quick Form configuration.
+Production uses Render with DATA_DIR=/data, one instance/worker, build-time frontend compilation, and runtime-only database initialization. UiPath solution 1.1.2 contains the Flow, document-retrieval API Workflow, HTTP Webhook connection resource, Autonomous Agent configuration, and Quick Form configuration. The 1.1.2 release changes canonical artifact reproducibility only; retained end-to-end functional execution evidence remains from 1.1.1.
+
+The root [`TransferIQ_Reconciliation.uis`](TransferIQ_Reconciliation.uis) is a checksum-recorded Studio Web source export containing both UiPath projects. It is not an activated package. A judge imports it into a separate tenant, replaces the reviewer and webhook bindings, then publishes/deploys a judge-owned version by following [TRANSFERIQ_UIS_RUN_GUIDE.md](TRANSFERIQ_UIS_RUN_GUIDE.md).
 
 Another tenant must supply its own entitled organization/tenant/folder, HTTP Webhook connection, eligible single-user Quick Form reviewer, Agent/Analyze Files availability, ignored Flow bindings, and deployed webhook URL. No owner tenant identifier or secret is a portable default.
 
 ## Current limitations
 
-- Native Maestro evaluation data points and run evidence are absent.
+- One bounded native Maestro CLEAN evaluation scored 1.0; native inline-Agent evaluation remains blocked because node-scoped evaluation cannot supply the preserved upstream file expression.
 - A second-tenant import/binding rehearsal has not been retained.
 - Demo reviewer references are not suitable for real financial authority.
 - Real ACATS, settlement, trading, and custody mutation are deliberately absent.

@@ -90,7 +90,7 @@ Back up SQLite and document bytes together. Do not copy only a live database fil
 
 Render does not deploy the UiPath solution. The target UiPath tenant must already have:
 
-- active solution 1.1.1 or a separately validated later version;
+- active solution 1.1.2 or a separately validated later version;
 - an enabled authenticated HTTP Webhook connection;
 - a deployed PortalWebhook trigger and issued URL;
 - an eligible single-user Quick Form reviewer;

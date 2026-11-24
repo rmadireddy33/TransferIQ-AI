@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@uipath/agent-tool": "1.205.0",
+    "@uipath/api-workflow-tool": "^1.205.0",
     "@uipath/eval-tool": "1.205.0",
+    "@uipath/integrationservice-tool": "^1.205.0",
     "@uipath/maestro-tool": "1.205.0",
+    "@uipath/orchestrator-tool": "^1.205.0",
     "@uipath/solution-tool": "^1.205.0"
   }
 }

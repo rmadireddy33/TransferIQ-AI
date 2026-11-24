@@ -2,6 +2,7 @@
 
 Audit date: **2026-11-19**. Documentation-reconciliation update:
 **2026-11-22**. Final release gate: **2026-11-22**.
+UiPath release update: **2026-11-24**.
 
 Current recommendation: **PASS WITH LIMITATIONS**. Full details and exact
 commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
@@ -19,7 +20,7 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 ### P0-2 - Produce a clean, internally consistent submission package — CLOSED 2026-11-22
 
 - **Original issue:** Root, deployment, and judge documents mixed earlier
-  reconciliation-only and failed-form milestones with the current 1.1.1 state.
+  reconciliation-only and failed-form milestones with the current architecture. The active solution is now 1.1.2, while retained end-to-end functional evidence remains explicitly labelled 1.1.1.
 - **Implemented fix:** Reconciled README, architecture, project plan, Render and
   Railway guidance, API inventory, zero-credential boundaries, judge setup,
   tenant bindings, reviewer assignment, CLI compatibility, and environment
@@ -41,7 +42,7 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
   reports one error and two warnings because the
   `TransferIQ_Document_Retrieval` workflow-level `name` and `folderPath`
   binding rows are absent.
-- **Impact:** Production 1.1.1 is operational and the solution dry-run is
+- **Impact:** At discovery time production 1.1.1 was operational and the solution dry-run was
   `Valid`, so this is not an observed production outage. It does invalidate the
   unqualified documentation claim that the checked-in canonical `.flow`
   validates standalone and can surprise a judge following that command.
@@ -119,9 +120,18 @@ commands are in [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md).
 
 ### P1-4 - Rehearse tenant dependencies and portable assignment
 
-- **Exact issue:** The import/bind/assign checklist is now documented, but a
-  clean second-tenant rehearsal has not been retained.
+- **Exact issue:** The checked-in `TransferIQ_Reconciliation.uis` now has a
+  checksum-recorded, GitHub-facing import/bind/assign/run guide, but a clean
+  second-tenant rehearsal has not been retained.
 - **Why it matters:** Public browsing is zero-credential, but running the full Flow in another tenant is not zero setup.
+- **Completed portability evidence:** The 579,055-byte archive contains both
+  `TransferIQ_Reconciliation` and `TransferIQ_Document_Retrieval`; its Flow and
+  API Workflow independently validate, its 81/86 graph is preserved, and a
+  solution dry-run succeeds with only the known `ImplicitConnection` advisory.
+  The root [`.uis` run guide](../TRANSFERIQ_UIS_RUN_GUIDE.md) documents the
+  owner-solution-ID overwrite risk, target reviewer/webhook rebinding, manual
+  sample inputs, and the public-callback requirement for a judge-owned local
+  portal.
 - **Required fix:** Execute the documented process in a second tenant without
   reusing owner identifiers or editing financial logic.
 - **Complexity:** Low; documentation plus a clean-tenant rehearsal.

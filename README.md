@@ -4,7 +4,7 @@ TransferIQ AI is a fictional brokerage-transfer reconciliation demonstration. It
 
 ## Current verified release
 
-- UiPath solution: **TransferIQ-AI 1.1.1**, active.
+- UiPath solution: **TransferIQ-AI 1.1.2**, active. The 1.1.2 upgrade contains the canonical standalone-binding repair; no post-upgrade Maestro execution was launched during release installation.
 - Canonical Maestro Flow: **81 nodes / 86 edges**, independently product-valid with UiPath CLI 1.205.0; the pre-repair checksum backup is recorded under `maestro/verification-backups/`.
 - Editable Flow SDK source: reproducible, with **0 source errors / 0 warnings**.
 - Flow toolchain: UiPath CLI **1.205.0** pinned in the Flow SDK lockfile. CLI 1.206.0 has a documented dynamic Quick Form validation regression.
@@ -45,6 +45,7 @@ For TRF-1002, a completed approved workflow is REVIEWED_WITH_OPEN_EXCEPTIONS: SE
     maestro/TransferIQ_Reconciliation/
       TransferIQ_Reconciliation/     Canonical .flow and reproducible Flow SDK source
       TransferIQ_Document_Retrieval/ File-returning UiPath API Workflow
+    TransferIQ_Reconciliation.uis     Portable Studio Web solution export for judge import
     docs/                            Current guides and historical milestone evidence
     tests/                           Backend, contract, graph, security, and regression tests
     data/                            Local runtime state; ignored and never deployed from source
@@ -90,6 +91,7 @@ The exact route inventory is in [API_SURFACES.md](docs/API_SURFACES.md). Do not 
 
 ## Deployment and UiPath reproduction
 
+- Import/deploy/run the checked-in `.uis`: [TRANSFERIQ_UIS_RUN_GUIDE.md](TRANSFERIQ_UIS_RUN_GUIDE.md).
 - Render configuration: [RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md).
 - Judge and tenant setup: [JUDGE_REPRODUCTION_GUIDE.md](docs/JUDGE_REPRODUCTION_GUIDE.md).
 - Source-to-Flow reproduction: [MAESTRO_SOURCE_REPRODUCIBILITY.md](docs/MAESTRO_SOURCE_REPRODUCIBILITY.md).
@@ -98,14 +100,16 @@ The exact route inventory is in [API_SURFACES.md](docs/API_SURFACES.md). Do not 
 
 Tenant imports must bind their own HTTP Webhook connection, select an eligible single-user reviewer for the Quick Form, and provide the target folder/resource values in ignored local bindings. Tenant identifiers and secrets must never be committed.
 
+The `.uis` carries its source Studio Web solution ID and owner-tenant resource references. Import it into a separate judge tenant: uploading it to a tenant that already contains that solution ID overwrites the existing solution after a snapshot. The archive is source, not an activated deployment, and its package version is chosen when it is packed/published.
+
 ## Documentation convention
 
 Root documents and the final audit describe the current architecture. STEP2 through STEP10 files are historical milestone and incident records; their statements are accurate for the date/version named in each file and are not the current release status. Step 11 and the reproduction guides supersede older setup instructions where they differ.
 
 ## Remaining limitations
 
-- Native Maestro evaluation definitions currently have no data points or recorded evaluation run.
+- One bounded native Maestro CLEAN evaluation scored 1.0. Native inline-Agent evaluation remains blocked because node-scoped evaluation cannot supply the preserved upstream file expression.
 - A second-tenant import/binding rehearsal has not been retained.
-- Current 1.1.1 live traces are not retained for every secondary scenario and negative case.
+- Retained live functional evidence is from 1.1.1; a post-upgrade 1.1.2 execution was intentionally not launched during release installation, and live traces are not retained for every secondary scenario and negative case.
 - Source-to-deployment commit provenance is managed outside this workspace and is not asserted here.
 - Portal evidence labels now come from the persisted plan projection: `AGENT_ANALYZE_FILES`, `API_ONLY`, or document evidence unavailable. The active six-stage timeline uses backend-reported workflow state and keeps workflow completion distinct from transfer completion.

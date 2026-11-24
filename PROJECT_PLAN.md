@@ -1,6 +1,6 @@
 # TransferIQ AI project plan and status
 
-Current release: **UiPath solution 1.1.1**  
+Current release: **UiPath solution 1.1.2**  
 Current assessment: **READY WITH LIMITATIONS**  
 Current canonical Flow: **81 nodes / 86 edges, Valid**
 
@@ -23,7 +23,7 @@ This plan records implemented milestones and remaining work. Historical Step doc
 | Step 10C: status | Accurate lifecycle projection, terminal-aware bounded polling, reload-safe tracking, paginated operator-scoped investigation history, audit/transfer links, and workflow-vs-transfer completion distinction. |
 | Step 11: document analysis | Automated fictional PDF retrieval, real Agent Analyze Files attachment, deterministic comparison to corporate-action API, API-only fallback, and live 1.1.1 approval/rejection/CLEAN evidence. |
 | Reproducibility remediation | Source check 0/0, clean compile 81/86, product-valid candidate, semantic comparison, binding template, and pinned CLI 1.205.0. |
-| Canonical binding remediation | Added only the two missing in-solution API Workflow binding rows through supported CLI tooling; standalone canonical validation is Valid and the 81/86 graph is unchanged. |
+| Canonical binding remediation | Added only the two missing in-solution API Workflow binding rows through supported CLI tooling; standalone canonical validation is Valid and the 81/86 graph is unchanged. Published and activated as solution 1.1.2 on 2026-11-24. |
 
 ## Verification baseline
 
@@ -31,8 +31,9 @@ This plan records implemented milestones and remaining work. Historical Step doc
 - Frontend: **26 passed**, production build successful.
 - Canonical Flow: product validation **Valid**.
 - Editable source: **0 errors / 0 warnings**; clean compile **81 nodes / 86 edges**.
-- Solution: **1.1.1 Active / Successful**.
+- Solution: **1.1.2 Active / SuccessfulActivate**; both deployed projects report version 1.1.2/latest.
 - Real retained 1.1.1 evidence: TRF-1001 CLEAN; TRF-1002 Analyze Files approval and rejection; unchanged positions; verified audit.
+- Release-install verification did not execute a new Maestro instance, so the retained 1.1.1 evidence is not relabelled as 1.1.2 runtime evidence.
 
 These are recorded audit/remediation results, not tests rerun by every documentation update.
 
@@ -40,7 +41,7 @@ These are recorded audit/remediation results, not tests rerun by every documenta
 
 ### P0 - documentation and provenance
 
-- Keep root, deployment, judge, and environment guidance aligned with release 1.1.1.
+- Keep root, deployment, judge, and environment guidance aligned with active release 1.1.2 while preserving 1.1.1 runtime evidence labels.
 - Treat old incident and milestone documents as historical evidence.
 - Keep tenant bindings and secrets outside source control.
 - Maintain source/package/deployment provenance in the owner's external version-control process; this workspace does not assert it.
@@ -94,6 +95,7 @@ Future changes must preserve:
 - [Feature completeness matrix](docs/FEATURE_COMPLETENESS_MATRIX.md)
 - [Submission gap list](docs/SUBMISSION_GAP_LIST.md)
 - [Judge reproduction guide](docs/JUDGE_REPRODUCTION_GUIDE.md)
+- [UiPath `.uis` import, deployment, and run guide](TRANSFERIQ_UIS_RUN_GUIDE.md)
 - [Render deployment](docs/RENDER_DEPLOYMENT.md)
 - [Flow source reproducibility](docs/MAESTRO_SOURCE_REPRODUCIBILITY.md)
 - [Portal status](docs/STEP10C_PORTAL_STATUS.md)

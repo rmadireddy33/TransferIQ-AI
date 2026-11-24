@@ -2,7 +2,7 @@
 
 Audit date: **2026-11-19**  
 Native evaluation update: **2026-11-22**  
-Scope: current source, deployed Render service, active UiPath solution 1.1.1, retained execution evidence, and fresh automated verification.
+Scope: current source, deployed Render service, active UiPath solution 1.1.2, retained execution evidence, and fresh automated verification.
 
 ## Status model and completion calculation
 
@@ -23,7 +23,7 @@ run there are **43 A**, **6 B**, and **1 C** rows. Completion is therefore
 
 | # | Feature | Status | Evidence source | Fresh or actual result | Remaining work | Priority |
 |---:|---|:---:|---|---|---|:---:|
-| 1 | Five fictional transfer scenarios | A | `backend/database/seed.py`, `seed_reconciliation.py` | Covered by 478-pass suite and production catalog returns 5 items | None | - |
+| 1 | Five fictional transfer scenarios | A | `backend/database/seed.py`, `seed_reconciliation.py` | Covered by the current 485-pass suite and production catalog returns 5 items | None | - |
 | 2 | Transfer records and lifecycle | A | `backend/models/entities.py`, API tests | Protected private APIs and isolated public-run reads pass | None | - |
 | 3 | Immutable delivering positions | A | models, DB triggers/migrations, reconciliation tests | Mutation and before/after invariants pass | None | - |
 | 4 | Receiving transfer staging positions | A | models and reconciliation service | Kept distinct from settled custody; tests pass | None | - |
@@ -57,12 +57,12 @@ run there are **43 A**, **6 B**, and **1 C** rows. Completion is therefore
 | 32 | Persisted portal lifecycle, history and bounded polling | A | portal registry, FastAPI/React tests | Operator-scoped global/transfer filtering, pagination, nullable historical fields, PEX reopen/return, status persistence, refresh, timeout and 60-poll bound pass | Deploy latest portal candidate and recheck asset parity | P1 |
 | 33 | Workflow-complete vs transfer-complete distinction | A | portal UI and live verify response | UI explicitly says workflow completed while shortage remains unresolved | None | - |
 | 34 | Render source/API parity | A | fresh OpenAPI and asset comparison | 51/51 paths match; JS name, length and SHA-256 match local build | None | - |
-| 35 | Active UiPath solution deployment | A | tenant package/deployment reads | `TransferIQ-AI` 1.1.1 is Active/Successful | None | - |
+| 35 | Active UiPath solution deployment | A | tenant package/deployment reads | `TransferIQ-AI` 1.1.2 is Active/Successful; retained end-to-end functional evidence remains from 1.1.1 | No post-upgrade execution was launched | - |
 | 36 | Reproducible authored Flow source and canonical artifact | A | `.flow-sdk` source, pinned package/lockfile, binding template, checksum backup, comparison script, [reproduction procedure](MAESTRO_SOURCE_REPRODUCIBILITY.md) | Source check 0/0; source compile and repaired canonical both validate `Valid` at 81 nodes/86 edges with CLI 1.205.0; exact node-ID and edge-tuple comparison passed; canonical pre/post diff is only two process binding rows | Target tenants must supply their own ignored connection bindings; CLI 1.206.0 has a documented dynamic Quick Form validator regression | - |
 | 37 | Complete backend regression suite | A | fresh pytest run | **485 passed**, 0 failed, 0 skipped, 1 warning, 349.05s | None | - |
 | 38 | Frontend tests and production build | A | fresh Vitest/TypeScript/Vite | **26 passed** across 2 files, 0 failed; production build successful (2,162 modules) | None | - |
 | 39 | Native Maestro evaluation runs | B | `evals/`, [native evaluation report](MAESTRO_EVALUATION_REPORT.md) | Ten logical cases created; native TRF-1001 Flow run `816ba84e-ebbf-34a0-9342-e8df51d775cd` passed at 1.0; inline-Agent node run failed before agent output because its upstream file expression is unavailable in node scope | Establish a supported isolated Agent/file harness before claiming Agent evaluation completion | P1 |
-| 40 | Judge reproduction material | A | current root docs, API inventory, deployment and judge guides | Current architecture, pinned CLI, bindings, reviewer assignment, and versioned historical evidence are consolidated | A second-tenant rehearsal remains a separate portability limitation | - |
+| 40 | Judge reproduction material | A | current root docs, `.uis` archive, API inventory, deployment and judge guides | Current architecture, pinned CLI, bindings, reviewer assignment, sample inputs, manual run path, and judge-owned portal path are consolidated; the checked-in `.uis` dry-run packs and its two projects validate | A second-tenant import/binding rehearsal remains a separate portability limitation | - |
 | 41 | TRF-1001 current CLEAN live control | A | PEX-3a66..., instance ab6e29d9... | 1.1.1 completed CLEAN and skipped document/agent/form nodes | None | - |
 | 42 | TRF-1002 current approval live path | A | PEX-f260..., instance de4d8ce5... | Analyze Files, approval, execution, verification and audit completed | None | - |
 | 43 | TRF-1002 current rejection live path | A | PEX-6cff..., instance 9ce7b7cd... | Analyze Files, rejection, verification and audit completed | None | - |

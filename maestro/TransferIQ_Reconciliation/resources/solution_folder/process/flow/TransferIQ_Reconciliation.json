@@ -55,7 +55,7 @@
       },
       {
         "bindingType": "process",
-        "bindingKey": "solution_folder.TransferIQ_Document_Retrieval",
+        "bindingKey": "b41e40a5-172f-465d-8aee-01d75ea8e906",
         "bindingValues": {
           "folderPath": {
             "defaultValue": "solution_folder",

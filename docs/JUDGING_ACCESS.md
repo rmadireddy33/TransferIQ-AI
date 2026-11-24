@@ -1,6 +1,6 @@
 # Judge access
 
-Use [JUDGE_REPRODUCTION_GUIDE.md](JUDGE_REPRODUCTION_GUIDE.md) as the authoritative procedure.
+Use [JUDGE_REPRODUCTION_GUIDE.md](JUDGE_REPRODUCTION_GUIDE.md) as the authoritative review procedure. To import, deploy, and run the checked-in Studio Web archive, follow the root-level [TRANSFERIQ_UIS_RUN_GUIDE.md](../TRANSFERIQ_UIS_RUN_GUIDE.md).
 
 ## Public review
 

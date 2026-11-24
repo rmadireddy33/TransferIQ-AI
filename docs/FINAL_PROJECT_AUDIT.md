@@ -7,6 +7,7 @@ Portal presentation cleanup: **2026-11-22**
 Final release verification: **2026-11-22**  
 Portal CSRF remediation: **2026-11-22**  
 Canonical Flow binding remediation: **2026-11-22**  
+UiPath solution release update: **2026-11-24**  
 Audit role: independent solution architecture, QA, security, and submission-readiness review  
 Overall feature completion: **92%**  
 Release recommendation: **PASS WITH LIMITATIONS**  
@@ -14,7 +15,7 @@ Challenge-readiness score: **91/100**
 
 ## Executive conclusion
 
-TransferIQ AI is a functioning, deployed demonstration rather than a prototype represented only by mocks. The production backend and portal are reachable, UiPath solution version 1.1.1 is active, and retained live records prove real portal-triggered approval, rejection, CLEAN routing, Autonomous Agent execution, Analyze Files document processing, Action Center review, independent backend verification, and append-only audit behavior. The portal presentation cleanup and global/transfer Investigation History are deployed: the production JavaScript and CSS hashes exactly match the fresh local production build.
+TransferIQ AI is a functioning, deployed demonstration rather than a prototype represented only by mocks. The production backend and portal are reachable, UiPath solution version 1.1.2 is active, and retained 1.1.1 live records prove real portal-triggered approval, rejection, CLEAN routing, Autonomous Agent execution, Analyze Files document processing, Action Center review, independent backend verification, and append-only audit behavior. The portal presentation cleanup and global/transfer Investigation History are deployed: the production JavaScript and CSS hashes exactly match the fresh local production build.
 
 The core financial safety outcome is also intact: AI and humans can explain or approve a disposition, but the deterministic backend remains authoritative. In the verified `TRF-1002` approval, SEC-103 was explained by independently verified corporate-action evidence while SEC-104 remained an unresolved 20-share shortage. Original positions did not change, no correction was applied, and the transfer was not falsely marked completed.
 
@@ -31,7 +32,7 @@ Semantic comparison found no node, edge, Quick Form, Agent-input, or business
 routing difference.
 The documentation blocker is also closed: root, API, deployment, judge,
 tenant-binding, reviewer-assignment, and evidence guidance now agree with
-release 1.1.1, while older milestones are explicitly historical. The solution
+release 1.1.2, while older milestones are explicitly historical. The solution
 remains PASS WITH LIMITATIONS. Ten native evaluation cases now exist and a
 bounded `TRF-1001` Flow evaluation passed at 1.0, but inline-Agent node
 evaluation is blocked before agent execution by an upstream file-input
@@ -165,12 +166,12 @@ business logic.
 The deployed solution inventory reports:
 
 - solution package: `TransferIQ-AI`;
-- current package version: **1.1.1**;
+- current package version: **1.1.2**;
 - activation state: **Active**;
 - operation state: **Successful**;
 - deployed folder: `DemoFolder`.
 
-The deployment display name still includes `1.0.0`, but package/current version is 1.1.1. This is a naming artifact, not evidence that the older package is running.
+The deployment display name still includes `1.0.0`, but package/current version is 1.1.2. This is a naming artifact, not evidence that the older package is running. The in-place 1.1.2 upgrade completed as `VersionChange / SuccessfulActivate / Active`; both deployed projects report 1.1.2/latest and the HTTP Webhook connection remains Enabled. No post-upgrade Maestro execution was launched, so retained runtime evidence remains labelled 1.1.1.
 
 The Flow provides controlled routing for CLEAN, investigation, review, execution, verification, audit, and failures. The Portal Webhook passes only the allowlisted transfer ID, PEX correlation, and `enableIXP=false`. Request headers are not read, logged, or returned by Flow logic.
 
@@ -333,7 +334,7 @@ uip solution pack maestro\TransferIQ_Reconciliation --dry-run --output json
 - semantic comparison: no missing/extra node IDs or edge tuples; Quick Form and agent input contracts equivalent;
 - canonical pre/post parsed difference: exactly two appended process binding rows; document-retrieval input expressions unchanged;
 - known solution warning: pre-existing `ImplicitConnection` resource-catalog advisory;
-- active tenant package: **1.1.1**;
+- active tenant package: **1.1.2** (`SuccessfulActivate / Active`); both Flow and API Workflow processes report 1.1.2/latest;
 - retained approval Flow instance: **Completed**, no incidents;
 - retained rejection Flow instance: **Completed**;
 - retained CLEAN Flow instance: **Completed**;
@@ -435,6 +436,7 @@ No change to the financial reconciliation rules, IXP default, existing webhook i
 - [LIVE_EXECUTION_EVIDENCE.md](LIVE_EXECUTION_EVIDENCE.md) — sanitized real-run catalog and exact nonclaims.
 - [SUBMISSION_GAP_LIST.md](SUBMISSION_GAP_LIST.md) — prioritized remediation backlog.
 - [JUDGE_REPRODUCTION_GUIDE.md](JUDGE_REPRODUCTION_GUIDE.md) — public, authorized, local, and judge-tenant reproduction paths.
+- [TRANSFERIQ_UIS_RUN_GUIDE.md](../TRANSFERIQ_UIS_RUN_GUIDE.md) — checksum-recorded import, target-tenant binding, deployment, Manual Trigger samples, and judge-owned portal execution for the checked-in Studio Web archive.
 - [FINAL_RELEASE_VERIFICATION.md](FINAL_RELEASE_VERIFICATION.md) — final regression, production parity, history, security, dependency, Flow and documentation gate.
 
 Final determination after the competition release audit:

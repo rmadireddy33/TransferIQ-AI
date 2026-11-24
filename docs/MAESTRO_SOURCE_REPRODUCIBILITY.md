@@ -1,6 +1,6 @@
 # Maestro Flow source reproducibility
 
-Status: **source remediated on 2026-11-19; checked-in canonical artifact repaired and independently validated on 2026-11-22**. This procedure rebuilds a product-valid candidate and validates the checked-in canonical Flow without changing deployed UiPath solution 1.1.1.
+Status: **source remediated on 2026-11-19; checked-in canonical artifact repaired and independently validated on 2026-11-22; repaired solution published and activated as 1.1.2 on 2026-11-24**. This procedure rebuilds a product-valid candidate and validates the checked-in canonical Flow. The 1.1.2 release installation did not launch a Maestro execution; retained functional evidence remains from 1.1.1.
 
 ## What was repaired
 
