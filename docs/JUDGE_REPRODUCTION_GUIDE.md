@@ -4,6 +4,8 @@ This guide provides three bounded ways to inspect TransferIQ AI. The public path
 
 For the checked-in Studio Web archive, use the root-level [TransferIQ `.uis` import, deployment, and run guide](../TRANSFERIQ_UIS_RUN_GUIDE.md). It contains the exact archive checksum, target-tenant rebinding steps, sample Manual Trigger inputs, expected results, and the additional requirements for a judge-owned local portal run. This document remains the broader public/owner/source reproduction guide.
 
+IXP-in-Flow is unavailable in the Community tenant used by this project. TransferIQ therefore uses the supported Autonomous Agent Analyze Files tool with a real PDF file resource and an explicitly labelled `API_ONLY` fallback. Reviewers must keep `enableIXP=false`; no current result should be described as IXP extraction.
+
 ## 1. Fastest public review — no credentials
 
 Open the deployed portal:

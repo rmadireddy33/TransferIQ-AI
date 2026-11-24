@@ -11,6 +11,8 @@ The exact filename is `TransferIQ_Reconciliation.uis` (singular *Reconciliation*
 
 The `.uis` is editable solution source, not an already deployed package. Importing it does not deploy or run a workflow. A reviewer must use a UiPath tenant with Maestro, Agents, Integration Service, and Action Center access, then supply that tenant's own connection and reviewer assignment.
 
+> **Why this solution does not use IXP-in-Flow:** UiPath IXP extraction inside a Flow is not available in the Community tenant used for TransferIQ. The implemented alternative is the supported Autonomous Agent **Analyze Files** tool, which receives the real fictional PDF as a file resource. If a usable document is unavailable, the Flow reports the honest `API_ONLY` evidence path. It never claims that IXP ran. The legacy `enableIXP` Manual Trigger input remains for backward compatibility and must be set to `false`.
+
 ## Package integrity and validated contents
 
 | Item | Value |
